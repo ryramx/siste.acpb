@@ -1,0 +1,103 @@
+@import "tailwindcss";
+
+@theme {
+  --color-acpb-green: #004922;
+  --color-acpb-green-hover: #00632e;
+  --color-acpb-green-dark: #003318;
+  --color-acpb-yellow: #F8D800;
+  --color-acpb-yellow-hover: #e0c300;
+  --color-acpb-yellow-dark: #b8a000;
+
+  --color-surface-bg: #0F1210;
+  --color-surface-card: #181D1A;
+  --color-surface-card-hover: #1e2521;
+  --color-surface-border: #222824;
+  --color-surface-input: #151917;
+
+  --color-text-primary: #FFFFFF;
+  --color-text-secondary: #AEB5B0;
+  --color-text-muted: #727A74;
+
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-heading: 'Outfit', 'Inter', system-ui, sans-serif;
+
+  --animate-fade-in: fade-in 0.2s ease-out;
+  --animate-slide-in: slide-in 0.25s ease-out;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #0F1210;
+}
+::-webkit-scrollbar-thumb {
+  background: #222824;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #004922;
+}
+
+/* Animations */
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slide-in {
+  from { opacity: 0; transform: translateX(8px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.25s ease-out both;
+}
+
+.animate-slide-in {
+  animation: slide-in 0.2s ease-out both;
+}
+
+body {
+  background-color: #0F1210;
+  color: #FFFFFF;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  overflow-x: hidden;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Outfit', 'Inter', system-ui, sans-serif;
+}
+
+/* Font heading utility */
+.font-heading {
+  font-family: 'Outfit', 'Inter', system-ui, sans-serif;
+}
+
+/* Line clamp utility */
+.line-clamp-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Focus visible ring */
+*:focus-visible {
+  outline: 2px solid #004922;
+  outline-offset: 2px;
+}
+
+/* Selection */
+::selection {
+  background: #004922;
+  color: #F8D800;
+}
+
+/* Responsive table scrolling */
+.table-responsive {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}

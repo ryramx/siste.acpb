@@ -1,0 +1,197 @@
+import React, { useEffect, useState } from 'react';
+import { ArrowUpRight, Plus, Search, Filter, TrendingUp } from 'lucide-react';
+import { Button } from '../../components/ui/Button';
+import { Input } from '../../components/ui/Input';
+import { Select } from '../../components/ui/Select';
+import { Badge } from '../../components/ui/Badge';
+import { Modal } from '../../components/ui/Modal';
+import { EmptyState } from '../../components/ui/EmptyState';
+import { TableSkeleton } from '../../components/ui/Skeleton';
+import { financialService } from '../../services/domainServices';
+import { FinancialTransaction } from '../../types/domain';
+import { useAuth } from '../../contexts/AuthContext';
+import { useToast } from '../../contexts/ToastContext';
+import { FinancialTabs } from '../../components/common/FinancialTabs';
+
+export const ReceitasPage: React.FC = () => {
+  const { hasPermission } = useAuth();
+  const { addToast } = useToast();
+
+  const [transactions, setTransactions] = useState<FinancialTransaction[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('TODOS');
+  const [modalOpen, setModalOpen] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+
+  const [newReceita, setNewReceita] = useState({
+    category: 'Doações' as any,
+    amount: 0,
+    date: new Date().toISOString().split('T')[0],
+    description: '',
+    paymentMethod: 'Pix' as any,
+    responsibleName: 'Carlos Oliveira',
+    status: 'PAGO' as any,
+  });
+
+  const fetchData = async () => {
+    setLoading(true);
+    const data = await financialService.getAll();
+    setTransactions(data.filter((t) => t.type === 'RECEITA'));
+    setLoading(false);
+  };
+
+  useEffect(() => { fetchData(); }, []);
+
+  const filtered = transactions.filter((t) => {
+    const matchSearch = t.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      t.category.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchStatus = statusFilter === 'TODOS' || t.status === statusFilter;
+    return matchSearch && matchStatus;
+  });
+
+  const total = filtered.filter(t => t.status === 'PAGO').reduce((acc, t) => acc + t.amount, 0);
+
+  const handleCreate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSubmitting(true);
+    try {
+      await financialService.create({ ...newReceita, type: 'RECEITA' });
+      addToast({ type: 'success', title: 'Receita registrada', message: 'Receita adicionada com sucesso.' });
+      setModalOpen(false);
+      fetchData();
+    } catch {
+      addToast({ type: 'error', title: 'Erro ao registrar receita' });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="space-y-6 animate-fade-in pb-12">
+      <FinancialTabs />
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-white font-heading flex items-center gap-2">
+            <ArrowUpRight className="w-6 h-6 text-green-400" />
+            Receitas
+          </h1>
+          <p className="text-sm text-[#AEB5B0]">Doações, contribuições, patrocínios e demais entradas financeiras.</p>
+        </div>
+        {hasPermission('edit_financial') && (
+          <Button variant="primary" leftIcon={<Plus className="w-4 h-4" />} onClick={() => setModalOpen(true)}>
+            Nova Receita
+          </Button>
+        )}
+      </div>
+
+      {/* Summary Card */}
+      <div className="bg-[#181D1A] border border-[#004922]/40 border-l-4 border-l-green-500 p-5 rounded-xl flex items-center justify-between">
+        <div>
+          <span className="text-xs text-[#AEB5B0] uppercase tracking-wider font-semibold">Total de Receitas Confirmadas</span>
+          <div className="text-2xl font-bold text-green-400 mt-1 font-heading">
+            R$ {total.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+          </div>
+        </div>
+        <TrendingUp className="w-10 h-10 text-green-500/30" />
+      </div>
+
+      {/* Filtros */}
+      <div className="bg-[#181D1A] border border-[#222824] p-4 rounded-xl flex flex-col md:flex-row gap-3">
+        <div className="flex-1">
+          <Input placeholder="Buscar por descrição ou categoria..." value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)} leftIcon={<Search className="w-4 h-4" />} />
+        </div>
+        <div className="w-full md:w-44">
+          <Select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}
+            options={[
+              { value: 'TODOS', label: 'Todos os Status' },
+              { value: 'PAGO', label: 'Pago' },
+              { value: 'PENDENTE', label: 'Pendente' },
+            ]} />
+        </div>
+      </div>
+
+      {/* Tabela */}
+      {loading ? <TableSkeleton rows={3} /> : filtered.length === 0 ? (
+        <EmptyState title="Nenhuma receita encontrada" description="Nenhuma receita corresponde aos filtros aplicados."
+          actionLabel={hasPermission('edit_financial') ? 'Registrar receita' : undefined}
+          onAction={() => setModalOpen(true)} />
+      ) : (
+        <div className="bg-[#181D1A] border border-[#222824] rounded-xl overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-sm">
+              <thead className="bg-[#0F1210] border-b border-[#222824] text-[#AEB5B0] font-medium">
+                <tr>
+                  <th className="py-3 px-4">Data</th>
+                  <th className="py-3 px-4">Descrição</th>
+                  <th className="py-3 px-4">Categoria</th>
+                  <th className="py-3 px-4">Forma</th>
+                  <th className="py-3 px-4">Valor</th>
+                  <th className="py-3 px-4">Status</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[#222824]">
+                {filtered.map((t) => (
+                  <tr key={t.id} className="hover:bg-[#1e2521] transition-colors">
+                    <td className="py-3 px-4 text-xs text-[#AEB5B0]">{t.date}</td>
+                    <td className="py-3 px-4 font-medium text-white">{t.description}</td>
+                    <td className="py-3 px-4 text-xs text-[#F8D800]">{t.category}</td>
+                    <td className="py-3 px-4 text-xs text-[#AEB5B0]">{t.paymentMethod}</td>
+                    <td className="py-3 px-4 font-bold text-green-400">+ R$ {t.amount.toFixed(2)}</td>
+                    <td className="py-3 px-4">
+                      <Badge variant={t.status === 'PAGO' ? 'success' : 'warning'}>{t.status}</Badge>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* Modal */}
+      <Modal isOpen={modalOpen} onClose={() => setModalOpen(false)} title="Registrar Nova Receita">
+        <form onSubmit={handleCreate} className="space-y-4">
+          <Input label="Descrição" value={newReceita.description}
+            onChange={(e) => setNewReceita({ ...newReceita, description: e.target.value })} required />
+          <div className="grid grid-cols-2 gap-3">
+            <Input label="Valor (R$)" type="number" step="0.01" value={newReceita.amount}
+              onChange={(e) => setNewReceita({ ...newReceita, amount: Number(e.target.value) })} required />
+            <Input label="Data" type="date" value={newReceita.date}
+              onChange={(e) => setNewReceita({ ...newReceita, date: e.target.value })} required />
+          </div>
+          <Select label="Categoria" value={newReceita.category}
+            onChange={(e) => setNewReceita({ ...newReceita, category: e.target.value as any })}
+            options={[
+              { value: 'Doações', label: 'Doações' },
+              { value: 'Contribuições', label: 'Contribuições' },
+              { value: 'Patrocínios', label: 'Patrocínios' },
+              { value: 'Convênios', label: 'Convênios' },
+              { value: 'Eventos', label: 'Eventos' },
+              { value: 'Outras receitas', label: 'Outras receitas' },
+            ]} />
+          <Select label="Forma de Pagamento" value={newReceita.paymentMethod}
+            onChange={(e) => setNewReceita({ ...newReceita, paymentMethod: e.target.value as any })}
+            options={[
+              { value: 'Pix', label: 'Pix' },
+              { value: 'Transferência', label: 'Transferência' },
+              { value: 'Dinheiro', label: 'Dinheiro' },
+              { value: 'Boleto', label: 'Boleto' },
+            ]} />
+          <Select label="Status" value={newReceita.status}
+            onChange={(e) => setNewReceita({ ...newReceita, status: e.target.value as any })}
+            options={[
+              { value: 'PAGO', label: 'Recebido / Pago' },
+              { value: 'PENDENTE', label: 'Pendente' },
+            ]} />
+          <div className="flex justify-end gap-2 pt-2">
+            <Button type="button" variant="ghost" onClick={() => setModalOpen(false)}>Cancelar</Button>
+            <Button type="submit" variant="primary" isLoading={submitting}>Salvar Receita</Button>
+          </div>
+        </form>
+      </Modal>
+    </div>
+  );
+};
