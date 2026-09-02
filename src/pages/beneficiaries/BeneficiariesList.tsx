@@ -4,6 +4,8 @@ import { HeartHandshake, Search, Eye, Shield, Lock } from 'lucide-react';
 import { Input } from '../../components/ui/Input';
 import { Select } from '../../components/ui/Select';
 import { Badge } from '../../components/ui/Badge';
+import { EmptyState } from '../../components/ui/EmptyState';
+import { TableSkeleton } from '../../components/ui/Skeleton';
 import { beneficiaryService } from '../../services/domainServices';
 import { Beneficiary } from '../../types/domain';
 
@@ -77,43 +79,59 @@ export const BeneficiariesList: React.FC = () => {
       </div>
 
       {/* Tabela de Beneficiários */}
-      <div className="bg-[#181D1A] border border-[#222824] rounded-xl overflow-hidden shadow-sm">
-        <table className="w-full text-left text-sm">
-          <thead className="bg-[#0F1210] border-b border-[#222824] text-[#AEB5B0] font-medium">
-            <tr>
-              <th className="py-3.5 px-4">Nome do Assistido</th>
-              <th className="py-3.5 px-4">Faixa Etária</th>
-              <th className="py-3.5 px-4 hidden sm:table-cell">Projeto Vinculado</th>
-              <th className="py-3.5 px-4">Situação</th>
-              <th className="py-3.5 px-4 text-right">Ações</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-[#222824]">
-            {filteredBeneficiaries.map((b) => (
-              <tr key={b.id} className="hover:bg-[#1e2521] transition-colors">
-                <td className="py-3.5 px-4 font-semibold text-white">{b.name}</td>
-                <td className="py-3.5 px-4 text-[#AEB5B0] text-xs">{b.ageGroup}</td>
-                <td className="py-3.5 px-4 hidden sm:table-cell text-xs text-[#F8D800]">
-                  {b.projectName}
-                </td>
-                <td className="py-3.5 px-4">
-                  <Badge variant={b.status === 'EM_ATENDIMENTO' ? 'success' : 'neutral'}>
-                    {b.status.replace('_', ' ')}
-                  </Badge>
-                </td>
-                <td className="py-3.5 px-4 text-right">
-                  <button
-                    onClick={() => navigate(`/beneficiarios/${b.id}`)}
-                    className="p-1.5 text-[#AEB5B0] hover:text-white hover:bg-[#222824] rounded-lg transition-colors inline-flex items-center gap-1 text-xs font-medium"
-                  >
-                    <Eye className="w-4 h-4" /> Detalhes & Timeline
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      {loading ? (
+        <TableSkeleton rows={4} />
+      ) : filteredBeneficiaries.length === 0 ? (
+        <EmptyState
+          title="Nenhum beneficiário encontrado"
+          description="Tente ajustar os filtros de busca para encontrar o registro desejado."
+          actionLabel="Limpar filtros"
+          onAction={() => {
+            setSearchTerm('');
+            setAgeFilter('TODAS');
+          }}
+        />
+      ) : (
+        <div className="bg-[#181D1A] border border-[#222824] rounded-xl overflow-hidden shadow-sm">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-sm">
+              <thead className="bg-[#0F1210] border-b border-[#222824] text-[#AEB5B0] font-medium">
+                <tr>
+                  <th className="py-3.5 px-4">Nome do Assistido</th>
+                  <th className="py-3.5 px-4">Faixa Etária</th>
+                  <th className="py-3.5 px-4 hidden sm:table-cell">Projeto Vinculado</th>
+                  <th className="py-3.5 px-4">Situação</th>
+                  <th className="py-3.5 px-4 text-right">Ações</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[#222824]">
+                {filteredBeneficiaries.map((b) => (
+                  <tr key={b.id} className="hover:bg-[#1e2521] transition-colors">
+                    <td className="py-3.5 px-4 font-semibold text-white">{b.name}</td>
+                    <td className="py-3.5 px-4 text-[#AEB5B0] text-xs">{b.ageGroup}</td>
+                    <td className="py-3.5 px-4 hidden sm:table-cell text-xs text-[#F8D800]">
+                      {b.projectName}
+                    </td>
+                    <td className="py-3.5 px-4">
+                      <Badge variant={b.status === 'EM_ATENDIMENTO' ? 'success' : 'neutral'}>
+                        {b.status.replace('_', ' ')}
+                      </Badge>
+                    </td>
+                    <td className="py-3.5 px-4 text-right">
+                      <button
+                        onClick={() => navigate(`/beneficiarios/${b.id}`)}
+                        className="p-1.5 text-[#AEB5B0] hover:text-white hover:bg-[#222824] rounded-lg transition-colors inline-flex items-center gap-1 text-xs font-medium"
+                      >
+                        <Eye className="w-4 h-4" /> Detalhes & Timeline
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

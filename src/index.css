@@ -86,7 +86,7 @@ h1, h2, h3, h4, h5, h6 {
 
 /* Focus visible ring */
 *:focus-visible {
-  outline: 2px solid #004922;
+  outline: 2px solid #F8D800;
   outline-offset: 2px;
 }
 

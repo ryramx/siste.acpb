@@ -79,49 +79,54 @@ export const EventsList: React.FC = () => {
           </div>
         </div>
 
-        {/* Dias da semana */}
-        <div className="grid grid-cols-7 gap-2 text-center text-xs font-semibold text-[#AEB5B0]">
-          <div>DOM</div>
-          <div>SEG</div>
-          <div>TER</div>
-          <div>QUA</div>
-          <div>QUI</div>
-          <div>SEX</div>
-          <div>SÁB</div>
-        </div>
+        {/* Wrapper responsivo para o calendário */}
+        <div className="overflow-x-auto pb-2 -mx-2 px-2 sm:mx-0 sm:px-0">
+          <div className="min-w-[600px]">
+            {/* Dias da semana */}
+            <div className="grid grid-cols-7 gap-2 text-center text-xs font-semibold text-[#AEB5B0] mb-2">
+              <div>DOM</div>
+              <div>SEG</div>
+              <div>TER</div>
+              <div>QUA</div>
+              <div>QUI</div>
+              <div>SEX</div>
+              <div>SÁB</div>
+            </div>
 
-        {/* Grade de Dias */}
-        <div className="grid grid-cols-7 gap-2">
-          {daysInMonth.map((day) => {
-            const dayStr = day < 10 ? `0${day}` : `${day}`;
-            const matchedEvents = events.filter((e) => e.date === `2026-09-${dayStr}`);
+            {/* Grade de Dias */}
+            <div className="grid grid-cols-7 gap-2">
+              {daysInMonth.map((day) => {
+                const dayStr = day < 10 ? `0${day}` : `${day}`;
+                const matchedEvents = events.filter((e) => e.date === `2026-09-${dayStr}`);
 
-            return (
-              <div
-                key={day}
-                className={`min-h-[90px] bg-[#0F1210] border border-[#222824] rounded-xl p-2 flex flex-col justify-between hover:border-[#004922] transition-colors ${
-                  matchedEvents.length > 0 ? 'bg-[#004922]/10 border-[#004922]/40' : ''
-                }`}
-              >
-                <span className={`text-xs font-bold ${matchedEvents.length > 0 ? 'text-[#F8D800]' : 'text-[#727A74]'}`}>
-                  {day}
-                </span>
+                return (
+                  <div
+                    key={day}
+                    className={`min-h-[90px] bg-[#0F1210] border border-[#222824] rounded-xl p-2 flex flex-col justify-between hover:border-[#004922] transition-colors ${
+                      matchedEvents.length > 0 ? 'bg-[#004922]/10 border-[#004922]/40' : ''
+                    }`}
+                  >
+                    <span className={`text-xs font-bold ${matchedEvents.length > 0 ? 'text-[#F8D800]' : 'text-[#727A74]'}`}>
+                      {day}
+                    </span>
 
-                <div className="space-y-1">
-                  {matchedEvents.map((evt) => (
-                    <div
-                      key={evt.id}
-                      onClick={() => navigate(`/eventos/${evt.id}`)}
-                      className="bg-[#004922] text-white p-1 rounded text-[10px] font-semibold truncate cursor-pointer hover:bg-[#00632e]"
-                      title={evt.title}
-                    >
-                      {evt.time} • {evt.title}
+                    <div className="space-y-1 mt-1">
+                      {matchedEvents.map((evt) => (
+                        <div
+                          key={evt.id}
+                          onClick={() => navigate(`/eventos/${evt.id}`)}
+                          className="bg-[#004922] text-white p-1 rounded text-[10px] font-semibold truncate cursor-pointer hover:bg-[#00632e]"
+                          title={evt.title}
+                        >
+                          {evt.time} • {evt.title}
+                        </div>
+                      ))}
                     </div>
-                  ))}
-                </div>
-              </div>
-            );
-          })}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
         </div>
       </div>
     );
