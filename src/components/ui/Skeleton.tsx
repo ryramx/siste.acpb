@@ -1,4 +1,17 @@
 import React from 'react';
+import { clsx } from 'clsx';
+import { twMerge } from 'tailwind-merge';
+
+interface SkeletonProps extends React.HTMLAttributes<HTMLDivElement> {}
+
+export const Skeleton: React.FC<SkeletonProps> = ({ className, ...props }) => {
+  return (
+    <div
+      className={twMerge(clsx('animate-pulse rounded-xl bg-[#222824]', className))}
+      {...props}
+    />
+  );
+};
 
 export const TableSkeleton: React.FC<{ rows?: number }> = ({ rows = 5 }) => {
   return (

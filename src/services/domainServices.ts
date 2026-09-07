@@ -1,5 +1,49 @@
 import { Member, Volunteer, Beneficiary, Project, EventItem, FinancialTransaction, AttendanceRecord } from '../types/domain';
 import { MOCK_MEMBERS, MOCK_VOLUNTEERS, MOCK_BENEFICIARIES, MOCK_PROJECTS, MOCK_EVENTS, MOCK_FINANCIAL_TRANSACTIONS } from '../mocks/domain';
+import { apiGet } from './apiClient';
+
+interface ApiMembro {
+  id: number;
+  pessoa_id: number;
+  cargo_id: number;
+  data_entrada: string;
+  data_saida: string | null;
+  motivo_saida: string | null;
+  ativo: boolean;
+  observacoes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+interface ApiPessoa {
+  id: number;
+  nome_completo: string;
+  cpf: string | null;
+  data_nascimento: string | null;
+  email: string | null;
+  endereco: string | null;
+  cidade: string | null;
+  estado: string | null;
+}
+
+const toMember = (membro: ApiMembro, pessoa: ApiPessoa): Member => ({
+  id: String(membro.id),
+  name: pessoa.nome_completo,
+  cpf: pessoa.cpf ?? '',
+  birthDate: pessoa.data_nascimento ?? '',
+  phone: '',
+  whatsapp: '',
+  email: pessoa.email ?? '',
+  cep: '',
+  address: pessoa.endereco ?? '',
+  number: '',
+  neighborhood: '',
+  city: pessoa.cidade ?? '',
+  state: pessoa.estado ?? '',
+  entryDate: membro.data_entrada,
+  status: membro.ativo ? 'ATIVO' : 'INATIVO',
+  notes: membro.observacoes ?? undefined
+});
 
 // Estado em memória persistente durante a sessão do browser
 let membersList = [...MOCK_MEMBERS];
@@ -13,8 +57,12 @@ const delay = (ms = 400) => new Promise((resolve) => setTimeout(resolve, ms));
 
 export const memberService = {
   async getAll(): Promise<Member[]> {
-    await delay();
-    return [...membersList];
+    const membros = await apiGet<ApiMembro[]>('/membros/');
+    const pessoas = await Promise.all(
+      membros.map((membro) => apiGet<ApiPessoa>(`/pessoas/${membro.pessoa_id}`))
+    );
+
+    return membros.map((membro, index) => toMember(membro, pessoas[index]));
   },
   async getById(id: string): Promise<Member | undefined> {
     await delay();

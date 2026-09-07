@@ -20,6 +20,7 @@ export const MembersList: React.FC = () => {
 
   const [members, setMembers] = useState<Member[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('TODOS');
   const [projectFilter, setProjectFilter] = useState<string>('TODOS');
@@ -30,11 +31,14 @@ export const MembersList: React.FC = () => {
 
   const fetchMembers = async () => {
     setLoading(true);
+    setError(null);
     try {
       const data = await memberService.getAll();
       setMembers(data);
     } catch (err) {
-      addToast({ type: 'error', title: 'Erro ao carregar membros' });
+      const message = err instanceof Error ? err.message : 'Erro ao carregar membros';
+      setError(message);
+      addToast({ type: 'error', title: 'Erro ao carregar membros', message });
     } finally {
       setLoading(false);
     }
@@ -139,6 +143,13 @@ export const MembersList: React.FC = () => {
       {/* Tabela ou Estados de Interface */}
       {loading ? (
         <TableSkeleton rows={4} />
+      ) : error ? (
+        <EmptyState
+          title="Erro ao carregar membros"
+          description={error}
+          actionLabel="Tentar novamente"
+          onAction={fetchMembers}
+        />
       ) : filteredMembers.length === 0 ? (
         <EmptyState
           title="Nenhum membro encontrado"
