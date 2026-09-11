@@ -1,14 +1,22 @@
 from datetime import datetime
 from datetime import date
+from typing import TYPE_CHECKING
 
-from sqlalchemy import BigInteger, Date, DateTime, String
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy import BigInteger, Date, DateTime, ForeignKey, String, Text, UniqueConstraint
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
+
+if TYPE_CHECKING:
+    from app.models.projeto import Projeto
+    from app.models.voluntario import Voluntario
 
 
 class ProjetoVoluntario(Base):
     __tablename__ = "projeto_voluntarios"
+    __table_args__ = (
+        UniqueConstraint("projeto_id", "voluntario_id", name="uq_projeto_voluntario"),
+    )
 
     id: Mapped[int] = mapped_column(
         BigInteger,
@@ -18,11 +26,13 @@ class ProjetoVoluntario(Base):
 
     projeto_id: Mapped[int] = mapped_column(
         BigInteger,
+        ForeignKey("projetos.id"),
         nullable=False
     )
 
     voluntario_id: Mapped[int] = mapped_column(
         BigInteger,
+        ForeignKey("voluntarios.id"),
         nullable=False
     )
 
@@ -42,7 +52,7 @@ class ProjetoVoluntario(Base):
     )
 
     observacoes: Mapped[str | None] = mapped_column(
-        String,
+        Text,
         nullable=True
     )
 
@@ -55,3 +65,6 @@ class ProjetoVoluntario(Base):
         DateTime,
         nullable=False
     )
+
+    projeto: Mapped["Projeto"] = relationship(back_populates="voluntarios_vinculados")
+    voluntario: Mapped["Voluntario"] = relationship(back_populates="projetos_vinculados")

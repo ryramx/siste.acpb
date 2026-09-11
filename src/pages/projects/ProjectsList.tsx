@@ -25,9 +25,8 @@ export const ProjectsList: React.FC = () => {
   const [newProject, setNewProject] = useState({
     name: '',
     description: '',
-    responsibleName: '',
     startDate: new Date().toISOString().split('T')[0],
-    status: 'ATIVO' as Project['status']
+    status: 'ATIVO'
   });
 
   const fetchProjects = async () => {
@@ -114,18 +113,20 @@ export const ProjectsList: React.FC = () => {
                 {/* Estatísticas de Relação */}
                 <div className="grid grid-cols-2 gap-3 mb-6 bg-[#0F1210] p-3 rounded-xl border border-[#222824]">
                   <div className="flex items-center gap-2">
-                    <HeartHandshake className="w-4 h-4 text-[#F8D800]" />
+                    <Calendar className="w-4 h-4 text-[#F8D800]" />
                     <div>
-                      <span className="text-sm font-bold text-white block">{p.beneficiariesCount}</span>
-                      <span className="text-[10px] text-[#727A74]">Beneficiários</span>
+                      <span className="text-sm font-bold text-white block">{p.eventsCount}</span>
+                      <span className="text-[10px] text-[#727A74]">Eventos</span>
                     </div>
                   </div>
 
                   <div className="flex items-center gap-2">
-                    <Users className="w-4 h-4 text-[#004922]" />
+                    <DollarSign className="w-4 h-4 text-[#004922]" />
                     <div>
-                      <span className="text-sm font-bold text-white block">{p.volunteersCount}</span>
-                      <span className="text-[10px] text-[#727A74]">Voluntários</span>
+                      <span className="text-sm font-bold text-white block">
+                        R$ {p.totalExpenses.toFixed(2)}
+                      </span>
+                      <span className="text-[10px] text-[#727A74]">Despesas</span>
                     </div>
                   </div>
                 </div>
@@ -133,7 +134,7 @@ export const ProjectsList: React.FC = () => {
 
               <div className="pt-4 border-t border-[#222824] flex items-center justify-between">
                 <span className="text-xs text-[#AEB5B0]">
-                  Resp: <strong className="text-white">{p.responsibleName}</strong>
+                  Resp: <strong className="text-white">{p.responsibleName ?? 'Não definido'}</strong>
                 </span>
 
                 <Button
@@ -157,12 +158,6 @@ export const ProjectsList: React.FC = () => {
             label="Nome do Projeto"
             value={newProject.name}
             onChange={(e) => setNewProject({ ...newProject, name: e.target.value })}
-            required
-          />
-          <Input
-            label="Responsável pelo Projeto"
-            value={newProject.responsibleName}
-            onChange={(e) => setNewProject({ ...newProject, responsibleName: e.target.value })}
             required
           />
           <div className="flex flex-col gap-1.5">

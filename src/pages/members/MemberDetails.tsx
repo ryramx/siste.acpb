@@ -6,6 +6,8 @@ import { Badge } from '../../components/ui/Badge';
 import { memberService } from '../../services/domainServices';
 import { Member } from '../../types/domain';
 import { useAuth } from '../../contexts/AuthContext';
+import { AvatarUpload } from '../../components/ui/AvatarUpload';
+import { Avatar } from '../../components/ui/Avatar';
 
 export const MemberDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -55,11 +57,16 @@ export const MemberDetails: React.FC = () => {
       {/* Header Profile Card */}
       <div className="bg-[#181D1A] border border-[#222824] p-6 rounded-2xl flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
         <div className="flex items-center gap-5">
-          <img
-            src={member.photoUrl || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150'}
-            alt={member.name}
-            className="w-20 h-20 rounded-full object-cover border-2 border-[#004922] shrink-0"
-          />
+          {hasPermission('edit_members') ? (
+            <AvatarUpload
+              pessoaId={member.pessoaId}
+              nome={member.name}
+              temFoto={member.temFoto}
+              onChange={(temFotoAgora) => setMember({ ...member, temFoto: temFotoAgora })}
+            />
+          ) : (
+            <Avatar pessoaId={member.pessoaId} nome={member.name} temFoto={member.temFoto} size="xl" />
+          )}
           <div>
             <div className="flex items-center gap-3">
               <h1 className="text-2xl font-bold text-white font-heading">{member.name}</h1>
@@ -69,7 +76,7 @@ export const MemberDetails: React.FC = () => {
             </div>
             <p className="text-xs text-[#AEB5B0] mt-1">CPF: {member.cpf}</p>
             <p className="text-xs text-[#F8D800] font-medium mt-0.5">
-              Projeto: {member.projectName || 'Sem projeto associado'}
+              Cargo: {member.cargoName || 'Sem cargo associado'}
             </p>
           </div>
         </div>
@@ -77,7 +84,7 @@ export const MemberDetails: React.FC = () => {
         {hasPermission('edit_members') && (
           <Button
             variant="outline"
-            onClick={() => navigate(`/membros/novo`)}
+            onClick={() => navigate(`/membros/${member.id}/editar`)}
             leftIcon={<Edit className="w-4 h-4" />}
           >
             Editar Cadastro
@@ -116,15 +123,6 @@ export const MemberDetails: React.FC = () => {
             </div>
           </div>
 
-          {member.isMinor && (
-            <div className="p-3 bg-[#0F1210] border border-[#F8D800]/30 rounded-xl space-y-1">
-              <span className="text-xs font-semibold text-[#F8D800] flex items-center gap-1">
-                <ShieldCheck className="w-4 h-4" /> Responsável Legal:
-              </span>
-              <p className="text-xs text-white">{member.guardianName}</p>
-              <p className="text-xs text-[#AEB5B0]">Tel: {member.guardianPhone}</p>
-            </div>
-          )}
         </div>
 
         {/* Endereço & Observações */}

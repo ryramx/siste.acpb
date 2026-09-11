@@ -8,33 +8,87 @@ import { Badge } from '../../components/ui/Badge';
 import { Modal } from '../../components/ui/Modal';
 import { Input } from '../../components/ui/Input';
 import { Select } from '../../components/ui/Select';
-import { financialService } from '../../services/domainServices';
-import { FinancialTransaction, RevenueCategory, ExpenseCategory } from '../../types/domain';
+import { financialService, OpcaoFinanceira } from '../../services/domainServices';
+import { FinancialTransaction } from '../../types/domain';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
 
+interface CategoriaBreakdownProps {
+  titulo: string;
+  icon: React.ReactNode;
+  transactions: FinancialTransaction[];
+  type: 'RECEITA' | 'DESPESA';
+  barColor: string;
+  textColor: string;
+}
+
+const CategoriaBreakdown: React.FC<CategoriaBreakdownProps> = ({
+  titulo,
+  icon,
+  transactions,
+  type,
+  barColor,
+  textColor
+}) => {
+  const filtradas = transactions.filter((t) => t.type === type && t.status === 'CONFIRMADA');
+  const totais = new Map<string, number>();
+  filtradas.forEach((t) => totais.set(t.category, (totais.get(t.category) ?? 0) + t.amount));
+  const totalGeral = filtradas.reduce((acc, t) => acc + t.amount, 0);
+  const linhas = Array.from(totais.entries()).sort((a, b) => b[1] - a[1]);
+
+  return (
+    <div className="bg-[#181D1A] border border-[#222824] p-6 rounded-2xl space-y-4">
+      <h3 className="text-base font-bold text-white font-heading flex items-center gap-2">
+        {icon}
+        {titulo}
+      </h3>
+      {linhas.length === 0 ? (
+        <p className="text-xs text-[#727A74] pt-2">Nenhum lançamento confirmado ainda.</p>
+      ) : (
+        <div className="space-y-3 pt-2">
+          {linhas.map(([categoria, total]) => {
+            const percentual = totalGeral > 0 ? Math.round((total / totalGeral) * 100) : 0;
+            return (
+              <div key={categoria}>
+                <div className="flex justify-between text-xs font-semibold mb-1">
+                  <span className="text-white">{categoria}</span>
+                  <span className={textColor}>
+                    R$ {total.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} ({percentual}%)
+                  </span>
+                </div>
+                <div className="w-full bg-[#0F1210] h-2.5 rounded-full overflow-hidden border border-[#222824]">
+                  <div className={`${barColor} h-full`} style={{ width: `${percentual}%` }} />
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+};
+
 export const FinancialDashboard: React.FC = () => {
   const navigate = useNavigate();
-  const { hasPermission } = useAuth();
+  const { hasPermission, user } = useAuth();
   const { addToast } = useToast();
 
   const [transactions, setTransactions] = useState<FinancialTransaction[]>([]);
   const [loading, setLoading] = useState(true);
+  const [contas, setContas] = useState<OpcaoFinanceira[]>([]);
+  const [categorias, setCategorias] = useState<OpcaoFinanceira[]>([]);
 
   // Modal Novo Lançamento
   const [modalOpen, setModalOpen] = useState(false);
   const [txType, setTxType] = useState<'RECEITA' | 'DESPESA'>('DESPESA');
   const [newTx, setNewTx] = useState({
-    category: 'Alimentação' as any,
+    categoryId: '',
+    accountId: '',
     amount: 0,
     date: new Date().toISOString().split('T')[0],
     description: '',
-    paymentMethod: 'Pix' as any,
-    responsibleName: 'Carlos Oliveira',
-    projectId: 'proj-1',
-    projectName: 'Projeto Reforço Escolar',
-    status: 'PAGO' as any,
-    attachmentName: 'comprovante_lancamento.pdf'
+    paymentMethod: 'Pix',
+    status: 'CONFIRMADA'
   });
 
   const fetchTransactions = async () => {
@@ -45,24 +99,34 @@ export const FinancialDashboard: React.FC = () => {
 
   useEffect(() => {
     fetchTransactions();
+    financialService.listarContas().then(setContas);
   }, []);
 
+  useEffect(() => {
+    financialService.listarCategorias(txType).then((lista) => {
+      setCategorias(lista);
+      setNewTx((prev) => ({ ...prev, categoryId: lista[0]?.id ?? '' }));
+    });
+  }, [txType]);
+
   const totalReceitas = transactions
-    .filter((t) => t.type === 'RECEITA' && t.status === 'PAGO')
+    .filter((t) => t.type === 'RECEITA' && t.status === 'CONFIRMADA')
     .reduce((acc, curr) => acc + curr.amount, 0);
 
   const totalDespesas = transactions
-    .filter((t) => t.type === 'DESPESA' && t.status === 'PAGO')
+    .filter((t) => t.type === 'DESPESA' && t.status === 'CONFIRMADA')
     .reduce((acc, curr) => acc + curr.amount, 0);
 
   const saldo = totalReceitas - totalDespesas;
 
   const handleCreateTx = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!user) return;
     try {
       await financialService.create({
         ...newTx,
-        type: txType
+        type: txType,
+        responsavelPessoaId: user.pessoaId
       });
       addToast({
         type: 'success',
@@ -144,75 +208,24 @@ export const FinancialDashboard: React.FC = () => {
         />
       </div>
 
-      {/* Distribuição Gráfica Visual (Simulada em CSS / Canvas Limpo) */}
+      {/* Distribuição por Categoria (agregada a partir dos lançamentos reais) */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Receitas por Categoria */}
-        <div className="bg-[#181D1A] border border-[#222824] p-6 rounded-2xl space-y-4">
-          <h3 className="text-base font-bold text-white font-heading flex items-center gap-2">
-            <PieChart className="w-5 h-5 text-[#004922]" />
-            Receitas por Categoria
-          </h3>
-          <div className="space-y-3 pt-2">
-            <div>
-              <div className="flex justify-between text-xs font-semibold mb-1">
-                <span className="text-white">Doações Mantenedores</span>
-                <span className="text-[#40C075]">R$ 5.200 (62%)</span>
-              </div>
-              <div className="w-full bg-[#0F1210] h-2.5 rounded-full overflow-hidden border border-[#222824]">
-                <div className="bg-[#004922] h-full" style={{ width: '62%' }} />
-              </div>
-            </div>
-
-            <div>
-              <div className="flex justify-between text-xs font-semibold mb-1">
-                <span className="text-white">Contribuições de Associados</span>
-                <span className="text-[#40C075]">R$ 3.220 (38%)</span>
-              </div>
-              <div className="w-full bg-[#0F1210] h-2.5 rounded-full overflow-hidden border border-[#222824]">
-                <div className="bg-[#F8D800] h-full" style={{ width: '38%' }} />
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Despesas por Categoria */}
-        <div className="bg-[#181D1A] border border-[#222824] p-6 rounded-2xl space-y-4">
-          <h3 className="text-base font-bold text-white font-heading flex items-center gap-2">
-            <PieChart className="w-5 h-5 text-red-500" />
-            Despesas por Categoria
-          </h3>
-          <div className="space-y-3 pt-2">
-            <div>
-              <div className="flex justify-between text-xs font-semibold mb-1">
-                <span className="text-white">Aluguel & Infraestrutura</span>
-                <span className="text-red-400">R$ 1.500 (55%)</span>
-              </div>
-              <div className="w-full bg-[#0F1210] h-2.5 rounded-full overflow-hidden border border-[#222824]">
-                <div className="bg-red-800 h-full" style={{ width: '55%' }} />
-              </div>
-            </div>
-
-            <div>
-              <div className="flex justify-between text-xs font-semibold mb-1">
-                <span className="text-white">Alimentação & Projetos</span>
-                <span className="text-red-400">R$ 850 (31%)</span>
-              </div>
-              <div className="w-full bg-[#0F1210] h-2.5 rounded-full overflow-hidden border border-[#222824]">
-                <div className="bg-[#F8D800] h-full" style={{ width: '31%' }} />
-              </div>
-            </div>
-
-            <div>
-              <div className="flex justify-between text-xs font-semibold mb-1">
-                <span className="text-white">Energia & Utilidades</span>
-                <span className="text-red-400">R$ 387,42 (14%)</span>
-              </div>
-              <div className="w-full bg-[#0F1210] h-2.5 rounded-full overflow-hidden border border-[#222824]">
-                <div className="bg-blue-600 h-full" style={{ width: '14%' }} />
-              </div>
-            </div>
-          </div>
-        </div>
+        <CategoriaBreakdown
+          titulo="Receitas por Categoria"
+          icon={<PieChart className="w-5 h-5 text-[#004922]" />}
+          transactions={transactions}
+          type="RECEITA"
+          barColor="bg-[#004922]"
+          textColor="text-[#40C075]"
+        />
+        <CategoriaBreakdown
+          titulo="Despesas por Categoria"
+          icon={<PieChart className="w-5 h-5 text-red-500" />}
+          transactions={transactions}
+          type="DESPESA"
+          barColor="bg-red-800"
+          textColor="text-red-400"
+        />
       </div>
 
       {/* Tabela de Lançamentos Recentes com Anexo de Comprovante */}
@@ -221,6 +234,7 @@ export const FinancialDashboard: React.FC = () => {
           <h3 className="text-base font-bold text-white font-heading">Últimas Movimentações Financeiras</h3>
         </div>
 
+        <div className="overflow-x-auto">
         <table className="w-full text-left text-sm">
           <thead className="bg-[#0F1210] border-b border-[#222824] text-[#AEB5B0] font-medium">
             <tr>
@@ -242,12 +256,9 @@ export const FinancialDashboard: React.FC = () => {
                 </td>
                 <td className="py-3.5 px-4 text-xs text-[#AEB5B0]">{t.paymentMethod}</td>
                 <td className="py-3.5 px-4 text-xs">
-                  {t.attachmentName ? (
-                    <span
-                      onClick={() => alert(`Visualizando anexo simulado: ${t.attachmentName}`)}
-                      className="inline-flex items-center gap-1 text-[#F8D800] hover:underline cursor-pointer bg-[#0F1210] px-2 py-1 rounded border border-[#222824]"
-                    >
-                      📎 {t.attachmentName}
+                  {t.attachmentsCount > 0 ? (
+                    <span className="inline-flex items-center gap-1 text-[#F8D800] bg-[#0F1210] px-2 py-1 rounded border border-[#222824]">
+                      📎 {t.attachmentsCount} arquivo(s)
                     </span>
                   ) : (
                     <span className="text-[#727A74]">-</span>
@@ -257,7 +268,7 @@ export const FinancialDashboard: React.FC = () => {
                   {t.type === 'RECEITA' ? '+' : '-'} R$ {t.amount.toFixed(2)}
                 </td>
                 <td className="py-3.5 px-4">
-                  <Badge variant={t.status === 'PAGO' ? 'success' : 'warning'}>
+                  <Badge variant={t.status === 'CONFIRMADA' ? 'success' : 'warning'}>
                     {t.status}
                   </Badge>
                 </td>
@@ -265,6 +276,7 @@ export const FinancialDashboard: React.FC = () => {
             ))}
           </tbody>
         </table>
+        </div>
       </div>
 
       {/* Modal Lançamento Financeiro */}
@@ -300,9 +312,23 @@ export const FinancialDashboard: React.FC = () => {
           </div>
           <div className="grid grid-cols-2 gap-3">
             <Select
+              label="Conta"
+              value={newTx.accountId}
+              onChange={(e) => setNewTx({ ...newTx, accountId: e.target.value })}
+              options={contas.map((c) => ({ value: c.id, label: c.nome }))}
+            />
+            <Select
+              label="Categoria"
+              value={newTx.categoryId}
+              onChange={(e) => setNewTx({ ...newTx, categoryId: e.target.value })}
+              options={categorias.map((c) => ({ value: c.id, label: c.nome }))}
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <Select
               label="Forma de Pagamento"
               value={newTx.paymentMethod}
-              onChange={(e) => setNewTx({ ...newTx, paymentMethod: e.target.value as any })}
+              onChange={(e) => setNewTx({ ...newTx, paymentMethod: e.target.value })}
               options={[
                 { value: 'Pix', label: 'Pix' },
                 { value: 'Transferência', label: 'Transferência Bancária' },
@@ -313,17 +339,16 @@ export const FinancialDashboard: React.FC = () => {
             <Select
               label="Status"
               value={newTx.status}
-              onChange={(e) => setNewTx({ ...newTx, status: e.target.value as any })}
+              onChange={(e) => setNewTx({ ...newTx, status: e.target.value })}
               options={[
-                { value: 'PAGO', label: 'Pago / Liquidado' },
+                { value: 'CONFIRMADA', label: 'Pago / Confirmado' },
                 { value: 'PENDENTE', label: 'Pendente' }
               ]}
             />
           </div>
-          <div className="p-3 bg-[#0F1210] border border-[#222824] rounded-xl space-y-1 text-xs">
-            <span className="font-semibold text-white block">Anexo de Comprovante (Simulado):</span>
-            <span className="text-[#F8D800]">📎 conta_agosto.pdf (Arquivo anexado com sucesso)</span>
-          </div>
+          <p className="text-xs text-[#AEB5B0]">
+            Comprovantes podem ser anexados após salvar o lançamento, na tela de detalhes.
+          </p>
           <div className="flex items-center justify-end gap-2 pt-2">
             <Button type="button" variant="ghost" onClick={() => setModalOpen(false)}>
               Cancelar

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { ArrowUpRight, Plus, Search, Filter, TrendingUp } from 'lucide-react';
+import { ArrowUpRight, Plus, Search, TrendingUp } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Select } from '../../components/ui/Select';
@@ -7,14 +7,14 @@ import { Badge } from '../../components/ui/Badge';
 import { Modal } from '../../components/ui/Modal';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { TableSkeleton } from '../../components/ui/Skeleton';
-import { financialService } from '../../services/domainServices';
+import { financialService, OpcaoFinanceira } from '../../services/domainServices';
 import { FinancialTransaction } from '../../types/domain';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
 import { FinancialTabs } from '../../components/common/FinancialTabs';
 
 export const ReceitasPage: React.FC = () => {
-  const { hasPermission } = useAuth();
+  const { hasPermission, user } = useAuth();
   const { addToast } = useToast();
 
   const [transactions, setTransactions] = useState<FinancialTransaction[]>([]);
@@ -23,15 +23,17 @@ export const ReceitasPage: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState('TODOS');
   const [modalOpen, setModalOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [contas, setContas] = useState<OpcaoFinanceira[]>([]);
+  const [categorias, setCategorias] = useState<OpcaoFinanceira[]>([]);
 
   const [newReceita, setNewReceita] = useState({
-    category: 'Doações' as any,
+    categoryId: '',
+    accountId: '',
     amount: 0,
     date: new Date().toISOString().split('T')[0],
     description: '',
-    paymentMethod: 'Pix' as any,
-    responsibleName: 'Carlos Oliveira',
-    status: 'PAGO' as any,
+    paymentMethod: 'Pix',
+    status: 'CONFIRMADA'
   });
 
   const fetchData = async () => {
@@ -41,7 +43,14 @@ export const ReceitasPage: React.FC = () => {
     setLoading(false);
   };
 
-  useEffect(() => { fetchData(); }, []);
+  useEffect(() => {
+    fetchData();
+    financialService.listarContas().then(setContas);
+    financialService.listarCategorias('RECEITA').then((lista) => {
+      setCategorias(lista);
+      setNewReceita((prev) => (prev.categoryId ? prev : { ...prev, categoryId: lista[0]?.id ?? '' }));
+    });
+  }, []);
 
   const filtered = transactions.filter((t) => {
     const matchSearch = t.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -50,18 +59,24 @@ export const ReceitasPage: React.FC = () => {
     return matchSearch && matchStatus;
   });
 
-  const total = filtered.filter(t => t.status === 'PAGO').reduce((acc, t) => acc + t.amount, 0);
+  const total = filtered.filter(t => t.status === 'CONFIRMADA').reduce((acc, t) => acc + t.amount, 0);
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!user) return;
     setSubmitting(true);
     try {
-      await financialService.create({ ...newReceita, type: 'RECEITA' });
+      await financialService.create({
+        ...newReceita,
+        type: 'RECEITA',
+        responsavelPessoaId: user.pessoaId
+      });
       addToast({ type: 'success', title: 'Receita registrada', message: 'Receita adicionada com sucesso.' });
       setModalOpen(false);
       fetchData();
-    } catch {
-      addToast({ type: 'error', title: 'Erro ao registrar receita' });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Tente novamente em instantes.';
+      addToast({ type: 'error', title: 'Erro ao registrar receita', message });
     } finally {
       setSubmitting(false);
     }
@@ -107,7 +122,7 @@ export const ReceitasPage: React.FC = () => {
           <Select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}
             options={[
               { value: 'TODOS', label: 'Todos os Status' },
-              { value: 'PAGO', label: 'Pago' },
+              { value: 'CONFIRMADA', label: 'Confirmada' },
               { value: 'PENDENTE', label: 'Pendente' },
             ]} />
         </div>
@@ -127,6 +142,7 @@ export const ReceitasPage: React.FC = () => {
                   <th className="py-3 px-4">Data</th>
                   <th className="py-3 px-4">Descrição</th>
                   <th className="py-3 px-4">Categoria</th>
+                  <th className="py-3 px-4">Conta</th>
                   <th className="py-3 px-4">Forma</th>
                   <th className="py-3 px-4">Valor</th>
                   <th className="py-3 px-4">Status</th>
@@ -138,10 +154,11 @@ export const ReceitasPage: React.FC = () => {
                     <td className="py-3 px-4 text-xs text-[#AEB5B0]">{t.date}</td>
                     <td className="py-3 px-4 font-medium text-white">{t.description}</td>
                     <td className="py-3 px-4 text-xs text-[#F8D800]">{t.category}</td>
+                    <td className="py-3 px-4 text-xs text-[#AEB5B0]">{t.accountName}</td>
                     <td className="py-3 px-4 text-xs text-[#AEB5B0]">{t.paymentMethod}</td>
                     <td className="py-3 px-4 font-bold text-green-400">+ R$ {t.amount.toFixed(2)}</td>
                     <td className="py-3 px-4">
-                      <Badge variant={t.status === 'PAGO' ? 'success' : 'warning'}>{t.status}</Badge>
+                      <Badge variant={t.status === 'CONFIRMADA' ? 'success' : 'warning'}>{t.status}</Badge>
                     </td>
                   </tr>
                 ))}
@@ -162,18 +179,14 @@ export const ReceitasPage: React.FC = () => {
             <Input label="Data" type="date" value={newReceita.date}
               onChange={(e) => setNewReceita({ ...newReceita, date: e.target.value })} required />
           </div>
-          <Select label="Categoria" value={newReceita.category}
-            onChange={(e) => setNewReceita({ ...newReceita, category: e.target.value as any })}
-            options={[
-              { value: 'Doações', label: 'Doações' },
-              { value: 'Contribuições', label: 'Contribuições' },
-              { value: 'Patrocínios', label: 'Patrocínios' },
-              { value: 'Convênios', label: 'Convênios' },
-              { value: 'Eventos', label: 'Eventos' },
-              { value: 'Outras receitas', label: 'Outras receitas' },
-            ]} />
+          <Select label="Conta" value={newReceita.accountId}
+            onChange={(e) => setNewReceita({ ...newReceita, accountId: e.target.value })}
+            options={contas.map((c) => ({ value: c.id, label: c.nome }))} required />
+          <Select label="Categoria" value={newReceita.categoryId}
+            onChange={(e) => setNewReceita({ ...newReceita, categoryId: e.target.value })}
+            options={categorias.map((c) => ({ value: c.id, label: c.nome }))} required />
           <Select label="Forma de Pagamento" value={newReceita.paymentMethod}
-            onChange={(e) => setNewReceita({ ...newReceita, paymentMethod: e.target.value as any })}
+            onChange={(e) => setNewReceita({ ...newReceita, paymentMethod: e.target.value })}
             options={[
               { value: 'Pix', label: 'Pix' },
               { value: 'Transferência', label: 'Transferência' },
@@ -181,9 +194,9 @@ export const ReceitasPage: React.FC = () => {
               { value: 'Boleto', label: 'Boleto' },
             ]} />
           <Select label="Status" value={newReceita.status}
-            onChange={(e) => setNewReceita({ ...newReceita, status: e.target.value as any })}
+            onChange={(e) => setNewReceita({ ...newReceita, status: e.target.value })}
             options={[
-              { value: 'PAGO', label: 'Recebido / Pago' },
+              { value: 'CONFIRMADA', label: 'Recebido / Confirmado' },
               { value: 'PENDENTE', label: 'Pendente' },
             ]} />
           <div className="flex justify-end gap-2 pt-2">

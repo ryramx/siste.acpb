@@ -99,7 +99,6 @@ export const BeneficiariesList: React.FC = () => {
                 <tr>
                   <th className="py-3.5 px-4">Nome do Assistido</th>
                   <th className="py-3.5 px-4">Faixa Etária</th>
-                  <th className="py-3.5 px-4 hidden sm:table-cell">Projeto Vinculado</th>
                   <th className="py-3.5 px-4">Situação</th>
                   <th className="py-3.5 px-4 text-right">Ações</th>
                 </tr>
@@ -109,9 +108,6 @@ export const BeneficiariesList: React.FC = () => {
                   <tr key={b.id} className="hover:bg-[#1e2521] transition-colors">
                     <td className="py-3.5 px-4 font-semibold text-white">{b.name}</td>
                     <td className="py-3.5 px-4 text-[#AEB5B0] text-xs">{b.ageGroup}</td>
-                    <td className="py-3.5 px-4 hidden sm:table-cell text-xs text-[#F8D800]">
-                      {b.projectName}
-                    </td>
                     <td className="py-3.5 px-4">
                       <Badge variant={b.status === 'EM_ATENDIMENTO' ? 'success' : 'neutral'}>
                         {b.status.replace('_', ' ')}

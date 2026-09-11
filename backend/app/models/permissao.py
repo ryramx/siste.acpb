@@ -1,9 +1,13 @@
 from datetime import datetime
+from typing import TYPE_CHECKING
 
 from sqlalchemy import BigInteger, Boolean, DateTime, String
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
+
+if TYPE_CHECKING:
+    from app.models.perfil import Perfil
 
 
 class Permissao(Base):
@@ -17,6 +21,7 @@ class Permissao(Base):
 
     nome: Mapped[str] = mapped_column(
         String(100),
+        unique=True,
         nullable=False
     )
 
@@ -48,4 +53,8 @@ class Permissao(Base):
     updated_at: Mapped[datetime] = mapped_column(
         DateTime,
         nullable=False
+    )
+
+    perfis: Mapped[list["Perfil"]] = relationship(
+        secondary="perfil_permissoes", back_populates="permissoes", viewonly=True
     )

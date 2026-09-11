@@ -71,6 +71,14 @@ export const AppRoutes: React.FC = () => {
                 }
               />
               <Route
+                path="membros/:id/editar"
+                element={
+                  <ProtectedRoute permission="edit_members">
+                    <MemberForm />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
                 path="membros/:id"
                 element={
                   <ProtectedRoute permission="view_members">

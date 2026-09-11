@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { Bell, Menu, User as UserIcon, LogOut, Shield, ChevronDown } from 'lucide-react';
+import { Bell, Menu, LogOut, ChevronDown } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { MOCK_USERS } from '../../mocks/users';
+import { Avatar } from '../ui/Avatar';
+import { AvatarUpload } from '../ui/AvatarUpload';
 
 interface TopbarProps {
   title?: string;
@@ -10,7 +11,7 @@ interface TopbarProps {
 }
 
 export const Topbar: React.FC<TopbarProps> = ({ title, onMobileMenuToggle }) => {
-  const { user, logout, switchUserRole } = useAuth();
+  const { user, logout, updateUserPhotoStatus } = useAuth();
   const navigate = useNavigate();
   const [profileOpen, setProfileOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
@@ -32,6 +33,7 @@ export const Topbar: React.FC<TopbarProps> = ({ title, onMobileMenuToggle }) => 
       <div className="flex items-center gap-3">
         <button
           onClick={onMobileMenuToggle}
+          aria-label="Abrir menu de navegação"
           className="md:hidden p-2 text-[#AEB5B0] hover:text-white rounded-lg hover:bg-[#222824]"
         >
           <Menu className="w-6 h-6" />
@@ -46,31 +48,16 @@ export const Topbar: React.FC<TopbarProps> = ({ title, onMobileMenuToggle }) => 
         </div>
       </div>
 
-      {/* Direita: Notificações + Seletor de Perfil Simulado + Avatar */}
+      {/* Direita: Notificações + Avatar */}
       <div className="flex items-center gap-3 md:gap-4">
-        {/* Quick Role Switcher (Facilitador para testes de RBAC) */}
-        <div className="hidden lg:flex items-center bg-[#0F1210] border border-[#222824] rounded-lg px-2 py-1 text-xs">
-          <Shield className="w-3.5 h-3.5 text-[#F8D800] mr-1.5" />
-          <span className="text-[#AEB5B0] mr-1">Simular perfil:</span>
-          <select
-            value={user?.email}
-            onChange={(e) => switchUserRole(e.target.value)}
-            className="bg-transparent text-white text-xs font-semibold focus:outline-none cursor-pointer"
-          >
-            {MOCK_USERS.map((u) => (
-              <option key={u.id} value={u.email} className="bg-[#181D1A]">
-                {u.role} ({u.name.split(' ')[0]})
-              </option>
-            ))}
-          </select>
-        </div>
-
         {/* Notificações Dropdown */}
         <div className="relative">
           <button
             onClick={() => setNotificationsOpen(!notificationsOpen)}
             className="p-2 text-[#AEB5B0] hover:text-white rounded-lg hover:bg-[#222824] relative transition-colors"
             title="Notificações"
+            aria-label="Notificações"
+            aria-expanded={notificationsOpen}
           >
             <Bell className="w-5 h-5" />
             <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-[#F8D800] rounded-full ring-2 ring-[#181D1A]" />
@@ -102,27 +89,36 @@ export const Topbar: React.FC<TopbarProps> = ({ title, onMobileMenuToggle }) => 
         <div className="relative">
           <button
             onClick={() => setProfileOpen(!profileOpen)}
+            aria-label="Menu do perfil"
+            aria-expanded={profileOpen}
             className="flex items-center gap-2.5 p-1 rounded-lg hover:bg-[#222824] transition-colors"
           >
-            <img
-              src={user?.avatar || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150'}
-              alt={user?.name}
-              className="w-8 h-8 rounded-full object-cover border border-[#004922]"
-            />
+            {user && (
+              <Avatar pessoaId={user.pessoaId} nome={user.name} temFoto={user.temFoto} size="sm" />
+            )}
             <span className="text-sm font-medium text-white hidden md:inline truncate max-w-[120px]">
               {user?.name.split(' ')[0]}
             </span>
             <ChevronDown className="w-4 h-4 text-[#AEB5B0] hidden md:inline" />
           </button>
 
-          {profileOpen && (
+          {profileOpen && user && (
             <div className="absolute right-0 mt-2 w-56 bg-[#181D1A] border border-[#222824] rounded-xl shadow-2xl py-2 z-50 animate-slide-in">
-              <div className="px-4 py-2 border-b border-[#222824]">
-                <p className="text-xs font-semibold text-white truncate">{user?.name}</p>
-                <p className="text-[11px] text-[#AEB5B0] truncate">{user?.email}</p>
-                <span className="inline-block mt-1 text-[10px] bg-[#004922] text-[#F8D800] px-2 py-0.5 rounded font-semibold uppercase tracking-wider">
-                  {user?.role}
-                </span>
+              <div className="px-4 py-3 border-b border-[#222824] flex items-center gap-3">
+                <AvatarUpload
+                  pessoaId={user.pessoaId}
+                  nome={user.name}
+                  temFoto={user.temFoto}
+                  onChange={updateUserPhotoStatus}
+                  size="sm"
+                />
+                <div className="min-w-0">
+                  <p className="text-xs font-semibold text-white truncate">{user.name}</p>
+                  <p className="text-[11px] text-[#AEB5B0] truncate">{user.email}</p>
+                  <span className="inline-block mt-1 text-[10px] bg-[#004922] text-[#F8D800] px-2 py-0.5 rounded font-semibold uppercase tracking-wider">
+                    {user.role}
+                  </span>
+                </div>
               </div>
               <button
                 onClick={handleLogout}

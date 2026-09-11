@@ -1,22 +1,50 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile, status
+from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
+
+from app.core.erros import tratar_integrity_error
 from datetime import datetime
 
+from app.api.deps import get_current_user, get_permissoes_usuario, require_permission
 from app.api.routes.health import get_db
+from app.core.auditoria import model_to_dict, obter_ip_cliente, registrar_auditoria
+from app.core.foto_pessoa_storage import (
+    TAMANHO_MAXIMO_BYTES,
+    TIPOS_PERMITIDOS,
+    caminho_fisico,
+    gerar_nome_armazenado,
+    remover_arquivo,
+    salvar_conteudo,
+)
+from app.core.config import settings
 from app.models.pessoa import Pessoa
+from app.models.usuario import Usuario
 from app.schemas.pessoa import PessoaCreate, PessoaUpdate, PessoaResponse
 
 router = APIRouter()
 
-@router.get("/", response_model=list[PessoaResponse])
+
+def _autorizar_acesso_foto(id: int, permissao: str, usuario_atual: Usuario, db: Session) -> None:
+    """Permite o acesso quando o usuário mexe na própria foto (pessoa_id == id) ou possui a
+    permissão informada. Toda pessoa pode gerenciar sua própria foto, independente do seu perfil."""
+    if usuario_atual.pessoa_id == id:
+        return
+    if permissao in get_permissoes_usuario(usuario_atual, db):
+        return
+    raise HTTPException(
+        status_code=status.HTTP_403_FORBIDDEN,
+        detail=f"Usuário não tem a permissão '{permissao}' necessária para esta operação",
+    )
+
+@router.get("/", response_model=list[PessoaResponse], dependencies=[Depends(require_permission("pessoas.visualizar"))])
 def listar_pessoas(
     db: Session = Depends(get_db)
 ):
     pessoas = db.query(Pessoa).all()
     return pessoas
 
-@router.get("/{id}", response_model=PessoaResponse)
+@router.get("/{id}", response_model=PessoaResponse, dependencies=[Depends(require_permission("pessoas.visualizar"))])
 def obter_pessoa(
     id: int,
     db: Session = Depends(get_db)
@@ -26,7 +54,7 @@ def obter_pessoa(
         raise HTTPException(status_code=404, detail="Pessoa não encontrada")
     return pessoa
 
-@router.post("/", response_model=PessoaResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/", response_model=PessoaResponse, status_code=status.HTTP_201_CREATED, dependencies=[Depends(require_permission("pessoas.criar"))])
 def criar_pessoa(
     obj_in: PessoaCreate,
     db: Session = Depends(get_db)
@@ -45,12 +73,12 @@ def criar_pessoa(
     try:
         db.commit()
         db.refresh(obj)
-    except IntegrityError:
+    except IntegrityError as e:
         db.rollback()
-        raise HTTPException(status_code=400, detail="Erro de integridade ou duplicidade")
+        raise tratar_integrity_error(e)
     return obj
 
-@router.put("/{id}", response_model=PessoaResponse)
+@router.put("/{id}", response_model=PessoaResponse, dependencies=[Depends(require_permission("pessoas.editar"))])
 def atualizar_pessoa(
     id: int,
     obj_in: PessoaUpdate,
@@ -74,24 +102,120 @@ def atualizar_pessoa(
     try:
         db.commit()
         db.refresh(obj)
-    except IntegrityError:
+    except IntegrityError as e:
         db.rollback()
-        raise HTTPException(status_code=400, detail="Erro de integridade ou duplicidade")
+        raise tratar_integrity_error(e)
     return obj
 
-@router.delete("/{id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/{id}", status_code=status.HTTP_204_NO_CONTENT, dependencies=[Depends(require_permission("pessoas.excluir"))])
 def deletar_pessoa(
     id: int,
-    db: Session = Depends(get_db)
+    request: Request,
+    db: Session = Depends(get_db),
+    usuario_atual: Usuario = Depends(get_current_user),
 ):
     obj = db.query(Pessoa).filter(Pessoa.id == id).first()
     if not obj:
         raise HTTPException(status_code=404, detail="Pessoa não encontrada")
-        
+
+    registrar_auditoria(
+        db,
+        usuario_id=usuario_atual.id,
+        acao="excluir",
+        tabela="pessoas",
+        registro_id=obj.id,
+        dados_anteriores=model_to_dict(obj),
+        ip=obter_ip_cliente(request),
+    )
     db.delete(obj)
     try:
         db.commit()
     except IntegrityError:
         db.rollback()
         raise HTTPException(status_code=409, detail="Não é possível excluir devido a dependências (Integridade referencial)")
+    return None
+
+
+@router.post("/{id}/foto", response_model=PessoaResponse)
+async def enviar_foto_pessoa(
+    id: int,
+    arquivo: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    usuario_atual: Usuario = Depends(get_current_user),
+):
+    _autorizar_acesso_foto(id, "pessoas.editar", usuario_atual, db)
+
+    pessoa = db.query(Pessoa).filter(Pessoa.id == id).first()
+    if not pessoa:
+        raise HTTPException(status_code=404, detail="Pessoa não encontrada")
+
+    if arquivo.content_type not in TIPOS_PERMITIDOS:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Tipo de arquivo não permitido. Aceitos: {', '.join(sorted(TIPOS_PERMITIDOS))}",
+        )
+
+    conteudo = await arquivo.read()
+    if len(conteudo) == 0:
+        raise HTTPException(status_code=400, detail="Arquivo vazio")
+    if len(conteudo) > TAMANHO_MAXIMO_BYTES:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Imagem excede o tamanho máximo de {settings.FOTOS_TAMANHO_MAXIMO_MB}MB",
+        )
+
+    nome_antigo = pessoa.foto_arquivo
+    novo_nome = gerar_nome_armazenado(arquivo.content_type)
+    salvar_conteudo(novo_nome, conteudo)
+
+    pessoa.foto_arquivo = novo_nome
+    pessoa.updated_at = datetime.utcnow()
+    db.commit()
+    db.refresh(pessoa)
+
+    if nome_antigo:
+        remover_arquivo(nome_antigo)
+
+    return pessoa
+
+
+@router.get("/{id}/foto")
+def obter_foto_pessoa(
+    id: int,
+    db: Session = Depends(get_db),
+    usuario_atual: Usuario = Depends(get_current_user),
+):
+    _autorizar_acesso_foto(id, "pessoas.visualizar", usuario_atual, db)
+
+    pessoa = db.query(Pessoa).filter(Pessoa.id == id).first()
+    if not pessoa or not pessoa.foto_arquivo:
+        raise HTTPException(status_code=404, detail="Esta pessoa não tem foto cadastrada")
+
+    caminho = caminho_fisico(pessoa.foto_arquivo)
+    if not caminho.exists():
+        raise HTTPException(status_code=404, detail="Arquivo de foto não encontrado no armazenamento")
+
+    tipo_mime = "image/png" if caminho.suffix == ".png" else "image/jpeg"
+    return FileResponse(path=caminho, media_type=tipo_mime)
+
+
+@router.delete("/{id}/foto", status_code=status.HTTP_204_NO_CONTENT)
+def remover_foto_pessoa(
+    id: int,
+    db: Session = Depends(get_db),
+    usuario_atual: Usuario = Depends(get_current_user),
+):
+    _autorizar_acesso_foto(id, "pessoas.editar", usuario_atual, db)
+
+    pessoa = db.query(Pessoa).filter(Pessoa.id == id).first()
+    if not pessoa:
+        raise HTTPException(status_code=404, detail="Pessoa não encontrada")
+    if not pessoa.foto_arquivo:
+        raise HTTPException(status_code=404, detail="Esta pessoa não tem foto cadastrada")
+
+    nome_antigo = pessoa.foto_arquivo
+    pessoa.foto_arquivo = None
+    pessoa.updated_at = datetime.utcnow()
+    db.commit()
+    remover_arquivo(nome_antigo)
     return None

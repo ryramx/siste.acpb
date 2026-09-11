@@ -16,6 +16,7 @@ import {
   X
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
+import { Avatar } from '../ui/Avatar';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -67,12 +68,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
           onClick={onToggle}
           className="hidden md:flex p-1.5 rounded-lg text-[#AEB5B0] hover:text-white hover:bg-[#222824] transition-colors"
           title={isOpen ? 'Recolher menu' : 'Expandir menu'}
+          aria-label={isOpen ? 'Recolher menu' : 'Expandir menu'}
         >
           <Menu className="w-5 h-5" />
         </button>
         {/* Mobile Close Button */}
         <button
           onClick={onMobileClose}
+          aria-label="Fechar menu"
           className="md:hidden p-1.5 rounded-lg text-[#AEB5B0] hover:text-white hover:bg-[#222824]"
         >
           <X className="w-5 h-5" />
@@ -274,11 +277,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       <div className="p-3 border-t border-[#222824] space-y-2">
         {user && isOpen && (
           <div className="px-3 py-2 bg-[#0F1210] rounded-lg border border-[#222824] flex items-center gap-3">
-            <img
-              src={user.avatar || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150'}
-              alt={user.name}
-              className="w-8 h-8 rounded-full object-cover border border-[#004922]"
-            />
+            <Avatar pessoaId={user.pessoaId} nome={user.name} temFoto={user.temFoto} size="sm" />
             <div className="flex flex-col truncate">
               <span className="text-xs font-semibold text-white truncate">{user.name}</span>
               <span className="text-[10px] text-[#F8D800] tracking-wide font-medium">{user.role}</span>
@@ -288,6 +287,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
         <button
           onClick={handleLogout}
+          aria-label="Sair da conta"
           className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-red-400 hover:bg-red-950/30 hover:text-red-300 transition-colors"
         >
           <LogOut className="w-5 h-5 shrink-0" />

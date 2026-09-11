@@ -1,9 +1,14 @@
 from datetime import datetime
+from typing import TYPE_CHECKING
 
-from sqlalchemy import BigInteger, Boolean, DateTime, String
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy import BigInteger, Boolean, DateTime, ForeignKey, String
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
+
+if TYPE_CHECKING:
+    from app.models.pessoa import Pessoa
+    from app.models.perfil import Perfil
 
 
 class Usuario(Base):
@@ -17,11 +22,14 @@ class Usuario(Base):
 
     pessoa_id: Mapped[int] = mapped_column(
         BigInteger,
+        ForeignKey("pessoas.id"),
+        unique=True,
         nullable=False
     )
 
     email: Mapped[str] = mapped_column(
         String(150),
+        unique=True,
         nullable=False
     )
 
@@ -48,4 +56,9 @@ class Usuario(Base):
     updated_at: Mapped[datetime] = mapped_column(
         DateTime,
         nullable=False
+    )
+
+    pessoa: Mapped["Pessoa"] = relationship(back_populates="usuario")
+    perfis: Mapped[list["Perfil"]] = relationship(
+        secondary="usuario_perfis", back_populates="usuarios", viewonly=True
     )

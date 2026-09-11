@@ -7,3 +7,5 @@ __pycache__/
 .idea/
 .vscode/
 alembic.ini.bak
+backups/
+storage/

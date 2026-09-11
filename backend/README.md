@@ -55,7 +55,50 @@ Nós usamos o `pytest` para testes. Para executá-los:
 pytest
 ```
 
-## 10. Como executar o Alembic (Migrations)
-Neste momento, a infraestrutura inicial do backend está configurada, mas **não existem models, tabelas ou migrations de negócio**. 
+## 10. Modelagem de dados
 
-Rodar comandos como `alembic upgrade head` neste momento servirá apenas para testar a ferramenta, mas **não criará** as tabelas do sistema ACPB, visto que a modelagem do banco de dados (DER) ainda não foi implementada.
+Todos os models de negócio (Pessoa, Membro, Voluntário, Beneficiário, Atendimento, Telefone,
+Usuário, Perfil, Permissão e seus vínculos, Projeto, Evento, Inscrição, contas/categorias/
+movimentações financeiras e Auditoria) estão implementados em `app/models/` e registrados em
+`app/models/__init__.py`. As chaves estrangeiras, restrições de unicidade e regras de exclusão
+seguem o inventário documentado em [`RELACIONAMENTOS.md`](RELACIONAMENTOS.md) — consulte esse
+arquivo antes de alterar qualquer relacionamento.
+
+## 11. Como executar o Alembic (Migrations)
+
+O schema completo é versionado a partir da migration baseline em `alembic/versions/`, que cria
+todas as tabelas, índices e FKs em um banco limpo:
+
+```bash
+alembic upgrade head
+```
+
+Para gerar uma nova migration após alterar models:
+
+```bash
+alembic revision --autogenerate -m "descricao da mudanca"
+```
+
+Sempre revise o arquivo gerado antes de aplicar. Em bancos que já possuem dados, **nunca** rode
+`alembic upgrade head` sem antes conferir se a operação é destrutiva — prefira gerar um backup
+(`pg_dump`) e, se o schema já existir fisicamente e a migration só estiver documentando o estado
+atual, aplique com `alembic stamp <revisao>` em vez de `upgrade`.
+
+Para verificar se os models estão sincronizados com o banco sem gerar uma migration:
+
+```bash
+alembic check
+```
+
+## 12. Backups
+
+Backups gerados com `pg_dump` (formato custom, `-F c`) devem ficar em `backend/backups/`, pasta
+ignorada pelo git por conter dados pessoais. Exemplo de geração de backup antes de qualquer
+migration em banco com dados:
+
+```bash
+pg_dump -h localhost -p 5432 -U acpb_app -d acpb_db -F c -f backups/acpb_db_AAAAMMDD_HHMMSS.dump
+```
+
+A política completa de backup/restauração (periodicidade, retenção e teste de restauração) está
+descrita na tarefa 36 (`tarefas_pendentes/36-definir-backup-e-restauracao.md`).

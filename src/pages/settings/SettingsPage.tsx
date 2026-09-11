@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { Settings, Shield, Users, Lock } from 'lucide-react';
-import { Button } from '../../components/ui/Button';
-import { Badge } from '../../components/ui/Badge';
-import { MOCK_USERS } from '../../mocks/users';
+import { Settings, Shield, Users, ShieldCheck } from 'lucide-react';
+import { UsersManagement } from './UsersManagement';
+import { ProfilesManagement } from './ProfilesManagement';
+
+type SettingsTab = 'usuarios' | 'perfis';
 
 export const SettingsPage: React.FC = () => {
-  const [usersList, setUsersList] = useState(MOCK_USERS);
+  const [tab, setTab] = useState<SettingsTab>('usuarios');
 
   return (
     <div className="space-y-6 animate-fade-in pb-12">
@@ -29,51 +30,33 @@ export const SettingsPage: React.FC = () => {
         </span>
       </div>
 
-      {/* Tabela de Gestão de Usuários */}
-      <div className="bg-[#181D1A] border border-[#222824] rounded-xl overflow-hidden shadow-sm">
-        <div className="p-4 border-b border-[#222824] flex items-center justify-between">
-          <h3 className="text-base font-bold text-white font-heading">Usuários Cadastrados no Sistema</h3>
-          <Button variant="primary" size="sm" onClick={() => alert('Modal de criação de usuário mock ativado')}>
-            + Novo Usuário
-          </Button>
-        </div>
-
-        <table className="w-full text-left text-sm">
-          <thead className="bg-[#0F1210] border-b border-[#222824] text-[#AEB5B0] font-medium">
-            <tr>
-              <th className="py-3.5 px-4">Nome / E-mail</th>
-              <th className="py-3.5 px-4">Perfil (Role)</th>
-              <th className="py-3.5 px-4">Status</th>
-              <th className="py-3.5 px-4 text-right">Ações</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-[#222824]">
-            {usersList.map((u) => (
-              <tr key={u.id} className="hover:bg-[#1e2521] transition-colors">
-                <td className="py-3.5 px-4">
-                  <div className="font-semibold text-white">{u.name}</div>
-                  <div className="text-xs text-[#727A74]">{u.email}</div>
-                </td>
-                <td className="py-3.5 px-4">
-                  <span className="text-xs font-bold text-[#F8D800] bg-[#0F1210] px-2 py-1 rounded border border-[#222824]">
-                    {u.role}
-                  </span>
-                </td>
-                <td className="py-3.5 px-4">
-                  <Badge variant={u.status === 'ATIVO' ? 'success' : 'danger'}>
-                    {u.status}
-                  </Badge>
-                </td>
-                <td className="py-3.5 px-4 text-right">
-                  <Button variant="ghost" size="sm" onClick={() => alert(`Editando usuário: ${u.name}`)}>
-                    Editar Permissões
-                  </Button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      {/* Abas */}
+      <div className="border-b border-[#222824] flex items-center gap-1">
+        <button
+          onClick={() => setTab('usuarios')}
+          className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
+            tab === 'usuarios'
+              ? 'border-[#F8D800] text-white'
+              : 'border-transparent text-[#AEB5B0] hover:text-white'
+          }`}
+        >
+          <Users className="w-4 h-4" />
+          Usuários
+        </button>
+        <button
+          onClick={() => setTab('perfis')}
+          className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
+            tab === 'perfis'
+              ? 'border-[#F8D800] text-white'
+              : 'border-transparent text-[#AEB5B0] hover:text-white'
+          }`}
+        >
+          <ShieldCheck className="w-4 h-4" />
+          Perfis e Permissões
+        </button>
       </div>
+
+      {tab === 'usuarios' ? <UsersManagement /> : <ProfilesManagement />}
     </div>
   );
 };

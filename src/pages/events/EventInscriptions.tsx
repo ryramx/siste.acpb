@@ -51,13 +51,19 @@ export const EventInscriptions: React.FC = () => {
 
       {/* Cards de Resumo de Vagas */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <StatCard title="Vagas Totais" value={event.maxSlots} icon={<Users className="w-5 h-5" />} accentColor="neutral" />
+        <StatCard title="Vagas Totais" value={event.maxSlots ?? 'Sem limite'} icon={<Users className="w-5 h-5" />} accentColor="neutral" />
         <StatCard title="Inscritos" value={event.filledSlots} icon={<CheckCircle className="w-5 h-5" />} accentColor="green" />
-        <StatCard title="Disponíveis" value={event.maxSlots - event.filledSlots} icon={<Clock className="w-5 h-5" />} accentColor="yellow" />
+        <StatCard
+          title="Disponíveis"
+          value={event.maxSlots !== null ? event.maxSlots - event.filledSlots : 'Sem limite'}
+          icon={<Clock className="w-5 h-5" />}
+          accentColor="yellow"
+        />
       </div>
 
       {/* Tabela de Inscrições */}
       <div className="bg-[#181D1A] border border-[#222824] rounded-xl overflow-hidden shadow-sm">
+        <div className="overflow-x-auto">
         <table className="w-full text-left text-sm">
           <thead className="bg-[#0F1210] border-b border-[#222824] text-[#AEB5B0] font-medium">
             <tr>
@@ -83,6 +89,7 @@ export const EventInscriptions: React.FC = () => {
             ))}
           </tbody>
         </table>
+        </div>
       </div>
     </div>
   );

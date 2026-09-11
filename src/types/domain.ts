@@ -1,9 +1,10 @@
 export interface Member {
   id: string;
+  pessoaId: string;
   name: string;
   cpf: string;
   birthDate: string;
-  photoUrl?: string;
+  temFoto: boolean;
   phone: string;
   whatsapp: string;
   email: string;
@@ -15,35 +16,32 @@ export interface Member {
   city: string;
   state: string;
   entryDate: string;
-  status: 'ATIVO' | 'AFASTADO' | 'INATIVO';
-  projectId?: string;
-  projectName?: string;
+  // 'AFASTADO' era só um conceito de mock: o backend (Membro.ativo) só distingue ativo/inativo.
+  status: 'ATIVO' | 'INATIVO';
+  cargoId?: string;
+  cargoName?: string;
   notes?: string;
-  guardianName?: string;
-  guardianPhone?: string;
-  isMinor?: boolean;
 }
 
 export interface Volunteer {
   id: string;
+  pessoaId: string;
   name: string;
   email: string;
   phone: string;
-  area: 'Educação' | 'Saúde' | 'Assistência Social' | 'Eventos' | 'Administrativo' | 'Tecnologia' | 'Outros';
+  // Área é texto livre no backend (Voluntario.area) — não um enum fechado.
+  area: string;
   skills: string[];
-  availability: string; // Ex: "Sábados à tarde", "Segundas e Quartas"
-  availableDays: ('Seg' | 'Ter' | 'Qua' | 'Qui' | 'Sex' | 'Sáb' | 'Dom')[];
-  projectId?: string;
-  projectName?: string;
-  hoursWorked: number;
+  availability: string; // Ex: "Sábados à tarde", "Segundas e Quartas" (Voluntario.disponibilidade)
   status: 'ATIVO' | 'INATIVO';
-  photoUrl?: string;
+  temFoto: boolean;
 }
 
 export interface AttendanceRecord {
   id: string;
   date: string;
-  type: 'Social' | 'Psicológico' | 'Entrega de Cesta' | 'Jurídico' | 'Médico' | 'Outro';
+  // Tipo é texto livre no backend (Atendimento.tipo) — não um enum fechado.
+  type: string;
   responsibleName: string;
   notes: string;
 }
@@ -52,13 +50,11 @@ export interface Beneficiary {
   id: string;
   name: string;
   cpf?: string;
-  ageGroup: 'Criança (0-12)' | 'Adolescente (13-17)' | 'Adulto (18-59)' | 'Idoso (60+)';
+  ageGroup: 'Criança (0-12)' | 'Adolescente (13-17)' | 'Adulto (18-59)' | 'Idoso (60+)' | 'Não informado';
   birthDate: string;
   phone?: string;
-  projectId: string;
-  projectName: string;
   entryDate: string;
-  status: 'EM_ATENDIMENTO' | 'CONCLUIDO' | 'DESLIGADO';
+  status: 'EM_ATENDIMENTO' | 'CONCLUIDO';
   attendances: AttendanceRecord[];
 }
 
@@ -66,13 +62,15 @@ export interface Project {
   id: string;
   name: string;
   description: string;
-  responsibleName: string;
-  beneficiariesCount: number;
-  volunteersCount: number;
+  // null quando o projeto não tem responsável vinculado (Projeto.responsavel_id é opcional).
+  responsibleName: string | null;
+  responsibleId?: string;
+  // Beneficiários/voluntários vinculados ainda não são expostos por uma rota própria no
+  // backend (ver tarefa 30) — só despesas e eventos são derivados de dados reais.
   eventsCount: number;
   totalExpenses: number;
-  status: 'ATIVO' | 'EM_PLANEJAMENTO' | 'CONCLUIDO';
-  startDate: string;
+  status: string;
+  startDate: string | null;
 }
 
 export interface EventInscription {
@@ -80,7 +78,7 @@ export interface EventInscription {
   participantName: string;
   participantPhone: string;
   inscriptionDate: string;
-  status: 'CONFIRMADO' | 'PENDENTE' | 'CANCELADO';
+  status: string;
 }
 
 export interface EventItem {
@@ -88,54 +86,36 @@ export interface EventItem {
   title: string;
   description: string;
   date: string;
-  time: string;
+  time: string | null;
   location: string;
-  responsibleName: string;
-  category: 'Reunião' | 'Mutirão' | 'Acampamento' | 'Capacitação' | 'Culto/Celebração' | 'Outro';
+  responsibleName: string | null;
+  projectId?: string;
+  // Categoria não existe como coluna no backend (Evento não tem "categoria") — mantido
+  // apenas como texto livre digitado pelo usuário via observações, não filtrável de verdade.
   targetAudience: string;
-  maxSlots: number;
+  maxSlots: number | null;
   filledSlots: number;
   requiresRegistration: boolean;
-  status: 'AGENDADO' | 'EM_ANDAMENTO' | 'REALIZADO' | 'CANCELADO';
+  status: 'AGENDADO' | 'REALIZADO';
   inscriptions?: EventInscription[];
 }
-
-export type RevenueCategory =
-  | 'Doações'
-  | 'Contribuições'
-  | 'Patrocínios'
-  | 'Convênios'
-  | 'Eventos'
-  | 'Outras receitas';
-
-export type ExpenseCategory =
-  | 'Aluguel'
-  | 'Energia'
-  | 'Água'
-  | 'Internet'
-  | 'Material de limpeza'
-  | 'Material de escritório'
-  | 'Alimentação'
-  | 'Transporte'
-  | 'Manutenção'
-  | 'Equipamentos'
-  | 'Projetos sociais'
-  | 'Contabilidade'
-  | 'Impostos/taxas'
-  | 'Outras despesas';
 
 export interface FinancialTransaction {
   id: string;
   type: 'RECEITA' | 'DESPESA';
-  category: RevenueCategory | ExpenseCategory;
+  // Categoria e conta são entidades reais do backend (CategoriaFinanceira/ContaFinanceira),
+  // não mais um enum fixo no frontend.
+  category: string;
+  categoryId: string;
+  accountId: string;
+  accountName: string;
   amount: number;
   date: string;
   description: string;
-  paymentMethod: 'Pix' | 'Transferência' | 'Boleto' | 'Dinheiro' | 'Cartão';
-  responsibleName: string;
+  paymentMethod: string | null;
+  responsibleName: string | null;
   projectId?: string;
   projectName?: string;
-  status: 'PAGO' | 'PENDENTE' | 'CANCELADO';
-  attachmentUrl?: string;
-  attachmentName?: string;
+  status: string;
+  attachmentsCount: number;
 }

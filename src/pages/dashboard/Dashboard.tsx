@@ -6,9 +6,6 @@ import {
   HeartHandshake,
   FolderKanban,
   Calendar,
-  ArrowUpRight,
-  ArrowDownRight,
-  AlertTriangle,
   Clock,
   ChevronRight,
   TrendingUp
@@ -16,32 +13,59 @@ import {
 import { StatCard } from '../../components/ui/StatCard';
 import { Badge } from '../../components/ui/Badge';
 import { Button } from '../../components/ui/Button';
+import { EmptyState } from '../../components/ui/EmptyState';
 import { useAuth } from '../../contexts/AuthContext';
-import { MOCK_MEMBERS, MOCK_VOLUNTEERS, MOCK_BENEFICIARIES, MOCK_PROJECTS, MOCK_EVENTS, MOCK_FINANCIAL_TRANSACTIONS } from '../../mocks/domain';
+import { apiClient } from '../../services/apiClient';
+import { eventService } from '../../services/domainServices';
+import { EventItem } from '../../types/domain';
+
+interface DashboardResumo {
+  quantidade_pessoas: number;
+  membros_ativos: number;
+  voluntarios_ativos: number;
+  beneficiarios: number;
+  projetos_ativos: number;
+  proximos_eventos: number;
+  saldo_financeiro: number;
+  receitas_confirmadas: number;
+  despesas_confirmadas: number;
+}
 
 export const Dashboard: React.FC = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
 
+  const [resumo, setResumo] = useState<DashboardResumo | null>(null);
+  const [proximosEventos, setProximosEventos] = useState<EventItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchData = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const [resumoData, eventos] = await Promise.all([
+        apiClient.get<DashboardResumo>('/dashboard/resumo'),
+        eventService.getAll()
+      ]);
+      setResumo(resumoData);
+      const hoje = new Date().toISOString().split('T')[0];
+      setProximosEventos(
+        eventos
+          .filter((e) => e.date >= hoje)
+          .sort((a, b) => a.date.localeCompare(b.date))
+          .slice(0, 4)
+      );
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erro ao carregar o dashboard');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const timer = setTimeout(() => setLoading(false), 300);
-    return () => clearTimeout(timer);
+    fetchData();
   }, []);
-
-  // Cálculos mockados baseados em dados reais estáticos
-  const totalMembers = MOCK_MEMBERS.length * 30 + 7; // ~127
-  const totalVolunteers = MOCK_VOLUNTEERS.length * 14 + 1; // ~43
-  const totalBeneficiaries = MOCK_BENEFICIARIES.length * 105 + 8; // ~218
-  const totalProjects = MOCK_PROJECTS.length + 5; // ~8
-
-  const recentActivities = [
-    { id: 1, user: 'João da Silva', action: 'cadastrou um novo membro', target: 'Ana Beatriz Souza', time: 'Há 15 min' },
-    { id: 2, user: 'Mariana Santos', action: 'criou o evento', target: 'Acampamento Pau-Brasil', time: 'Há 1 hora' },
-    { id: 3, user: 'Carlos Oliveira', action: 'registrou uma despesa', target: 'Energia Elétrica (R$ 387,42)', time: 'Há 3 horas' },
-    { id: 4, user: 'Lucas Ferreira', action: 'adicionou horas ao voluntário', target: 'Roberto Mendes (+4h)', time: 'Ontem' }
-  ];
 
   if (loading) {
     return (
@@ -56,6 +80,21 @@ export const Dashboard: React.FC = () => {
     );
   }
 
+  if (error || !resumo) {
+    return (
+      <EmptyState
+        title="Erro ao carregar o dashboard"
+        description={error ?? 'Não foi possível carregar os dados.'}
+        actionLabel="Tentar novamente"
+        onAction={fetchData}
+      />
+    );
+  }
+
+  const saldoPositivo = resumo.saldo_financeiro >= 0;
+  const totalMovimentado = resumo.receitas_confirmadas + resumo.despesas_confirmadas;
+  const percReceitas = totalMovimentado > 0 ? (resumo.receitas_confirmadas / totalMovimentado) * 100 : 50;
+
   return (
     <div className="space-y-6 animate-fade-in">
       {/* Header Saudação */}
@@ -69,63 +108,44 @@ export const Dashboard: React.FC = () => {
           </p>
         </div>
         <div className="z-10 flex gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => navigate('/membros')}
-          >
+          <Button variant="outline" size="sm" onClick={() => navigate('/membros')}>
             Ver Membros
           </Button>
-          <Button
-            variant="primary"
-            size="sm"
-            onClick={() => navigate('/financeiro')}
-          >
+          <Button variant="primary" size="sm" onClick={() => navigate('/financeiro')}>
             Gestão Financeira
           </Button>
         </div>
         <div className="absolute right-0 top-0 bottom-0 w-64 bg-gradient-to-l from-[#004922]/20 to-transparent pointer-events-none" />
       </div>
 
-      {/* Alerta Institucional de Atenção */}
-      <div className="p-4 bg-[#181D1A] border border-[#F8D800]/30 rounded-xl flex items-center gap-3">
-        <AlertTriangle className="w-5 h-5 text-[#F8D800] shrink-0" />
-        <div className="flex-1 text-xs md:text-sm text-[#AEB5B0]">
-          <strong className="text-white font-medium">Atenção da Diretoria:</strong> A prestação de contas do projeto Reforço Escolar encerra em 3 dias.
-        </div>
-        <Badge variant="warning">Pendente</Badge>
-      </div>
-
       {/* 4 KPIs Principais */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
-          title="Membros"
-          value={totalMembers}
+          title="Membros Ativos"
+          value={resumo.membros_ativos}
           icon={<UserCheck className="w-5 h-5" />}
-          subtitle="Cadastrados ativos"
-          trend={{ value: '+12% este mês', isPositive: true }}
+          subtitle={`${resumo.quantidade_pessoas} pessoas cadastradas`}
           accentColor="green"
         />
         <StatCard
           title="Voluntários"
-          value={totalVolunteers}
+          value={resumo.voluntarios_ativos}
           icon={<Users className="w-5 h-5" />}
           subtitle="Em atuação"
           accentColor="yellow"
         />
         <StatCard
           title="Beneficiários"
-          value={totalBeneficiaries}
+          value={resumo.beneficiarios}
           icon={<HeartHandshake className="w-5 h-5" />}
           subtitle="Famílias atendidas"
-          trend={{ value: '+8 novas famílias', isPositive: true }}
           accentColor="blue"
         />
         <StatCard
-          title="Projetos"
-          value={totalProjects}
+          title="Projetos Ativos"
+          value={resumo.projetos_ativos}
           icon={<FolderKanban className="w-5 h-5" />}
-          subtitle="Projetos ativos"
+          subtitle={`${resumo.proximos_eventos} eventos futuros`}
           accentColor="neutral"
         />
       </div>
@@ -150,30 +170,38 @@ export const Dashboard: React.FC = () => {
               </Button>
             </div>
 
-            <div className="space-y-3">
-              {MOCK_EVENTS.map((evt) => (
-                <div
-                  key={evt.id}
-                  onClick={() => navigate(`/eventos`)}
-                  className="p-3.5 bg-[#0F1210] border border-[#222824] rounded-xl flex items-center justify-between hover:border-[#004922]/50 transition-colors cursor-pointer"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-lg bg-[#004922]/30 border border-[#004922] flex flex-col items-center justify-center text-white shrink-0">
-                      <span className="text-[10px] font-bold uppercase">{evt.date.split('-')[1] === '09' ? 'SET' : 'AGO'}</span>
-                      <span className="text-xs font-bold text-[#F8D800]">{evt.date.split('-')[2]}</span>
+            {proximosEventos.length === 0 ? (
+              <p className="text-xs text-[#727A74] py-4 text-center">
+                Nenhum evento futuro agendado.
+              </p>
+            ) : (
+              <div className="space-y-3">
+                {proximosEventos.map((evt) => (
+                  <div
+                    key={evt.id}
+                    onClick={() => navigate(`/eventos/${evt.id}`)}
+                    className="p-3.5 bg-[#0F1210] border border-[#222824] rounded-xl flex items-center justify-between hover:border-[#004922]/50 transition-colors cursor-pointer"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-lg bg-[#004922]/30 border border-[#004922] flex flex-col items-center justify-center text-white shrink-0">
+                        <span className="text-[10px] font-bold uppercase">
+                          {evt.date.split('-')[1]}/{evt.date.split('-')[0].slice(2)}
+                        </span>
+                        <span className="text-xs font-bold text-[#F8D800]">{evt.date.split('-')[2]}</span>
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-semibold text-white">{evt.title}</h4>
+                        <p className="text-xs text-[#AEB5B0] flex items-center gap-1.5 mt-0.5">
+                          <Clock className="w-3 h-3 text-[#F8D800]" />
+                          {evt.time ?? 'Horário a definir'} • {evt.location}
+                        </p>
+                      </div>
                     </div>
-                    <div>
-                      <h4 className="text-sm font-semibold text-white">{evt.title}</h4>
-                      <p className="text-xs text-[#AEB5B0] flex items-center gap-1.5 mt-0.5">
-                        <Clock className="w-3 h-3 text-[#F8D800]" />
-                        {evt.time} • {evt.location}
-                      </p>
-                    </div>
+                    <Badge variant="success">{evt.status}</Badge>
                   </div>
-                  <Badge variant="success">Agendado</Badge>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 
@@ -183,7 +211,7 @@ export const Dashboard: React.FC = () => {
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-white font-heading flex items-center gap-2">
                 <TrendingUp className="w-5 h-5 text-[#004922]" />
-                Situação financeira (Mês Atual)
+                Situação financeira (confirmada)
               </h3>
               <Button
                 variant="ghost"
@@ -198,48 +226,37 @@ export const Dashboard: React.FC = () => {
             <div className="grid grid-cols-3 gap-3 mb-4">
               <div className="p-3 bg-[#0F1210] border border-[#222824] rounded-xl">
                 <span className="text-xs text-[#AEB5B0] block">Receitas</span>
-                <span className="text-base font-bold text-[#40C075] mt-1 block">R$ 8.420</span>
+                <span className="text-base font-bold text-[#40C075] mt-1 block">
+                  R$ {resumo.receitas_confirmadas.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                </span>
               </div>
               <div className="p-3 bg-[#0F1210] border border-[#222824] rounded-xl">
                 <span className="text-xs text-[#AEB5B0] block">Despesas</span>
-                <span className="text-base font-bold text-red-400 mt-1 block">R$ 6.830</span>
+                <span className="text-base font-bold text-red-400 mt-1 block">
+                  R$ {resumo.despesas_confirmadas.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                </span>
               </div>
               <div className="p-3 bg-[#0F1210] border border-[#004922] rounded-xl bg-[#004922]/10">
                 <span className="text-xs text-[#AEB5B0] block">Saldo</span>
-                <span className="text-base font-bold text-[#F8D800] mt-1 block">R$ 1.590</span>
+                <span className={`text-base font-bold mt-1 block ${saldoPositivo ? 'text-[#F8D800]' : 'text-red-400'}`}>
+                  R$ {resumo.saldo_financeiro.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                </span>
               </div>
             </div>
 
-            {/* Barra visual proporcional */}
-            <div className="w-full bg-[#0F1210] rounded-full h-3 overflow-hidden flex border border-[#222824]">
-              <div className="bg-[#004922] h-full" style={{ width: '55%' }} title="Receitas 55%" />
-              <div className="bg-red-800 h-full" style={{ width: '45%' }} title="Despesas 45%" />
-            </div>
-            <div className="flex justify-between text-[11px] text-[#727A74] mt-2">
-              <span>● Receitas do mês</span>
-              <span>● Despesas operacionais</span>
-            </div>
+            {totalMovimentado > 0 && (
+              <>
+                <div className="w-full bg-[#0F1210] rounded-full h-3 overflow-hidden flex border border-[#222824]">
+                  <div className="bg-[#004922] h-full" style={{ width: `${percReceitas}%` }} title="Receitas" />
+                  <div className="bg-red-800 h-full" style={{ width: `${100 - percReceitas}%` }} title="Despesas" />
+                </div>
+                <div className="flex justify-between text-[11px] text-[#727A74] mt-2">
+                  <span>● Receitas confirmadas</span>
+                  <span>● Despesas confirmadas</span>
+                </div>
+              </>
+            )}
           </div>
-        </div>
-      </div>
-
-      {/* Atividades Recentes */}
-      <div className="bg-[#181D1A] border border-[#222824] rounded-2xl p-6">
-        <h3 className="text-lg font-semibold text-white font-heading mb-4">
-          Atividades recentes
-        </h3>
-        <div className="divide-y divide-[#222824]">
-          {recentActivities.map((act) => (
-            <div key={act.id} className="py-3 flex items-center justify-between text-sm">
-              <div className="flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-[#004922]" />
-                <span className="text-white font-medium">{act.user}</span>
-                <span className="text-[#AEB5B0]">{act.action}</span>
-                <span className="text-[#F8D800] font-medium">{act.target}</span>
-              </div>
-              <span className="text-xs text-[#727A74]">{act.time}</span>
-            </div>
-          ))}
         </div>
       </div>
     </div>

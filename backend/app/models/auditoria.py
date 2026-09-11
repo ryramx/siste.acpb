@@ -1,10 +1,14 @@
 from datetime import datetime
+from typing import TYPE_CHECKING
 from sqlalchemy.dialects.postgresql import JSONB
 
-from sqlalchemy import BigInteger, DateTime, String
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy import BigInteger, DateTime, ForeignKey, String, Text
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
+
+if TYPE_CHECKING:
+    from app.models.usuario import Usuario
 
 
 class Auditoria(Base):
@@ -18,6 +22,7 @@ class Auditoria(Base):
 
     usuario_id: Mapped[int | None] = mapped_column(
         BigInteger,
+        ForeignKey("usuarios.id"),
         nullable=True
     )
 
@@ -37,7 +42,7 @@ class Auditoria(Base):
     )
 
     descricao: Mapped[str | None] = mapped_column(
-        String,
+        Text,
         nullable=True
     )
 
@@ -60,3 +65,5 @@ class Auditoria(Base):
         DateTime,
         nullable=False
     )
+
+    usuario: Mapped["Usuario | None"] = relationship()

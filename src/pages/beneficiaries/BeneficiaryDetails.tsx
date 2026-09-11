@@ -25,8 +25,7 @@ export const BeneficiaryDetails: React.FC = () => {
   const [submitting, setSubmitting] = useState(false);
   const [newAttendance, setNewAttendance] = useState({
     date: new Date().toISOString().split('T')[0],
-    type: 'Social' as AttendanceRecord['type'],
-    responsibleName: user?.name || 'Ana Paula Rocha',
+    type: 'Social',
     notes: ''
   });
 
@@ -44,11 +43,14 @@ export const BeneficiaryDetails: React.FC = () => {
 
   const handleRegisterAttendance = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!id || !newAttendance.notes) return;
+    if (!id || !newAttendance.notes || !user) return;
     setSubmitting(true);
 
     try {
-      await beneficiaryService.addAttendance(id, newAttendance);
+      await beneficiaryService.addAttendance(id, {
+        ...newAttendance,
+        responsavelPessoaId: user.pessoaId
+      });
       addToast({
         type: 'success',
         title: 'Atendimento registrado',
@@ -58,12 +60,12 @@ export const BeneficiaryDetails: React.FC = () => {
       setNewAttendance({
         date: new Date().toISOString().split('T')[0],
         type: 'Social',
-        responsibleName: user?.name || 'Ana Paula Rocha',
         notes: ''
       });
       fetchBeneficiary();
     } catch (err) {
-      addToast({ type: 'error', title: 'Erro ao registrar atendimento' });
+      const message = err instanceof Error ? err.message : 'Tente novamente em instantes.';
+      addToast({ type: 'error', title: 'Erro ao registrar atendimento', message });
     } finally {
       setSubmitting(false);
     }
@@ -105,8 +107,7 @@ export const BeneficiaryDetails: React.FC = () => {
             <Badge variant="success">{beneficiary.status.replace('_', ' ')}</Badge>
           </div>
           <p className="text-xs text-[#AEB5B0] mt-1">
-            Faixa Etária: <strong className="text-white">{beneficiary.ageGroup}</strong> • Projeto Vinculado:{' '}
-            <strong className="text-[#F8D800]">{beneficiary.projectName}</strong>
+            Faixa Etária: <strong className="text-white">{beneficiary.ageGroup}</strong>
           </p>
         </div>
 
@@ -178,7 +179,7 @@ export const BeneficiaryDetails: React.FC = () => {
           <Select
             label="Tipo de Atendimento"
             value={newAttendance.type}
-            onChange={(e) => setNewAttendance({ ...newAttendance, type: e.target.value as any })}
+            onChange={(e) => setNewAttendance({ ...newAttendance, type: e.target.value })}
             options={[
               { value: 'Social', label: 'Atendimento Social' },
               { value: 'Psicológico', label: 'Atendimento Psicológico' },
@@ -187,12 +188,9 @@ export const BeneficiaryDetails: React.FC = () => {
               { value: 'Jurídico', label: 'Apoio Jurídico' }
             ]}
           />
-          <Input
-            label="Responsável pelo Atendimento"
-            value={newAttendance.responsibleName}
-            onChange={(e) => setNewAttendance({ ...newAttendance, responsibleName: e.target.value })}
-            required
-          />
+          <p className="text-xs text-[#AEB5B0]">
+            Responsável: <strong className="text-white">{user?.name}</strong> (identificado pela sua sessão)
+          </p>
           <div className="flex flex-col gap-1.5">
             <label className="text-xs font-medium text-[#AEB5B0]">Descrição / Histórico do Atendimento *</label>
             <textarea

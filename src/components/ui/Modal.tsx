@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useId } from 'react';
 import { Button } from './Button';
 
 interface ModalProps {
@@ -18,6 +18,17 @@ export const Modal: React.FC<ModalProps> = ({
   footer,
   maxWidth = 'md'
 }) => {
+  const titleId = useId();
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
+
   if (!isOpen) return null;
 
   const widthClasses = {
@@ -29,16 +40,23 @@ export const Modal: React.FC<ModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-xs animate-fade-in">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-xs animate-fade-in"
+      onClick={onClose}
+    >
       <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
         className={`bg-[#181D1A] border border-[#222824] rounded-xl w-full ${widthClasses[maxWidth]} shadow-2xl flex flex-col max-h-[90vh] overflow-hidden`}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-[#222824]">
-          <h3 className="text-lg font-semibold text-white font-heading">{title}</h3>
+          <h3 id={titleId} className="text-lg font-semibold text-white font-heading">{title}</h3>
           <button
             onClick={onClose}
+            aria-label="Fechar"
             className="text-[#AEB5B0] hover:text-white transition-colors p-1 rounded-lg hover:bg-[#222824]"
           >
             ✕

@@ -1,13 +1,18 @@
-export type UserRole = 'ADMINISTRADOR' | 'FINANCEIRO' | 'COORDENADOR' | 'VOLUNTARIO' | 'CONSULTA';
-
-export interface User {
+/** Sessão autenticada real (via API). A tela de administração de usuários (`SettingsPage`)
+ * usa seus próprios tipos reais em `types/settings.ts` (`SystemUser`), não este. */
+export interface AuthenticatedUser {
   id: string;
-  name: string;
+  pessoaId: string;
   email: string;
-  role: UserRole;
-  avatar?: string;
-  status: 'ATIVO' | 'INATIVO';
-  createdAt: string;
+  name: string;
+  /** Se a Pessoa por trás deste usuário tem foto cadastrada (ver Avatar/AvatarUpload). */
+  temFoto: boolean;
+  /** Nomes dos perfis (Administrador, Gestor, ...) vindos do backend. */
+  perfis: string[];
+  /** Primeiro perfil do usuário, só para rótulos/exibição (ex.: badge no Topbar). */
+  role: string;
+  /** Permissões granulares "modulo.acao" vindas do backend — fonte real de autorização. */
+  permissoes: string[];
 }
 
 export type PermissionKey =

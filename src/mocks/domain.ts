@@ -6,8 +6,6 @@ export const MOCK_PROJECTS: Project[] = [
     name: 'Projeto Reforço Escolar',
     description: 'Acompanhamento pedagógico e atividades educativas para crianças da comunidade Pau-Brasil.',
     responsibleName: 'Mariana Santos',
-    beneficiariesCount: 74,
-    volunteersCount: 12,
     eventsCount: 4,
     totalExpenses: 2850.00,
     status: 'ATIVO',
@@ -18,8 +16,6 @@ export const MOCK_PROJECTS: Project[] = [
     name: 'Projeto Cestas Básicas',
     description: 'Triagem e distribuição mensal de cestas de alimentos para famílias em vulnerabilidade extrema.',
     responsibleName: 'João da Silva',
-    beneficiariesCount: 120,
-    volunteersCount: 8,
     eventsCount: 2,
     totalExpenses: 5400.00,
     status: 'ATIVO',
@@ -30,8 +26,6 @@ export const MOCK_PROJECTS: Project[] = [
     name: 'Capacitação Profissional Digital',
     description: 'Cursos livres de informática básica e preparação para o mercado de trabalho.',
     responsibleName: 'Lucas Ferreira',
-    beneficiariesCount: 24,
-    volunteersCount: 5,
     eventsCount: 1,
     totalExpenses: 1200.00,
     status: 'EM_PLANEJAMENTO',
@@ -42,6 +36,8 @@ export const MOCK_PROJECTS: Project[] = [
 export const MOCK_MEMBERS: Member[] = [
   {
     id: 'mem-1',
+    pessoaId: 'mem-1',
+    temFoto: false,
     name: 'João da Silva',
     cpf: '123.456.789-00',
     birthDate: '1985-06-15',
@@ -56,13 +52,12 @@ export const MOCK_MEMBERS: Member[] = [
     state: 'PE',
     entryDate: '2022-01-15',
     status: 'ATIVO',
-    projectId: 'proj-2',
-    projectName: 'Projeto Cestas Básicas',
     notes: 'Membro ativo da equipe de logística do projeto de apoio alimentar.',
-    photoUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80'
   },
   {
     id: 'mem-2',
+    pessoaId: 'mem-2',
+    temFoto: false,
     name: 'Maria Silva',
     cpf: '987.654.321-11',
     birthDate: '1990-11-20',
@@ -78,13 +73,12 @@ export const MOCK_MEMBERS: Member[] = [
     state: 'PE',
     entryDate: '2023-03-10',
     status: 'ATIVO',
-    projectId: 'proj-1',
-    projectName: 'Projeto Reforço Escolar',
     notes: 'Pedagoga responsável pelas oficinas de leitura.',
-    photoUrl: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80'
   },
   {
     id: 'mem-3',
+    pessoaId: 'mem-3',
+    temFoto: false,
     name: 'Carlos Souza',
     cpf: '456.789.123-22',
     birthDate: '1978-04-05',
@@ -98,14 +92,13 @@ export const MOCK_MEMBERS: Member[] = [
     city: 'Recife',
     state: 'PE',
     entryDate: '2021-08-01',
-    status: 'AFASTADO',
-    projectId: 'proj-1',
-    projectName: 'Projeto Reforço Escolar',
+    status: 'INATIVO',
     notes: 'Afastado temporariamente por motivos de saúde familiar.',
-    photoUrl: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&auto=format&fit=crop&q=80'
   },
   {
     id: 'mem-4',
+    pessoaId: 'mem-4',
+    temFoto: false,
     name: 'Ana Beatriz Souza',
     cpf: '111.222.333-44',
     birthDate: '2009-08-12',
@@ -120,16 +113,12 @@ export const MOCK_MEMBERS: Member[] = [
     state: 'PE',
     entryDate: '2024-05-15',
     status: 'ATIVO',
-    projectId: 'proj-1',
-    projectName: 'Projeto Reforço Escolar',
-    isMinor: true,
-    guardianName: 'Márcia Souza',
-    guardianPhone: '(81) 96666-0000',
     notes: 'Menor de idade cadastrada para monitoria jovem.',
-    photoUrl: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80'
   },
   {
     id: 'mem-5',
+    pessoaId: 'mem-5',
+    temFoto: false,
     name: 'Bruno Lima',
     cpf: '555.666.777-88',
     birthDate: '1995-12-05',
@@ -144,13 +133,12 @@ export const MOCK_MEMBERS: Member[] = [
     state: 'PE',
     entryDate: '2023-11-20',
     status: 'ATIVO',
-    projectId: 'proj-3',
-    projectName: 'Capacitação Profissional Digital',
     notes: 'Instrutor de informática e lógica de programação.',
-    photoUrl: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=150&auto=format&fit=crop&q=80'
   },
   {
     id: 'mem-6',
+    pessoaId: 'mem-6',
+    temFoto: false,
     name: 'Camila Rodrigues',
     cpf: '888.999.000-11',
     birthDate: '1988-07-22',
@@ -165,13 +153,12 @@ export const MOCK_MEMBERS: Member[] = [
     state: 'PE',
     entryDate: '2022-06-10',
     status: 'ATIVO',
-    projectId: 'proj-2',
-    projectName: 'Projeto Cestas Básicas',
     notes: 'Coordenadora de logística e distribuição.',
-    photoUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80'
   },
   {
     id: 'mem-7',
+    pessoaId: 'mem-7',
+    temFoto: false,
     name: 'Diego Costa',
     cpf: '222.333.444-55',
     birthDate: '1992-02-18',
@@ -185,12 +172,13 @@ export const MOCK_MEMBERS: Member[] = [
     city: 'Recife',
     state: 'PE',
     entryDate: '2024-01-05',
-    status: 'AFASTADO',
+    status: 'INATIVO',
     notes: 'Afastado para concluir estudos de pós-graduação.',
-    photoUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80'
   },
   {
     id: 'mem-8',
+    pessoaId: 'mem-8',
+    temFoto: false,
     name: 'Eduarda Pereira',
     cpf: '999.888.777-66',
     birthDate: '2001-09-30',
@@ -205,56 +193,46 @@ export const MOCK_MEMBERS: Member[] = [
     state: 'PE',
     entryDate: '2023-08-12',
     status: 'ATIVO',
-    projectId: 'proj-1',
-    projectName: 'Projeto Reforço Escolar',
     notes: 'Voluntária no reforço de matemática básica.',
-    photoUrl: 'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=150&auto=format&fit=crop&q=80'
   }
 ];
 
 export const MOCK_VOLUNTEERS: Volunteer[] = [
   {
     id: 'vol-1',
+    pessoaId: 'vol-1',
+    temFoto: false,
     name: 'Ana Paula Rocha',
     email: 'ana.rocha@email.com',
     phone: '(81) 99111-2222',
     area: 'Educação',
     skills: ['Pedagogia', 'Reforço de Matemática', 'Contação de Histórias'],
     availability: 'Sábados à manhã',
-    availableDays: ['Sáb'],
-    projectId: 'proj-1',
-    projectName: 'Projeto Reforço Escolar',
-    hoursWorked: 48,
     status: 'ATIVO',
-    photoUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80'
   },
   {
     id: 'vol-2',
+    pessoaId: 'vol-2',
+    temFoto: false,
     name: 'Roberto Mendes',
     email: 'roberto.mendes@email.com',
     phone: '(81) 99222-3333',
     area: 'Assistência Social',
     skills: ['Logística', 'Motorista CNH B', 'Organização de Estoque'],
     availability: 'Segundas e Quartas (Tarde)',
-    availableDays: ['Seg', 'Qua'],
-    projectId: 'proj-2',
-    projectName: 'Projeto Cestas Básicas',
-    hoursWorked: 92,
     status: 'ATIVO',
-    photoUrl: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=150&auto=format&fit=crop&q=80'
   },
   {
     id: 'vol-3',
+    pessoaId: 'vol-3',
+    temFoto: false,
     name: 'Juliana Lima',
     email: 'juliana.lima@email.com',
     phone: '(81) 99333-4444',
     area: 'Saúde',
     skills: ['Atendimento Psicológico', 'Escuta Ativa', 'Apoio Emocional'],
     availability: 'Sextas-feiras o dia todo',
-    availableDays: ['Sex'],
-    hoursWorked: 36,
     status: 'ATIVO',
-    photoUrl: 'https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?w=150&auto=format&fit=crop&q=80'
   }
 ];
 
@@ -266,8 +244,6 @@ export const MOCK_BENEFICIARIES: Beneficiary[] = [
     ageGroup: 'Criança (0-12)',
     birthDate: '2016-04-10',
     phone: '(81) 98123-4567',
-    projectId: 'proj-1',
-    projectName: 'Projeto Reforço Escolar',
     entryDate: '2024-03-01',
     status: 'EM_ATENDIMENTO',
     attendances: [
@@ -301,8 +277,6 @@ export const MOCK_BENEFICIARIES: Beneficiary[] = [
     ageGroup: 'Idoso (60+)',
     birthDate: '1952-09-18',
     phone: '(81) 98765-4321',
-    projectId: 'proj-2',
-    projectName: 'Projeto Cestas Básicas',
     entryDate: '2023-01-15',
     status: 'EM_ATENDIMENTO',
     attendances: [
@@ -326,7 +300,6 @@ export const MOCK_EVENTS: EventItem[] = [
     time: '19:00',
     location: 'Sede Principal ACPB - Sala Verde',
     responsibleName: 'Mariana Santos',
-    category: 'Reunião',
     targetAudience: 'Todos os Voluntários',
     maxSlots: 40,
     filledSlots: 28,
@@ -346,7 +319,6 @@ export const MOCK_EVENTS: EventItem[] = [
     time: '08:00',
     location: 'Galpão Comunitário',
     responsibleName: 'João da Silva',
-    category: 'Mutirão',
     targetAudience: 'Comunidade e Voluntários',
     maxSlots: 60,
     filledSlots: 45,
@@ -362,7 +334,6 @@ export const MOCK_EVENTS: EventItem[] = [
     time: '08:00',
     location: 'Sítio Pau-Brasil - Aldeia',
     responsibleName: 'João da Silva',
-    category: 'Acampamento',
     targetAudience: 'Membros e Voluntários',
     maxSlots: 50,
     filledSlots: 37,
@@ -376,66 +347,6 @@ export const MOCK_EVENTS: EventItem[] = [
   }
 ];
 
-export const MOCK_FINANCIAL_TRANSACTIONS: FinancialTransaction[] = [
-  {
-    id: 'fin-1',
-    type: 'RECEITA',
-    category: 'Doações',
-    amount: 5200.00,
-    date: '2026-08-05',
-    description: 'Doação institucional Mantenedores Solidários',
-    paymentMethod: 'Pix',
-    responsibleName: 'Carlos Oliveira',
-    status: 'PAGO'
-  },
-  {
-    id: 'fin-2',
-    type: 'RECEITA',
-    category: 'Contribuições',
-    amount: 3220.00,
-    date: '2026-08-10',
-    description: 'Contribuição mensal dos associados',
-    paymentMethod: 'Transferência',
-    responsibleName: 'Carlos Oliveira',
-    status: 'PAGO'
-  },
-  {
-    id: 'fin-3',
-    type: 'DESPESA',
-    category: 'Aluguel',
-    amount: 1500.00,
-    date: '2026-08-18',
-    description: 'Aluguel da sede administrativa e social',
-    paymentMethod: 'Boleto',
-    responsibleName: 'Carlos Oliveira',
-    status: 'PAGO',
-    attachmentName: 'comprovante_aluguel_agosto.pdf',
-    attachmentUrl: '#'
-  },
-  {
-    id: 'fin-4',
-    type: 'DESPESA',
-    category: 'Energia',
-    amount: 387.42,
-    date: '2026-08-15',
-    description: 'Fatura de energia elétrica da sede',
-    paymentMethod: 'Pix',
-    responsibleName: 'Carlos Oliveira',
-    status: 'PAGO',
-    attachmentName: 'conta_energia_agosto.pdf',
-    attachmentUrl: '#'
-  },
-  {
-    id: 'fin-5',
-    type: 'DESPESA',
-    category: 'Alimentação',
-    amount: 850.00,
-    date: '2026-08-20',
-    description: 'Compra de suprimentos para o lanche das crianças do Reforço Escolar',
-    paymentMethod: 'Pix',
-    responsibleName: 'Mariana Santos',
-    projectId: 'proj-1',
-    projectName: 'Projeto Reforço Escolar',
-    status: 'PENDENTE'
-  }
-];
+// Financeiro já usa a API real (tarefa 31) — mantido vazio aqui apenas para não quebrar
+// referências residuais em telas ainda não migradas (ex.: Dashboard geral, tarefa 32).
+export const MOCK_FINANCIAL_TRANSACTIONS: FinancialTransaction[] = [];

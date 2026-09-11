@@ -4,7 +4,7 @@ import { ChevronRight, HeartHandshake, Users, Calendar, DollarSign, ArrowLeft } 
 import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
 import { StatCard } from '../../components/ui/StatCard';
-import { projectService, beneficiaryService, volunteerService, eventService, financialService } from '../../services/domainServices';
+import { projectService, eventService, financialService } from '../../services/domainServices';
 import { Project, Beneficiary, Volunteer, EventItem, FinancialTransaction } from '../../types/domain';
 
 export const ProjectDetails: React.FC = () => {
@@ -25,14 +25,15 @@ export const ProjectDetails: React.FC = () => {
     if (id) {
       Promise.all([
         projectService.getById(id),
-        beneficiaryService.getAll(),
-        volunteerService.getAll(),
         eventService.getAll(),
         financialService.getAll()
-      ]).then(([p, bList, vList, eList, fList]) => {
+      ]).then(([p, eList, fList]) => {
         setProject(p || null);
-        setBeneficiaries(bList.filter((item) => item.projectId === id));
-        setVolunteers(vList.filter((item) => item.projectId === id));
+        // Beneficiários e voluntários ainda não têm vínculo de projeto exposto pela API
+        // (backend não relaciona Beneficiario a Projeto; Voluntario↔Projeto existe via
+        // projeto_voluntarios, mas sem rota própria ainda — ver tarefa 30).
+        setBeneficiaries([]);
+        setVolunteers([]);
         setEvents(eList);
         setFinancials(fList.filter((item) => item.projectId === id));
         setLoading(false);
@@ -61,26 +62,14 @@ export const ProjectDetails: React.FC = () => {
             <h1 className="text-2xl font-bold text-white font-heading">{project.name}</h1>
             <Badge variant="success">● {project.status}</Badge>
           </div>
-          <p className="text-xs text-[#AEB5B0] mt-1">Responsável Técnico: {project.responsibleName}</p>
+          <p className="text-xs text-[#AEB5B0] mt-1">
+            Responsável Técnico: {project.responsibleName ?? 'Não definido'}
+          </p>
         </div>
       </div>
 
-      {/* 4 Cards de Visão Geral das Relações */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard
-          title="Beneficiários"
-          value={project.beneficiariesCount}
-          icon={<HeartHandshake className="w-5 h-5 text-[#F8D800]" />}
-          subtitle="Atendidos no projeto"
-          accentColor="yellow"
-        />
-        <StatCard
-          title="Voluntários"
-          value={project.volunteersCount}
-          icon={<Users className="w-5 h-5 text-[#004922]" />}
-          subtitle="Alocados"
-          accentColor="green"
-        />
+      {/* Cards de Visão Geral das Relações */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <StatCard
           title="Eventos Realizados"
           value={project.eventsCount}

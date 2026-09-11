@@ -4,17 +4,31 @@ import { Mail, Lock, Eye, EyeOff, ShieldCheck, ArrowRight } from 'lucide-react';
 import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
 import { useAuth } from '../../contexts/AuthContext';
-import { MOCK_USERS } from '../../mocks/users';
+import { apiClient } from '../../services/apiClient';
 
 export const Login: React.FC = () => {
   const navigate = useNavigate();
   const { login } = useAuth();
 
-  const [email, setEmail] = useState('admin@acpb.local');
-  const [password, setPassword] = useState('123456');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+  const [recoveryMessage, setRecoveryMessage] = useState('');
+
+  const handleForgotPassword = async () => {
+    setErrorMessage('');
+    if (!email) {
+      setErrorMessage('Informe seu e-mail acima para receber as instruções de recuperação.');
+      return;
+    }
+    try {
+      await apiClient.post('/auth/recuperar-senha', { email });
+    } finally {
+      setRecoveryMessage('Se o e-mail existir, instruções de recuperação foram enviadas.');
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -22,18 +36,13 @@ export const Login: React.FC = () => {
     setIsLoading(true);
 
     try {
-      await login(email);
+      await login(email, password);
       navigate('/dashboard');
     } catch (err: any) {
       setErrorMessage(err.message || 'Erro ao realizar login. Tente novamente.');
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const handleSelectMockUser = (userEmail: string) => {
-    setEmail(userEmail);
-    setErrorMessage('');
   };
 
   return (
@@ -65,6 +74,12 @@ export const Login: React.FC = () => {
           <div className="mb-6 p-3 bg-red-950/40 border border-red-800 rounded-lg text-xs text-red-300 flex items-center gap-2">
             <ShieldCheck className="w-4 h-4 text-red-400 shrink-0" />
             <span>{errorMessage}</span>
+          </div>
+        )}
+        {recoveryMessage && (
+          <div className="mb-6 p-3 bg-[#004922]/20 border border-[#004922] rounded-lg text-xs text-[#F8D800] flex items-center gap-2">
+            <ShieldCheck className="w-4 h-4 shrink-0" />
+            <span>{recoveryMessage}</span>
           </div>
         )}
 
@@ -104,7 +119,7 @@ export const Login: React.FC = () => {
                 href="#"
                 onClick={(e) => {
                   e.preventDefault();
-                  alert('Instruções de recuperação enviadas ao e-mail institucional.');
+                  handleForgotPassword();
                 }}
                 className="text-xs text-[#AEB5B0] hover:text-[#F8D800] transition-colors"
               >
@@ -124,29 +139,6 @@ export const Login: React.FC = () => {
             ENTRAR NO SISTEMA
           </Button>
         </form>
-
-        {/* Área de atalhos rápidos com usuários fictícios para facilidade do teste */}
-        <div className="mt-8 pt-6 border-t border-[#222824]">
-          <span className="text-[11px] font-semibold text-[#727A74] uppercase tracking-wider block mb-3 text-center">
-            Acesso Rápido com Perfis Mocks:
-          </span>
-          <div className="grid grid-cols-2 gap-1.5">
-            {MOCK_USERS.map((u) => (
-              <button
-                key={u.id}
-                type="button"
-                onClick={() => handleSelectMockUser(u.email)}
-                className={`px-2.5 py-1.5 rounded text-[11px] font-medium text-left border transition-all truncate ${
-                  email === u.email
-                    ? 'bg-[#004922] border-[#004922] text-white font-semibold'
-                    : 'bg-[#0F1210] border-[#222824] text-[#AEB5B0] hover:border-[#004922]/50 hover:text-white'
-                }`}
-              >
-                {u.role.toLowerCase()}
-              </button>
-            ))}
-          </div>
-        </div>
       </div>
     </div>
   );

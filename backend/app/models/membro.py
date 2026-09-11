@@ -1,10 +1,15 @@
 from datetime import datetime
 from datetime import date
+from typing import TYPE_CHECKING
 
-from sqlalchemy import BigInteger, Boolean, Date, DateTime, String
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy import BigInteger, Boolean, Date, DateTime, ForeignKey, String, Text
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
+
+if TYPE_CHECKING:
+    from app.models.pessoa import Pessoa
+    from app.models.cargo import Cargo
 
 
 class Membro(Base):
@@ -18,11 +23,14 @@ class Membro(Base):
 
     pessoa_id: Mapped[int] = mapped_column(
         BigInteger,
+        ForeignKey("pessoas.id"),
+        unique=True,
         nullable=False
     )
 
     cargo_id: Mapped[int] = mapped_column(
         BigInteger,
+        ForeignKey("cargos.id"),
         nullable=False
     )
 
@@ -47,7 +55,7 @@ class Membro(Base):
     )
 
     observacoes: Mapped[str | None] = mapped_column(
-        String,
+        Text,
         nullable=True
     )
 
@@ -60,3 +68,6 @@ class Membro(Base):
         DateTime,
         nullable=False
     )
+
+    pessoa: Mapped["Pessoa"] = relationship(back_populates="membro")
+    cargo: Mapped["Cargo"] = relationship(back_populates="membros")

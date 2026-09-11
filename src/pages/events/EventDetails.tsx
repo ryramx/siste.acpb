@@ -43,7 +43,7 @@ export const EventDetails: React.FC = () => {
             <h1 className="text-2xl font-bold text-white font-heading">{event.title}</h1>
             <Badge variant="success">{event.status}</Badge>
           </div>
-          <p className="text-xs text-[#AEB5B0] mt-1">Categoria: {event.category} • Responsável: {event.responsibleName}</p>
+          <p className="text-xs text-[#AEB5B0] mt-1">Responsável: {event.responsibleName ?? 'Não definido'}</p>
         </div>
 
         <Button
@@ -57,9 +57,14 @@ export const EventDetails: React.FC = () => {
 
       {/* KPIs de Vagas */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <StatCard title="Vagas Totais" value={event.maxSlots} icon={<Users className="w-5 h-5" />} accentColor="neutral" />
+        <StatCard title="Vagas Totais" value={event.maxSlots ?? 'Sem limite'} icon={<Users className="w-5 h-5" />} accentColor="neutral" />
         <StatCard title="Inscritos Confirmados" value={event.filledSlots} icon={<UserCheck className="w-5 h-5" />} accentColor="green" />
-        <StatCard title="Vagas Disponíveis" value={event.maxSlots - event.filledSlots} icon={<Calendar className="w-5 h-5" />} accentColor="yellow" />
+        <StatCard
+          title="Vagas Disponíveis"
+          value={event.maxSlots !== null ? event.maxSlots - event.filledSlots : 'Sem limite'}
+          icon={<Calendar className="w-5 h-5" />}
+          accentColor="yellow"
+        />
       </div>
 
       {/* Informações detalhadas */}

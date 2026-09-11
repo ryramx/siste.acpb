@@ -8,6 +8,7 @@ import { Badge } from '../../components/ui/Badge';
 import { TableSkeleton } from '../../components/ui/Skeleton';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { Modal } from '../../components/ui/Modal';
+import { Avatar } from '../../components/ui/Avatar';
 import { memberService } from '../../services/domainServices';
 import { Member } from '../../types/domain';
 import { useAuth } from '../../contexts/AuthContext';
@@ -23,7 +24,6 @@ export const MembersList: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('TODOS');
-  const [projectFilter, setProjectFilter] = useState<string>('TODOS');
 
   // Modal de Exclusão/Desativação
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
@@ -55,9 +55,8 @@ export const MembersList: React.FC = () => {
       m.email.toLowerCase().includes(searchTerm.toLowerCase());
 
     const matchesStatus = statusFilter === 'TODOS' || m.status === statusFilter;
-    const matchesProject = projectFilter === 'TODOS' || m.projectId === projectFilter;
 
-    return matchesSearch && matchesStatus && matchesProject;
+    return matchesSearch && matchesStatus;
   });
 
   const handleDeleteMember = async () => {
@@ -120,20 +119,7 @@ export const MembersList: React.FC = () => {
               options={[
                 { value: 'TODOS', label: 'Todos os Status' },
                 { value: 'ATIVO', label: 'Ativo' },
-                { value: 'AFASTADO', label: 'Afastado' },
                 { value: 'INATIVO', label: 'Inativo' }
-              ]}
-            />
-          </div>
-
-          <div className="w-full sm:w-48">
-            <Select
-              value={projectFilter}
-              onChange={(e) => setProjectFilter(e.target.value)}
-              options={[
-                { value: 'TODOS', label: 'Todos os Projetos' },
-                { value: 'proj-1', label: 'Reforço Escolar' },
-                { value: 'proj-2', label: 'Cestas Básicas' }
               ]}
             />
           </div>
@@ -165,7 +151,7 @@ export const MembersList: React.FC = () => {
                 <tr>
                   <th className="py-3.5 px-4">Membro</th>
                   <th className="py-3.5 px-4 hidden md:table-cell">Contato</th>
-                  <th className="py-3.5 px-4 hidden sm:table-cell">Projeto</th>
+                  <th className="py-3.5 px-4 hidden sm:table-cell">Cargo</th>
                   <th className="py-3.5 px-4">Status</th>
                   <th className="py-3.5 px-4 text-right">Ações</th>
                 </tr>
@@ -175,11 +161,7 @@ export const MembersList: React.FC = () => {
                   <tr key={m.id} className="hover:bg-[#1e2521] transition-colors">
                     <td className="py-3.5 px-4">
                       <div className="flex items-center gap-3">
-                        <img
-                          src={m.photoUrl || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150'}
-                          alt={m.name}
-                          className="w-9 h-9 rounded-full object-cover border border-[#004922]/50 shrink-0"
-                        />
+                        <Avatar pessoaId={m.pessoaId} nome={m.name} temFoto={m.temFoto} size="sm" />
                         <div>
                           <div className="font-semibold text-white">{m.name}</div>
                           <div className="text-xs text-[#727A74]">CPF: {m.cpf}</div>
@@ -197,18 +179,10 @@ export const MembersList: React.FC = () => {
                       </div>
                     </td>
                     <td className="py-3.5 px-4 hidden sm:table-cell text-[#AEB5B0] text-xs">
-                      {m.projectName || 'Nenhum'}
+                      {m.cargoName || 'Nenhum'}
                     </td>
                     <td className="py-3.5 px-4">
-                      <Badge
-                        variant={
-                          m.status === 'ATIVO'
-                            ? 'success'
-                            : m.status === 'AFASTADO'
-                            ? 'warning'
-                            : 'danger'
-                        }
-                      >
+                      <Badge variant={m.status === 'ATIVO' ? 'success' : 'danger'}>
                         {m.status}
                       </Badge>
                     </td>

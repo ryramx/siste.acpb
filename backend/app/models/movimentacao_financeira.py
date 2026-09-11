@@ -1,11 +1,18 @@
 from decimal import Decimal
 from datetime import datetime
 from datetime import date
+from typing import TYPE_CHECKING
 
-from sqlalchemy import BigInteger, Date, DateTime, Numeric, String
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy import BigInteger, Date, DateTime, ForeignKey, Numeric, String, Text
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
+
+if TYPE_CHECKING:
+    from app.models.conta_financeira import ContaFinanceira
+    from app.models.categoria_financeira import CategoriaFinanceira
+    from app.models.projeto import Projeto
+    from app.models.pessoa import Pessoa
 
 
 class MovimentacaoFinanceira(Base):
@@ -19,21 +26,25 @@ class MovimentacaoFinanceira(Base):
 
     conta_financeira_id: Mapped[int] = mapped_column(
         BigInteger,
+        ForeignKey("contas_financeiras.id"),
         nullable=False
     )
 
     categoria_id: Mapped[int] = mapped_column(
         BigInteger,
+        ForeignKey("categorias_financeiras.id"),
         nullable=False
     )
 
     projeto_id: Mapped[int | None] = mapped_column(
         BigInteger,
+        ForeignKey("projetos.id"),
         nullable=True
     )
 
     responsavel_id: Mapped[int] = mapped_column(
         BigInteger,
+        ForeignKey("pessoas.id"),
         nullable=False
     )
 
@@ -68,7 +79,7 @@ class MovimentacaoFinanceira(Base):
     )
 
     observacoes: Mapped[str | None] = mapped_column(
-        String,
+        Text,
         nullable=True
     )
 
@@ -81,3 +92,14 @@ class MovimentacaoFinanceira(Base):
         DateTime,
         nullable=False
     )
+
+    conta_financeira: Mapped["ContaFinanceira"] = relationship(
+        back_populates="movimentacoes"
+    )
+    categoria: Mapped["CategoriaFinanceira"] = relationship(
+        back_populates="movimentacoes"
+    )
+    projeto: Mapped["Projeto | None"] = relationship(
+        back_populates="movimentacoes_financeiras"
+    )
+    responsavel: Mapped["Pessoa"] = relationship()

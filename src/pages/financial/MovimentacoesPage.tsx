@@ -26,14 +26,14 @@ export const MovimentacoesPage: React.FC = () => {
   const filtered = transactions.filter((t) => {
     const matchSearch = t.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
       t.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      t.responsibleName.toLowerCase().includes(searchTerm.toLowerCase());
+      (t.responsibleName ?? '').toLowerCase().includes(searchTerm.toLowerCase());
     const matchType = typeFilter === 'TODOS' || t.type === typeFilter;
     const matchStatus = statusFilter === 'TODOS' || t.status === statusFilter;
     return matchSearch && matchType && matchStatus;
   });
 
-  const totalReceitas = filtered.filter(t => t.type === 'RECEITA' && t.status === 'PAGO').reduce((acc, t) => acc + t.amount, 0);
-  const totalDespesas = filtered.filter(t => t.type === 'DESPESA' && t.status === 'PAGO').reduce((acc, t) => acc + t.amount, 0);
+  const totalReceitas = filtered.filter(t => t.type === 'RECEITA' && t.status === 'CONFIRMADA').reduce((acc, t) => acc + t.amount, 0);
+  const totalDespesas = filtered.filter(t => t.type === 'DESPESA' && t.status === 'CONFIRMADA').reduce((acc, t) => acc + t.amount, 0);
   const saldo = totalReceitas - totalDespesas;
 
   return (
@@ -85,7 +85,7 @@ export const MovimentacoesPage: React.FC = () => {
           <Select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}
             options={[
               { value: 'TODOS', label: 'Todos' },
-              { value: 'PAGO', label: 'Pago' },
+              { value: 'CONFIRMADA', label: 'Confirmada' },
               { value: 'PENDENTE', label: 'Pendente' },
             ]} />
         </div>
@@ -136,7 +136,7 @@ export const MovimentacoesPage: React.FC = () => {
                         {t.type === 'RECEITA' ? '+ ' : '- '}R$ {t.amount.toFixed(2)}
                       </td>
                       <td className="py-3 px-4">
-                        <Badge variant={t.status === 'PAGO' ? 'success' : 'warning'}>{t.status}</Badge>
+                        <Badge variant={t.status === 'CONFIRMADA' ? 'success' : 'warning'}>{t.status}</Badge>
                       </td>
                     </tr>
                   ))}

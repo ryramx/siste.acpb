@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { ArrowDownRight, Plus, Search, TrendingDown, Paperclip } from 'lucide-react';
+import { ArrowDownRight, Plus, Search, Paperclip } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Select } from '../../components/ui/Select';
@@ -7,14 +7,14 @@ import { Badge } from '../../components/ui/Badge';
 import { Modal } from '../../components/ui/Modal';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { TableSkeleton } from '../../components/ui/Skeleton';
-import { financialService } from '../../services/domainServices';
+import { financialService, OpcaoFinanceira } from '../../services/domainServices';
 import { FinancialTransaction } from '../../types/domain';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
 import { FinancialTabs } from '../../components/common/FinancialTabs';
 
 export const DespesasPage: React.FC = () => {
-  const { hasPermission } = useAuth();
+  const { hasPermission, user } = useAuth();
   const { addToast } = useToast();
 
   const [transactions, setTransactions] = useState<FinancialTransaction[]>([]);
@@ -24,16 +24,17 @@ export const DespesasPage: React.FC = () => {
   const [categoryFilter, setCategoryFilter] = useState('TODAS');
   const [modalOpen, setModalOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [contas, setContas] = useState<OpcaoFinanceira[]>([]);
+  const [categorias, setCategorias] = useState<OpcaoFinanceira[]>([]);
 
   const [newDespesa, setNewDespesa] = useState({
-    category: 'Alimentação' as any,
+    categoryId: '',
+    accountId: '',
     amount: 0,
     date: new Date().toISOString().split('T')[0],
     description: '',
-    paymentMethod: 'Pix' as any,
-    responsibleName: 'Carlos Oliveira',
-    status: 'PAGO' as any,
-    attachmentName: 'comprovante.pdf',
+    paymentMethod: 'Pix',
+    status: 'CONFIRMADA'
   });
 
   const fetchData = async () => {
@@ -43,7 +44,14 @@ export const DespesasPage: React.FC = () => {
     setLoading(false);
   };
 
-  useEffect(() => { fetchData(); }, []);
+  useEffect(() => {
+    fetchData();
+    financialService.listarContas().then(setContas);
+    financialService.listarCategorias('DESPESA').then((lista) => {
+      setCategorias(lista);
+      setNewDespesa((prev) => (prev.categoryId ? prev : { ...prev, categoryId: lista[0]?.id ?? '' }));
+    });
+  }, []);
 
   const filtered = transactions.filter((t) => {
     const matchSearch = t.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -53,29 +61,29 @@ export const DespesasPage: React.FC = () => {
     return matchSearch && matchStatus && matchCat;
   });
 
-  const totalPago = filtered.filter(t => t.status === 'PAGO').reduce((acc, t) => acc + t.amount, 0);
+  const totalPago = filtered.filter(t => t.status === 'CONFIRMADA').reduce((acc, t) => acc + t.amount, 0);
   const totalPendente = filtered.filter(t => t.status === 'PENDENTE').reduce((acc, t) => acc + t.amount, 0);
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!user) return;
     setSubmitting(true);
     try {
-      await financialService.create({ ...newDespesa, type: 'DESPESA' });
+      await financialService.create({
+        ...newDespesa,
+        type: 'DESPESA',
+        responsavelPessoaId: user.pessoaId
+      });
       addToast({ type: 'success', title: 'Despesa registrada', message: 'Despesa adicionada com sucesso.' });
       setModalOpen(false);
       fetchData();
-    } catch {
-      addToast({ type: 'error', title: 'Erro ao registrar despesa' });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Tente novamente em instantes.';
+      addToast({ type: 'error', title: 'Erro ao registrar despesa', message });
     } finally {
       setSubmitting(false);
     }
   };
-
-  const expenseCategories = [
-    'Aluguel', 'Energia', 'Água', 'Internet', 'Material de limpeza',
-    'Material de escritório', 'Alimentação', 'Transporte', 'Manutenção',
-    'Equipamentos', 'Projetos sociais', 'Contabilidade', 'Impostos/taxas', 'Outras despesas'
-  ];
 
   return (
     <div className="space-y-6 animate-fade-in pb-12">
@@ -98,7 +106,7 @@ export const DespesasPage: React.FC = () => {
       {/* Resumo Duplo */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="bg-[#181D1A] border border-red-900/40 border-l-4 border-l-red-600 p-5 rounded-xl">
-          <span className="text-xs text-[#AEB5B0] uppercase tracking-wider font-semibold">Total Pago</span>
+          <span className="text-xs text-[#AEB5B0] uppercase tracking-wider font-semibold">Total Confirmado</span>
           <div className="text-2xl font-bold text-red-400 mt-1 font-heading">
             R$ {totalPago.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
           </div>
@@ -121,14 +129,14 @@ export const DespesasPage: React.FC = () => {
           <Select value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)}
             options={[
               { value: 'TODAS', label: 'Todas as Categorias' },
-              ...expenseCategories.map(c => ({ value: c, label: c }))
+              ...categorias.map(c => ({ value: c.nome, label: c.nome }))
             ]} />
         </div>
         <div className="w-full md:w-36">
           <Select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}
             options={[
               { value: 'TODOS', label: 'Todos os Status' },
-              { value: 'PAGO', label: 'Pago' },
+              { value: 'CONFIRMADA', label: 'Confirmada' },
               { value: 'PENDENTE', label: 'Pendente' },
             ]} />
         </div>
@@ -148,7 +156,7 @@ export const DespesasPage: React.FC = () => {
                   <th className="py-3 px-4">Data</th>
                   <th className="py-3 px-4">Descrição</th>
                   <th className="py-3 px-4">Categoria</th>
-                  <th className="py-3 px-4">Comprovante</th>
+                  <th className="py-3 px-4">Comprovantes</th>
                   <th className="py-3 px-4">Valor</th>
                   <th className="py-3 px-4">Status</th>
                 </tr>
@@ -160,19 +168,16 @@ export const DespesasPage: React.FC = () => {
                     <td className="py-3 px-4 font-medium text-white">{t.description}</td>
                     <td className="py-3 px-4 text-xs text-[#F8D800]">{t.category}</td>
                     <td className="py-3 px-4 text-xs">
-                      {t.attachmentName ? (
-                        <button
-                          onClick={() => alert(`Visualizando: ${t.attachmentName}`)}
-                          className="inline-flex items-center gap-1 text-[#F8D800] hover:underline bg-[#0F1210] border border-[#222824] px-2 py-0.5 rounded"
-                        >
+                      {t.attachmentsCount > 0 ? (
+                        <span className="inline-flex items-center gap-1 text-[#F8D800] bg-[#0F1210] border border-[#222824] px-2 py-0.5 rounded">
                           <Paperclip className="w-3 h-3" />
-                          {t.attachmentName}
-                        </button>
+                          {t.attachmentsCount} arquivo(s)
+                        </span>
                       ) : <span className="text-[#727A74]">—</span>}
                     </td>
                     <td className="py-3 px-4 font-bold text-red-400">- R$ {t.amount.toFixed(2)}</td>
                     <td className="py-3 px-4">
-                      <Badge variant={t.status === 'PAGO' ? 'success' : 'warning'}>{t.status}</Badge>
+                      <Badge variant={t.status === 'CONFIRMADA' ? 'success' : 'warning'}>{t.status}</Badge>
                     </td>
                   </tr>
                 ))}
@@ -193,11 +198,14 @@ export const DespesasPage: React.FC = () => {
             <Input label="Data" type="date" value={newDespesa.date}
               onChange={(e) => setNewDespesa({ ...newDespesa, date: e.target.value })} required />
           </div>
-          <Select label="Categoria" value={newDespesa.category}
-            onChange={(e) => setNewDespesa({ ...newDespesa, category: e.target.value as any })}
-            options={expenseCategories.map(c => ({ value: c, label: c }))} />
+          <Select label="Conta" value={newDespesa.accountId}
+            onChange={(e) => setNewDespesa({ ...newDespesa, accountId: e.target.value })}
+            options={contas.map((c) => ({ value: c.id, label: c.nome }))} required />
+          <Select label="Categoria" value={newDespesa.categoryId}
+            onChange={(e) => setNewDespesa({ ...newDespesa, categoryId: e.target.value })}
+            options={categorias.map((c) => ({ value: c.id, label: c.nome }))} required />
           <Select label="Forma de Pagamento" value={newDespesa.paymentMethod}
-            onChange={(e) => setNewDespesa({ ...newDespesa, paymentMethod: e.target.value as any })}
+            onChange={(e) => setNewDespesa({ ...newDespesa, paymentMethod: e.target.value })}
             options={[
               { value: 'Pix', label: 'Pix' },
               { value: 'Transferência', label: 'Transferência' },
@@ -206,15 +214,14 @@ export const DespesasPage: React.FC = () => {
               { value: 'Cartão', label: 'Cartão' },
             ]} />
           <Select label="Status" value={newDespesa.status}
-            onChange={(e) => setNewDespesa({ ...newDespesa, status: e.target.value as any })}
+            onChange={(e) => setNewDespesa({ ...newDespesa, status: e.target.value })}
             options={[
-              { value: 'PAGO', label: 'Pago / Liquidado' },
+              { value: 'CONFIRMADA', label: 'Pago / Confirmado' },
               { value: 'PENDENTE', label: 'Pendente de Pagamento' },
             ]} />
-          <div className="p-3 bg-[#0F1210] border border-[#222824] rounded-lg text-xs">
-            <span className="text-white font-semibold block mb-1">📎 Comprovante Simulado</span>
-            <span className="text-[#F8D800]">comprovante_despesa.pdf — anexado automaticamente (mock)</span>
-          </div>
+          <p className="text-xs text-[#AEB5B0]">
+            Comprovantes podem ser anexados após salvar o lançamento, na tela de detalhes.
+          </p>
           <div className="flex justify-end gap-2 pt-2">
             <Button type="button" variant="ghost" onClick={() => setModalOpen(false)}>Cancelar</Button>
             <Button type="submit" variant="danger" isLoading={submitting}>Registrar Despesa</Button>
