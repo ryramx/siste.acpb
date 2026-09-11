@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import extract, func
 
 from app.api.deps import require_permission
-from app.api.routes.health import get_db
+from app.db.session import get_db
 from app.models.pessoa import Pessoa
 from app.models.membro import Membro
 from app.models.voluntario import Voluntario

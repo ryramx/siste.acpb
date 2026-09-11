@@ -7,7 +7,7 @@ from app.core.erros import tratar_integrity_error
 from datetime import datetime
 
 from app.api.deps import get_current_user, get_permissoes_usuario, require_permission
-from app.api.routes.health import get_db
+from app.db.session import get_db
 from app.core.auditoria import model_to_dict, obter_ip_cliente, registrar_auditoria
 from app.core.foto_pessoa_storage import (
     TAMANHO_MAXIMO_BYTES,

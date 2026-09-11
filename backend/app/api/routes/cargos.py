@@ -7,7 +7,7 @@ from datetime import datetime
 from app.core.erros import tratar_integrity_error
 
 from app.api.deps import require_permission
-from app.api.routes.health import get_db
+from app.db.session import get_db
 from app.models.cargo import Cargo
 from app.schemas.cargo import CargoCreate, CargoUpdate, CargoResponse
 

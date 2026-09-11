@@ -7,7 +7,7 @@ from datetime import datetime
 from app.core.erros import tratar_integrity_error
 
 from app.api.deps import require_permission
-from app.api.routes.health import get_db
+from app.db.session import get_db
 from app.models.categoria_financeira import CategoriaFinanceira
 from app.schemas.categoria_financeira import CategoriaFinanceiraCreate, CategoriaFinanceiraUpdate, CategoriaFinanceiraResponse
 
