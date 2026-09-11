@@ -1,4 +1,5 @@
 import os
+from urllib.parse import quote_plus
 
 from pydantic import model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -42,8 +43,12 @@ class Settings(BaseSettings):
 
     @property
     def SQLALCHEMY_DATABASE_URI(self) -> str:
-        # Avoid passing empty password explicitly if not needed, but typical format is:
-        return f"postgresql+psycopg://{self.DATABASE_USER}:{self.DATABASE_PASSWORD}@{self.DATABASE_HOST}:{self.DATABASE_PORT}/{self.DATABASE_NAME}"
+        # user/senha passam por quote_plus porque podem conter caracteres reservados de URL
+        # (@, :, /, espaço, etc.) — sem isso, uma senha com esses caracteres corrompe a string
+        # de conexão em vez de autenticar.
+        usuario = quote_plus(self.DATABASE_USER)
+        senha = quote_plus(self.DATABASE_PASSWORD)
+        return f"postgresql+psycopg://{usuario}:{senha}@{self.DATABASE_HOST}:{self.DATABASE_PORT}/{self.DATABASE_NAME}"
 
     model_config = SettingsConfigDict(env_file=_ENV_FILE, env_file_encoding="utf-8")
 
