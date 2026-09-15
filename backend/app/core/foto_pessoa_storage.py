@@ -1,7 +1,10 @@
+import logging
 import uuid
 from pathlib import Path
 
 from app.core.config import settings
+
+logger = logging.getLogger(__name__)
 
 TIPOS_PERMITIDOS = {
     "image/png": ".png",
@@ -36,3 +39,22 @@ def remover_arquivo(nome_armazenado: str) -> None:
     caminho = caminho_fisico(nome_armazenado)
     if caminho.exists():
         caminho.unlink()
+
+
+def remover_arquivo_seguro(nome_armazenado: str, contexto: str) -> None:
+    """Remove um arquivo sem propagar exceção, para limpeza best-effort (arquivo
+    órfão após falha de commit, ou arquivo antigo após commit bem-sucedido).
+
+    Nunca deve ser usado para desfazer uma transação já commitada nem para mascarar
+    a exceção original de um commit que falhou. Falhas de remoção são apenas
+    logadas, para permitir limpeza manual futura.
+    """
+    try:
+        remover_arquivo(nome_armazenado)
+    except OSError:
+        logger.error(
+            "Falha ao remover arquivo físico de foto '%s' (%s). Requer limpeza manual.",
+            nome_armazenado,
+            contexto,
+            exc_info=True,
+        )

@@ -10,7 +10,7 @@ from app.core.anexos_storage import (
     TIPOS_PERMITIDOS,
     caminho_fisico,
     gerar_nome_armazenado,
-    remover_arquivo,
+    remover_arquivo_seguro,
     salvar_conteudo,
 )
 from app.core.auditoria import obter_ip_cliente, registrar_auditoria
@@ -81,21 +81,28 @@ async def enviar_anexo(
         created_at=datetime.utcnow(),
     )
     db.add(obj)
-    db.flush()
-    registrar_auditoria(
-        db,
-        usuario_id=usuario_atual.id,
-        acao="criar",
-        tabela="anexos_financeiros",
-        registro_id=obj.id,
-        dados_novos={
-            "movimentacao_financeira_id": movimentacao_financeira_id,
-            "nome_original": obj.nome_original,
-            "tamanho_bytes": obj.tamanho_bytes,
-        },
-        ip=obter_ip_cliente(request),
-    )
-    db.commit()
+    try:
+        db.flush()
+        registrar_auditoria(
+            db,
+            usuario_id=usuario_atual.id,
+            acao="criar",
+            tabela="anexos_financeiros",
+            registro_id=obj.id,
+            dados_novos={
+                "movimentacao_financeira_id": movimentacao_financeira_id,
+                "nome_original": obj.nome_original,
+                "tamanho_bytes": obj.tamanho_bytes,
+            },
+            ip=obter_ip_cliente(request),
+        )
+        db.commit()
+    except Exception:
+        db.rollback()
+        remover_arquivo_seguro(
+            nome_armazenado, "rollback após falha de commit em envio de anexo"
+        )
+        raise
     db.refresh(obj)
     return obj
 
@@ -141,5 +148,5 @@ def deletar_anexo(
     nome_armazenado = obj.nome_armazenado
     db.delete(obj)
     db.commit()
-    remover_arquivo(nome_armazenado)
+    remover_arquivo_seguro(nome_armazenado, "remoção de anexo após commit")
     return None

@@ -14,7 +14,7 @@ from app.core.foto_pessoa_storage import (
     TIPOS_PERMITIDOS,
     caminho_fisico,
     gerar_nome_armazenado,
-    remover_arquivo,
+    remover_arquivo_seguro,
     salvar_conteudo,
 )
 from app.core.config import settings
@@ -170,11 +170,16 @@ async def enviar_foto_pessoa(
 
     pessoa.foto_arquivo = novo_nome
     pessoa.updated_at = datetime.utcnow()
-    db.commit()
+    try:
+        db.commit()
+    except Exception:
+        db.rollback()
+        remover_arquivo_seguro(novo_nome, "rollback após falha de commit em envio de foto")
+        raise
     db.refresh(pessoa)
 
     if nome_antigo:
-        remover_arquivo(nome_antigo)
+        remover_arquivo_seguro(nome_antigo, "remoção de foto antiga após commit")
 
     return pessoa
 
@@ -217,5 +222,5 @@ def remover_foto_pessoa(
     pessoa.foto_arquivo = None
     pessoa.updated_at = datetime.utcnow()
     db.commit()
-    remover_arquivo(nome_antigo)
+    remover_arquivo_seguro(nome_antigo, "remoção de foto após commit")
     return None
