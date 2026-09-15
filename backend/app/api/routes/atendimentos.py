@@ -85,5 +85,9 @@ def deletar_atendimento(id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Atendimento não encontrado")
 
     db.delete(obj)
-    db.commit()
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(status_code=409, detail="Não é possível excluir devido a dependências (Integridade referencial)")
     return None

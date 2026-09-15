@@ -82,12 +82,9 @@ def criar_usuario(
         )
         db.commit()
         db.refresh(usuario)
-    except IntegrityError:
+    except IntegrityError as e:
         db.rollback()
-        raise HTTPException(
-            status_code=400,
-            detail="Já existe um usuário para esta pessoa ou com este e-mail",
-        )
+        raise tratar_integrity_error(e)
     return usuario
 
 
