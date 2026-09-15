@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from sqlalchemy import extract, func
 
-from app.api.deps import require_permission
+from app.api.deps import get_current_user, get_permissoes_usuario, require_permission
 from app.db.session import get_db
 from app.models.pessoa import Pessoa
 from app.models.membro import Membro
@@ -15,6 +15,7 @@ from app.models.evento import Evento
 from app.models.categoria_financeira import CategoriaFinanceira
 from app.models.movimentacao_financeira import MovimentacaoFinanceira
 from app.models.conta_financeira import ContaFinanceira
+from app.models.usuario import Usuario
 from app.schemas.dashboard import (
     CategoriaResumoResponse,
     DashboardResumoResponse,
@@ -35,41 +36,51 @@ def _filtro_periodo(query, data_inicio: date | None, data_fim: date | None):
         query = query.filter(MovimentacaoFinanceira.data_movimentacao <= data_fim)
     return query
 
-@router.get("/resumo", response_model=DashboardResumoResponse)
-def obter_resumo(db: Session = Depends(get_db)):
+@router.get("/resumo", response_model=DashboardResumoResponse, response_model_exclude_none=True)
+def obter_resumo(
+    db: Session = Depends(get_db),
+    usuario_atual: Usuario = Depends(get_current_user),
+):
     qtd_pessoas = db.query(func.count(Pessoa.id)).scalar() or 0
     membros_ativos = db.query(func.count(Membro.id)).filter(Membro.ativo == True).scalar() or 0
     voluntarios_ativos = db.query(func.count(Voluntario.id)).filter(Voluntario.data_fim == None).scalar() or 0
     beneficiarios = db.query(func.count(Beneficiario.id)).scalar() or 0
-    
+
     projetos_ativos = db.query(func.count(Projeto.id)).filter(
         func.upper(Projeto.status).in_(['ATIVO', 'PLANEJADO'])
     ).scalar() or 0
     proximos_eventos = db.query(func.count(Evento.id)).filter(Evento.data_evento >= datetime.now().date()).scalar() or 0
-    
-    receitas = db.query(func.sum(MovimentacaoFinanceira.valor)).filter(
-        func.upper(MovimentacaoFinanceira.tipo) == 'ENTRADA',
-        func.upper(MovimentacaoFinanceira.status) == 'CONFIRMADA'
-    ).scalar() or 0.0
-    
-    despesas = db.query(func.sum(MovimentacaoFinanceira.valor)).filter(
-        func.upper(MovimentacaoFinanceira.tipo) == 'SAIDA',
-        func.upper(MovimentacaoFinanceira.status) == 'CONFIRMADA'
-    ).scalar() or 0.0
 
-    saldo_inicial = db.query(func.sum(ContaFinanceira.saldo_inicial)).scalar() or 0.0
-    
-    return {
+    resumo = {
         "quantidade_pessoas": qtd_pessoas,
         "membros_ativos": membros_ativos,
         "voluntarios_ativos": voluntarios_ativos,
         "beneficiarios": beneficiarios,
         "projetos_ativos": projetos_ativos,
         "proximos_eventos": proximos_eventos,
-        "saldo_financeiro": float(saldo_inicial) + float(receitas) - float(despesas),
-        "receitas_confirmadas": float(receitas),
-        "despesas_confirmadas": float(despesas)
     }
+
+    # Indicadores financeiros exigem financeiro.visualizar (ver RBAC.md) — omitidos da
+    # resposta (não zerados) para quem não tem a permissão, em vez de bloquear o dashboard
+    # geral inteiro com 403.
+    if "financeiro.visualizar" in get_permissoes_usuario(usuario_atual, db):
+        receitas = db.query(func.sum(MovimentacaoFinanceira.valor)).filter(
+            func.upper(MovimentacaoFinanceira.tipo) == 'ENTRADA',
+            func.upper(MovimentacaoFinanceira.status) == 'CONFIRMADA'
+        ).scalar() or 0.0
+
+        despesas = db.query(func.sum(MovimentacaoFinanceira.valor)).filter(
+            func.upper(MovimentacaoFinanceira.tipo) == 'SAIDA',
+            func.upper(MovimentacaoFinanceira.status) == 'CONFIRMADA'
+        ).scalar() or 0.0
+
+        saldo_inicial = db.query(func.sum(ContaFinanceira.saldo_inicial)).scalar() or 0.0
+
+        resumo["saldo_financeiro"] = float(saldo_inicial) + float(receitas) - float(despesas)
+        resumo["receitas_confirmadas"] = float(receitas)
+        resumo["despesas_confirmadas"] = float(despesas)
+
+    return resumo
 
 
 @router.get(

@@ -38,6 +38,8 @@ class DashboardResumoResponse(BaseModel):
     beneficiarios: int
     projetos_ativos: int
     proximos_eventos: int
-    saldo_financeiro: float
-    receitas_confirmadas: float
-    despesas_confirmadas: float
+    # Omitidos da resposta (via response_model_exclude_none) quando o usuário autenticado não
+    # tem a permissão financeiro.visualizar — ver app/api/routes/dashboard.py:obter_resumo.
+    saldo_financeiro: float | None = None
+    receitas_confirmadas: float | None = None
+    despesas_confirmadas: float | None = None

@@ -133,3 +133,44 @@ def test_resumo_geral_continua_publico_para_qualquer_autenticado(token_voluntari
         "/dashboard/resumo", headers={"Authorization": f"Bearer {token_voluntario}"}
     )
     assert response.status_code == 200
+
+
+def test_resumo_geral_sem_permissao_financeira_omite_dados_financeiros(token_voluntario):
+    """Voluntário não tem financeiro.visualizar (ver RBAC.md): o dashboard geral continua
+    acessível (200), mas sem os indicadores financeiros na resposta."""
+    response = client.get(
+        "/dashboard/resumo", headers={"Authorization": f"Bearer {token_voluntario}"}
+    )
+    assert response.status_code == 200
+    body = response.json()
+
+    # Indicadores gerais continuam presentes.
+    assert "quantidade_pessoas" in body
+    assert "membros_ativos" in body
+    assert "voluntarios_ativos" in body
+    assert "beneficiarios" in body
+    assert "projetos_ativos" in body
+    assert "proximos_eventos" in body
+
+    # Indicadores financeiros não devem aparecer na resposta.
+    assert "saldo_financeiro" not in body
+    assert "receitas_confirmadas" not in body
+    assert "despesas_confirmadas" not in body
+
+
+def test_resumo_geral_com_permissao_financeira_inclui_dados_financeiros(token_admin):
+    """Administrador tem financeiro.visualizar: o dashboard geral inclui também os
+    indicadores financeiros na mesma resposta."""
+    response = client.get(
+        "/dashboard/resumo", headers={"Authorization": f"Bearer {token_admin}"}
+    )
+    assert response.status_code == 200
+    body = response.json()
+
+    assert "quantidade_pessoas" in body
+    assert "saldo_financeiro" in body
+    assert "receitas_confirmadas" in body
+    assert "despesas_confirmadas" in body
+    assert isinstance(body["saldo_financeiro"], (int, float))
+    assert isinstance(body["receitas_confirmadas"], (int, float))
+    assert isinstance(body["despesas_confirmadas"], (int, float))
