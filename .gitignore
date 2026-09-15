@@ -1,0 +1,32 @@
+# Dependências
+node_modules/
+
+# Build do front-end
+dist/
+*.local
+
+# Cache de ferramentas
+.vite/
+.cache/
+coverage/
+
+# Variáveis de ambiente
+.env
+.env.*
+!.env.example
+!.env.test.example
+
+# Editores e SO
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Worktrees e artefatos locais do Claude Code
+.claude/worktrees/
