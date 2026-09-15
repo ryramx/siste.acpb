@@ -8,6 +8,7 @@ from app.db.session import SessionLocal
 from app.main import app
 from app.models.auditoria import Auditoria
 from app.models.beneficiario import Beneficiario
+from app.models.cargo import Cargo
 from app.models.membro import Membro
 from app.models.perfil import Perfil
 from app.models.pessoa import Pessoa
@@ -115,10 +116,13 @@ def test_reaproveita_pessoa_existente_para_novo_papel(token_admin):
 def test_papel_duplicado_para_mesma_pessoa_e_rejeitado(token_admin):
     db = SessionLocal()
     agora = datetime.utcnow()
+    cargo = Cargo(nome="Cargo Duplicado Teste", ativo=True, created_at=agora, updated_at=agora)
+    db.add(cargo)
+    db.flush()
     pessoa = Pessoa(nome_completo="Pessoa Membro Duplicado", created_at=agora, updated_at=agora)
     db.add(pessoa)
     db.flush()
-    cargo_id = db.execute(__import__("sqlalchemy").text("SELECT id FROM cargos LIMIT 1")).scalar()
+    cargo_id = cargo.id
     membro = Membro(
         pessoa_id=pessoa.id,
         cargo_id=cargo_id,
@@ -146,6 +150,7 @@ def test_papel_duplicado_para_mesma_pessoa_e_rejeitado(token_admin):
     db = SessionLocal()
     db.query(Membro).filter(Membro.pessoa_id == pessoa_id).delete()
     db.query(Pessoa).filter(Pessoa.id == pessoa_id).delete()
+    db.query(Cargo).filter(Cargo.id == cargo_id).delete()
     db.commit()
     db.close()
 

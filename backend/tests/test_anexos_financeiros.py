@@ -8,6 +8,9 @@ from app.db.session import SessionLocal
 from app.main import app
 from app.models.anexo_financeiro import AnexoFinanceiro
 from app.models.auditoria import Auditoria
+from app.models.categoria_financeira import CategoriaFinanceira
+from app.models.conta_financeira import ContaFinanceira
+from app.models.movimentacao_financeira import MovimentacaoFinanceira
 from app.models.perfil import Perfil
 from app.models.pessoa import Pessoa
 from app.models.usuario import Usuario
@@ -52,11 +55,48 @@ def token_admin():
 @pytest.fixture
 def movimentacao_id():
     db = SessionLocal()
-    import sqlalchemy as sa
-
-    mov_id = db.execute(sa.text("SELECT id FROM movimentacoes_financeiras LIMIT 1")).scalar()
+    agora = datetime.utcnow()
+    pessoa = Pessoa(nome_completo="Responsavel Anexo Teste", created_at=agora, updated_at=agora)
+    conta = ContaFinanceira(
+        nome="Conta Anexo Teste", tipo="corrente", saldo_inicial=0, ativo=True,
+        created_at=agora, updated_at=agora,
+    )
+    categoria = CategoriaFinanceira(
+        nome="Categoria Anexo Teste", tipo="despesa", ativo=True,
+        created_at=agora, updated_at=agora,
+    )
+    db.add_all([pessoa, conta, categoria])
+    db.flush()
+    movimentacao = MovimentacaoFinanceira(
+        conta_financeira_id=conta.id,
+        categoria_id=categoria.id,
+        responsavel_id=pessoa.id,
+        tipo="despesa",
+        descricao="Movimentacao Anexo Teste",
+        valor=10,
+        data_movimentacao="2026-01-01",
+        status="confirmada",
+        created_at=agora,
+        updated_at=agora,
+    )
+    db.add(movimentacao)
+    db.commit()
+    mov_id = movimentacao.id
+    pessoa_id, conta_id, categoria_id = pessoa.id, conta.id, categoria.id
     db.close()
-    return mov_id
+
+    yield mov_id
+
+    db = SessionLocal()
+    db.query(AnexoFinanceiro).filter(
+        AnexoFinanceiro.movimentacao_financeira_id == mov_id
+    ).delete()
+    db.query(MovimentacaoFinanceira).filter(MovimentacaoFinanceira.id == mov_id).delete()
+    db.query(ContaFinanceira).filter(ContaFinanceira.id == conta_id).delete()
+    db.query(CategoriaFinanceira).filter(CategoriaFinanceira.id == categoria_id).delete()
+    db.query(Pessoa).filter(Pessoa.id == pessoa_id).delete()
+    db.commit()
+    db.close()
 
 
 def test_upload_com_tipo_nao_permitido_e_rejeitado(token_admin, movimentacao_id):

@@ -7,6 +7,7 @@ from app.core.security import create_access_token, hash_password
 from app.db.session import SessionLocal
 from app.main import app
 from app.models.auditoria import Auditoria
+from app.models.categoria_financeira import CategoriaFinanceira
 from app.models.perfil import Perfil
 from app.models.pessoa import Pessoa
 from app.models.usuario import Usuario
@@ -104,10 +105,15 @@ def test_criar_inscricao_com_evento_inexistente_retorna_404(token_admin):
 
 def test_criar_movimentacao_com_conta_inexistente_retorna_404(token_admin):
     db = SessionLocal()
-    categoria_id = db.execute(
-        __import__("sqlalchemy").text("SELECT id FROM categorias_financeiras LIMIT 1")
-    ).scalar()
-    pessoa_id = db.execute(__import__("sqlalchemy").text("SELECT id FROM pessoas LIMIT 1")).scalar()
+    agora = datetime.utcnow()
+    categoria = CategoriaFinanceira(
+        nome="Categoria Validacao Teste", tipo="entrada", ativo=True,
+        created_at=agora, updated_at=agora,
+    )
+    pessoa = Pessoa(nome_completo="Pessoa Validacao Movimentacao", created_at=agora, updated_at=agora)
+    db.add_all([categoria, pessoa])
+    db.commit()
+    categoria_id, pessoa_id = categoria.id, pessoa.id
     db.close()
 
     response = client.post(
@@ -125,6 +131,12 @@ def test_criar_movimentacao_com_conta_inexistente_retorna_404(token_admin):
         },
     )
     assert response.status_code == 404
+
+    db = SessionLocal()
+    db.query(Pessoa).filter(Pessoa.id == pessoa_id).delete()
+    db.query(CategoriaFinanceira).filter(CategoriaFinanceira.id == categoria_id).delete()
+    db.commit()
+    db.close()
 
 
 def test_nenhuma_resposta_e_erro_500(token_admin):
