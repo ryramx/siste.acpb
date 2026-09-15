@@ -12,6 +12,13 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
     },
   },
+  server: {
+    watch: {
+      // Sem isso o watcher do dev server vigia as copias do repositorio em
+      // .claude/worktrees e mantem handles abertos nelas, o que impede remove-las.
+      ignored: ['**/.claude/**'],
+    },
+  },
   test: {
     environment: 'jsdom',
     globals: true,
