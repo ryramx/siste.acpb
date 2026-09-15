@@ -8,11 +8,39 @@ O projeto tem como objetivo reduzir a dependência de controles manuais e inform
 
 ## 📌 Status do projeto
 
-**Em desenvolvimento**
+**Em desenvolvimento — primeira versão funcional integrada**
 
-> O projeto encontra-se em fase de definição de requisitos, modelagem do banco de dados e implementação da estrutura inicial da aplicação.
+> O back-end está implementado e o front-end já consome a API real (nenhuma tela
+> usa dados fictícios). Os módulos de Patrimônio, Estoque e Doações permanecem
+> previstos, mas ainda não foram modelados.
 
-**Versão atual da documentação:** `0.1`
+| Módulo                                 | Back-end | Front-end |
+| -------------------------------------- | -------- | --------- |
+| Autenticação (login, JWT, recuperação) | ✅        | ✅         |
+| Usuários, perfis e permissões (RBAC)   | ✅        | ✅         |
+| Pessoas e telefones                    | ✅        | ✅         |
+| Membros                                | ✅        | ✅         |
+| Voluntários                            | ✅        | ✅         |
+| Beneficiários e atendimentos           | ✅        | ✅         |
+| Projetos                               | ✅        | ✅         |
+| Eventos, calendário e inscrições       | ✅        | ✅         |
+| Financeiro e anexos/comprovantes       | ✅        | ✅         |
+| Foto de pessoa (upload/remoção)        | ✅        | ✅         |
+| Dashboards (geral e financeiro)        | ✅        | ✅         |
+| Relatórios (CSV / Excel / PDF)         | ✅        | ⏳ API pronta, tela pendente |
+| Auditoria                              | ✅        | ⏳ API pronta, tela pendente |
+| Patrimônio                             | ⬜        | ⬜         |
+| Estoque                                | ⬜        | ⬜         |
+| Doações                                | ⬜        | ⬜         |
+
+**Ressalva de validação:** o front-end foi validado por build TypeScript, testes
+automatizados e chamadas end-to-end reais à API, mas ainda não passou por uma
+revisão visual completa em navegador.
+
+O andamento detalhado, tarefa a tarefa, está em
+[`tarefas_pendentes/progresso.md`](tarefas_pendentes/progresso.md).
+
+**Versão atual da documentação:** `0.2`
 
 ---
 
@@ -214,62 +242,70 @@ A arquitetura tecnológica inicial está organizada da seguinte forma:
 
 ### Front-end
 
-* React
-* TypeScript
+* React 19 + TypeScript 5
+* Vite 6 (build e servidor de desenvolvimento)
+* Tailwind CSS 4
+* React Router 7
+* Vitest + jsdom (testes)
 
 ### Back-end
 
-* Python
-* FastAPI
+* Python 3.10+
+* FastAPI + Uvicorn
+* Pydantic (schemas e validação)
+* pytest (testes)
 
 ### Banco de dados
 
 * PostgreSQL
-
-### ORM
-
-* SQLAlchemy
+* SQLAlchemy (ORM)
+* Alembic (migrations)
 
 ### Autenticação e autorização
 
-* JWT
-* RBAC
+* JWT (HS256, token de 8h, sem refresh)
+* Argon2 via `pwdlib` (hash de senha)
+* RBAC por permissão no formato `modulo.acao`
 
-### Infraestrutura
+### Relatórios e arquivos
 
-* Docker
+* `openpyxl` (Excel) e `reportlab` (PDF)
+* Armazenamento local de anexos e fotos, com nome de arquivo sempre gerado por `uuid4`
 
 ---
 
 ## 🗄️ Modelagem do banco de dados
 
-A modelagem está sendo construída de forma relacional utilizando PostgreSQL.
-
-Entre as entidades atualmente modeladas estão:
+A modelagem é relacional (PostgreSQL), versionada por migrations do Alembic e
+mapeada com SQLAlchemy. Entidades atualmente implementadas:
 
 ```text
 Pessoas
-├── Membros
-│   └── Cargos
+├── Membros ── Cargos
 ├── Voluntários
-├── Beneficiários
-└── Telefones
+├── Beneficiários ── Atendimentos
+├── Telefones
+└── Usuários ── Perfis ── Permissões
 
 Projetos
 └── Projeto_Voluntários
 
 Eventos
 └── Inscrições
+
+Financeiro
+├── Contas financeiras
+├── Categorias financeiras
+└── Movimentações financeiras ── Anexos financeiros
+
+Auditoria
+Tokens de redefinição de senha
 ```
 
-A modelagem continuará evoluindo conforme os requisitos dos módulos de:
+O inventário completo de tabelas, chaves estrangeiras e regras de `ondelete`
+está em [`backend/RELACIONAMENTOS.md`](backend/RELACIONAMENTOS.md).
 
-* Usuários e permissões;
-* Financeiro;
-* Doações;
-* Estoque;
-* Patrimônio;
-* Auditoria.
+Ainda a modelar: **Patrimônio**, **Estoque** e **Doações**.
 
 ---
 
@@ -345,16 +381,86 @@ DASHBOARD
 
 ---
 
+## 🚀 Como executar o projeto
+
+Pré-requisitos: **Python 3.10+**, **Node.js 18+** e **PostgreSQL** em execução.
+
+### Back-end
+
+```bash
+cd backend
+python -m venv venv
+.\venv\Scripts\activate        # Windows
+# source venv/bin/activate      # Linux/macOS
+pip install -r requirements.txt
+
+cp .env.example .env            # preencher DATABASE_PASSWORD e JWT_SECRET_KEY
+alembic upgrade head            # aplica as migrations
+uvicorn app.main:app --reload
+```
+
+* API: `http://localhost:8000`
+* Documentação interativa (Swagger): `http://localhost:8000/docs`
+* Health checks: `GET /health` e `GET /health/db`
+
+### Front-end
+
+```bash
+npm install
+npm run dev
+```
+
+Detalhes adicionais (migrations, backups, banco de testes) estão em
+[`backend/README.md`](backend/README.md).
+
+---
+
+## 🗂️ Estrutura do repositório
+
+```text
+.
+├── src/                  # Front-end React + TypeScript
+│   ├── components/       # Componentes de UI, layout e comuns
+│   ├── contexts/         # AuthContext, ToastContext
+│   ├── pages/            # Telas por módulo
+│   ├── services/         # Cliente de API e serviços de domínio
+│   └── types/            # Tipos compartilhados
+├── backend/              # API FastAPI
+│   ├── app/
+│   │   ├── api/routes/   # Endpoints por módulo
+│   │   ├── core/         # Segurança, RBAC, auditoria, storage, relatórios
+│   │   ├── models/       # Models SQLAlchemy
+│   │   └── schemas/      # Schemas Pydantic
+│   ├── alembic/          # Migrations
+│   └── tests/            # Suíte pytest
+├── tarefas_pendentes/    # Plano de tarefas e registro de progresso
+└── sist.acpb.arq/        # PRD e documentação de produto/UI
+```
+
+---
+
 ## 📚 Documentação
 
 A documentação do projeto é mantida separadamente do código-fonte para facilitar a evolução dos requisitos.
 
-Principais documentos:
+### Produto
 
-* **PRD:** visão do produto, objetivos, requisitos e escopo;
-* **Descrição da UI:** estrutura das telas, navegação, identidade visual e padrões de interface;
-* **Modelagem do banco de dados:** entidades, relacionamentos e estrutura do banco;
-* **Documentação técnica:** arquitetura, API e decisões de implementação.
+* **PRD** e **Descrição da UI** — em [`sist.acpb.arq/`](sist.acpb.arq/);
+* [`tarefas_pendentes/progresso.md`](tarefas_pendentes/progresso.md) — registro do que já foi entregue, tarefa a tarefa;
+* [`AUDIT.md`](AUDIT.md) — resumo executivo das mudanças, achados e decisões.
+
+### Técnica (back-end)
+
+| Documento | Conteúdo |
+| --------- | -------- |
+| [`backend/README.md`](backend/README.md) | Instalação, execução, migrations e testes |
+| [`backend/RELACIONAMENTOS.md`](backend/RELACIONAMENTOS.md) | Inventário de tabelas, FKs e regras de exclusão |
+| [`backend/AUTENTICACAO.md`](backend/AUTENTICACAO.md) | Política de autenticação e tokens |
+| [`backend/RBAC.md`](backend/RBAC.md) | Matriz de perfis × permissões |
+| [`backend/CORS_E_PRODUCAO.md`](backend/CORS_E_PRODUCAO.md) | CORS e validações obrigatórias em produção |
+| [`backend/DEPLOY.md`](backend/DEPLOY.md) | Deploy, health checks, logs e rollback |
+| [`backend/BACKUP_E_RESTAURACAO.md`](backend/BACKUP_E_RESTAURACAO.md) | Política de backup, retenção e testes de restauração |
+| [`backend/PRIVACIDADE_E_RETENCAO.md`](backend/PRIVACIDADE_E_RETENCAO.md) | Classificação de dados pessoais e política de retenção |
 
 ---
 
@@ -382,49 +488,48 @@ Essas funcionalidades poderão ser avaliadas posteriormente conforme as necessid
 
 ## 🔒 Segurança
 
-A aplicação deverá considerar desde sua arquitetura inicial:
+Já implementado:
 
-* Autenticação;
-* Autorização baseada em perfis;
-* Controle de acesso;
-* Proteção de dados pessoais;
-* Auditoria de operações críticas;
-* Estratégia de backup;
-* Preservação do histórico de ações relevantes.
+* Autenticação via JWT, com verificação do usuário ativo a cada requisição;
+* Senhas armazenadas com Argon2 — nenhum hash é exposto em respostas da API;
+* Autorização RBAC por permissão `modulo.acao` em todas as rotas de negócio;
+* Auditoria de operações sensíveis (ator, ação, tabela, registro, dados antes/depois e IP);
+* Exclusão substituída por inativação nos cadastros críticos, preservando o histórico;
+* Upload de arquivos com tipo e tamanho validados e nome sempre gerado por `uuid4`;
+* Download de anexos e fotos apenas por rota autenticada — nada exposto como arquivo estático;
+* Recuperação de senha com token de uso único, expiração de 30 min e apenas o hash persistido;
+* Recusa de iniciar em produção sem `JWT_SECRET_KEY`, sem `DATABASE_PASSWORD` ou com CORS aberto;
+* Política de backup e de retenção de dados documentada.
 
 ---
 
 ## 🧪 Desenvolvimento
 
-O projeto está sendo desenvolvido de maneira incremental, passando pelas seguintes etapas:
+O projeto é desenvolvido de maneira incremental. Situação das etapas:
 
 ```text
-Levantamento de requisitos
-          │
-          ▼
-Documentação do produto
-          │
-          ▼
-Modelagem do banco
-          │
-          ▼
-Arquitetura técnica
-          │
-          ▼
-Back-end / API
-          │
-          ▼
-Front-end
-          │
-          ▼
-Integração
-          │
-          ▼
-Testes
-          │
-          ▼
-Implantação
+Levantamento de requisitos     ✅ concluído
+Documentação do produto        ✅ concluído
+Modelagem do banco             ✅ concluído (exceto patrimônio/estoque/doações)
+Arquitetura técnica            ✅ concluído
+Back-end / API                 ✅ concluído para o escopo da 1ª versão
+Front-end                      ✅ concluído para o escopo da 1ª versão
+Integração front ↔ back        ✅ concluída (nenhuma tela usa dados fictícios)
+Testes                         ✅ automatizados; falta validação visual em navegador
+Implantação                    ⏳ documentada, ainda não executada
 ```
+
+### Testes automatizados
+
+| Suíte     | Comando                | Situação    |
+| --------- | ---------------------- | ----------- |
+| Back-end  | `cd backend && pytest` | 88 testes ✅ |
+| Front-end | `npm test`             | 27 testes ✅ |
+
+Os testes de back-end rodam contra um banco **isolado** (`acpb_db_test`) — a
+suíte se recusa a iniciar caso aponte para o banco de desenvolvimento. As
+instruções de preparação desse banco estão em
+[`backend/README.md`](backend/README.md).
 
 ---
 
@@ -432,21 +537,24 @@ Implantação
 
 A primeira versão será considerada funcional quando a associação conseguir:
 
-* Acessar o sistema com segurança;
-* Gerenciar usuários;
-* Cadastrar membros;
-* Cadastrar voluntários;
-* Cadastrar beneficiários;
-* Gerenciar projetos;
-* Criar e visualizar eventos;
-* Controlar inscrições;
-* Registrar receitas;
-* Registrar despesas;
-* Anexar comprovantes;
-* Visualizar informações financeiras;
-* Controlar permissões;
-* Consultar informações através dos dashboards;
-* Gerar os relatórios previstos para a primeira versão.
+* [x] Acessar o sistema com segurança;
+* [x] Gerenciar usuários;
+* [x] Cadastrar membros;
+* [x] Cadastrar voluntários;
+* [x] Cadastrar beneficiários;
+* [x] Gerenciar projetos;
+* [x] Criar e visualizar eventos;
+* [x] Controlar inscrições;
+* [x] Registrar receitas;
+* [x] Registrar despesas;
+* [x] Anexar comprovantes;
+* [x] Visualizar informações financeiras;
+* [x] Controlar permissões;
+* [x] Consultar informações através dos dashboards;
+* [x] Gerar os relatórios previstos para a primeira versão *(disponíveis via API; tela dedicada pendente)*.
+
+Para a entrega efetiva à associação, faltam **validação visual em navegador** e
+**implantação em ambiente de produção**.
 
 ---
 
