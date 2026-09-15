@@ -1,19 +1,19 @@
 from decimal import Decimal
-from datetime import datetime
 from datetime import date
 from typing import TYPE_CHECKING
 
-from sqlalchemy import BigInteger, Date, DateTime, ForeignKey, Integer, Numeric, String, Text
+from sqlalchemy import BigInteger, Date, ForeignKey, Integer, Numeric, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
+from app.models.mixins import TimestampMixin
 
 if TYPE_CHECKING:
     from app.models.pessoa import Pessoa
     from app.models.atendimento import Atendimento
 
 
-class Beneficiario(Base):
+class Beneficiario(Base, TimestampMixin):
     __tablename__ = "beneficiarios"
 
     id: Mapped[int] = mapped_column(
@@ -72,16 +72,6 @@ class Beneficiario(Base):
     motivo_encerramento: Mapped[str | None] = mapped_column(
         String(255),
         nullable=True
-    )
-
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime,
-        nullable=False
-    )
-
-    updated_at: Mapped[datetime] = mapped_column(
-        DateTime,
-        nullable=False
     )
 
     pessoa: Mapped["Pessoa"] = relationship(back_populates="beneficiario")

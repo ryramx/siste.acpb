@@ -1,19 +1,19 @@
-from datetime import datetime
 from datetime import date
 from datetime import time
 from typing import TYPE_CHECKING
 
-from sqlalchemy import BigInteger, Date, DateTime, ForeignKey, String, Text, Time
+from sqlalchemy import BigInteger, Date, ForeignKey, String, Text, Time
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
+from app.models.mixins import TimestampMixin
 
 if TYPE_CHECKING:
     from app.models.beneficiario import Beneficiario
     from app.models.pessoa import Pessoa
 
 
-class Atendimento(Base):
+class Atendimento(Base, TimestampMixin):
     __tablename__ = "atendimentos"
 
     id: Mapped[int] = mapped_column(
@@ -62,16 +62,6 @@ class Atendimento(Base):
     observacoes: Mapped[str | None] = mapped_column(
         Text,
         nullable=True
-    )
-
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime,
-        nullable=False
-    )
-
-    updated_at: Mapped[datetime] = mapped_column(
-        DateTime,
-        nullable=False
     )
 
     beneficiario: Mapped["Beneficiario"] = relationship(back_populates="atendimentos")

@@ -1,18 +1,18 @@
-from datetime import datetime
 from datetime import date
 from typing import TYPE_CHECKING
 
-from sqlalchemy import BigInteger, Date, DateTime, ForeignKey, String, Text, UniqueConstraint
+from sqlalchemy import BigInteger, Date, ForeignKey, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
+from app.models.mixins import TimestampMixin
 
 if TYPE_CHECKING:
     from app.models.projeto import Projeto
     from app.models.voluntario import Voluntario
 
 
-class ProjetoVoluntario(Base):
+class ProjetoVoluntario(Base, TimestampMixin):
     __tablename__ = "projeto_voluntarios"
     __table_args__ = (
         UniqueConstraint("projeto_id", "voluntario_id", name="uq_projeto_voluntario"),
@@ -54,16 +54,6 @@ class ProjetoVoluntario(Base):
     observacoes: Mapped[str | None] = mapped_column(
         Text,
         nullable=True
-    )
-
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime,
-        nullable=False
-    )
-
-    updated_at: Mapped[datetime] = mapped_column(
-        DateTime,
-        nullable=False
     )
 
     projeto: Mapped["Projeto"] = relationship(back_populates="voluntarios_vinculados")

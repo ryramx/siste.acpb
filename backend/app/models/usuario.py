@@ -5,13 +5,14 @@ from sqlalchemy import BigInteger, Boolean, DateTime, ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
+from app.models.mixins import TimestampMixin
 
 if TYPE_CHECKING:
     from app.models.pessoa import Pessoa
     from app.models.perfil import Perfil
 
 
-class Usuario(Base):
+class Usuario(Base, TimestampMixin):
     __tablename__ = "usuarios"
 
     id: Mapped[int] = mapped_column(
@@ -46,16 +47,6 @@ class Usuario(Base):
     ultimo_login: Mapped[datetime | None] = mapped_column(
         DateTime,
         nullable=True
-    )
-
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime,
-        nullable=False
-    )
-
-    updated_at: Mapped[datetime] = mapped_column(
-        DateTime,
-        nullable=False
     )
 
     pessoa: Mapped["Pessoa"] = relationship(back_populates="usuario")

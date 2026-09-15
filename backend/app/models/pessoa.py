@@ -1,10 +1,11 @@
-from datetime import date, datetime
+from datetime import date
 from typing import TYPE_CHECKING
 
-from sqlalchemy import BigInteger, Date, DateTime, String
+from sqlalchemy import BigInteger, Date, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
+from app.models.mixins import TimestampMixin
 
 if TYPE_CHECKING:
     from app.models.membro import Membro
@@ -14,7 +15,7 @@ if TYPE_CHECKING:
     from app.models.usuario import Usuario
 
 
-class Pessoa(Base):
+class Pessoa(Base, TimestampMixin):
     __tablename__ = "pessoas"
 
     id: Mapped[int] = mapped_column(
@@ -91,16 +92,6 @@ class Pessoa(Base):
     estado: Mapped[str | None] = mapped_column(
         String(2),
         nullable=True
-    )
-
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime,
-        nullable=False
-    )
-
-    updated_at: Mapped[datetime] = mapped_column(
-        DateTime,
-        nullable=False
     )
 
     # Nome gerado (uuid4 + extensão) do arquivo de foto no armazenamento local — nunca um nome

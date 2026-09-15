@@ -1,17 +1,17 @@
 from decimal import Decimal
-from datetime import datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import BigInteger, Boolean, DateTime, Numeric, String, Text
+from sqlalchemy import BigInteger, Boolean, Numeric, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
+from app.models.mixins import TimestampMixin
 
 if TYPE_CHECKING:
     from app.models.movimentacao_financeira import MovimentacaoFinanceira
 
 
-class ContaFinanceira(Base):
+class ContaFinanceira(Base, TimestampMixin):
     __tablename__ = "contas_financeiras"
 
     id: Mapped[int] = mapped_column(
@@ -58,16 +58,6 @@ class ContaFinanceira(Base):
     observacoes: Mapped[str | None] = mapped_column(
         Text,
         nullable=True
-    )
-
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime,
-        nullable=False
-    )
-
-    updated_at: Mapped[datetime] = mapped_column(
-        DateTime,
-        nullable=False
     )
 
     movimentacoes: Mapped[list["MovimentacaoFinanceira"]] = relationship(

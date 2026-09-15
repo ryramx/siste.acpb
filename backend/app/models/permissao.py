@@ -1,16 +1,16 @@
-from datetime import datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import BigInteger, Boolean, DateTime, String
+from sqlalchemy import BigInteger, Boolean, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
+from app.models.mixins import TimestampMixin
 
 if TYPE_CHECKING:
     from app.models.perfil import Perfil
 
 
-class Permissao(Base):
+class Permissao(Base, TimestampMixin):
     __tablename__ = "permissoes"
 
     id: Mapped[int] = mapped_column(
@@ -42,16 +42,6 @@ class Permissao(Base):
 
     ativo: Mapped[bool] = mapped_column(
         Boolean,
-        nullable=False
-    )
-
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime,
-        nullable=False
-    )
-
-    updated_at: Mapped[datetime] = mapped_column(
-        DateTime,
         nullable=False
     )
 

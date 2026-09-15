@@ -5,13 +5,14 @@ from sqlalchemy import BigInteger, DateTime, ForeignKey, String, Text, UniqueCon
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
+from app.models.mixins import TimestampMixin
 
 if TYPE_CHECKING:
     from app.models.pessoa import Pessoa
     from app.models.evento import Evento
 
 
-class Inscricao(Base):
+class Inscricao(Base, TimestampMixin):
     __tablename__ = "inscricoes"
     __table_args__ = (
         UniqueConstraint("pessoa_id", "evento_id", name="uq_inscricao_pessoa_evento"),
@@ -48,16 +49,6 @@ class Inscricao(Base):
     observacoes: Mapped[str | None] = mapped_column(
         Text,
         nullable=True
-    )
-
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime,
-        nullable=False
-    )
-
-    updated_at: Mapped[datetime] = mapped_column(
-        DateTime,
-        nullable=False
     )
 
     pessoa: Mapped["Pessoa"] = relationship()
