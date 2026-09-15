@@ -35,6 +35,7 @@ const REGRAS_DE_PERMISSAO: Record<PermissionKey, string[] | null> = {
   edit_projects: ['projetos.criar', 'projetos.editar'],
   view_events: ['eventos.visualizar'],
   edit_events: ['eventos.criar', 'eventos.editar'],
+  view_people: ['pessoas.visualizar'],
   view_financial: ['financeiro.visualizar'],
   edit_financial: ['financeiro.criar', 'financeiro.editar'],
   view_settings: ['usuarios.visualizar'],

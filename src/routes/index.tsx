@@ -23,6 +23,7 @@ import { FinancialDashboard } from '../pages/financial/FinancialDashboard';
 import { ReceitasPage } from '../pages/financial/ReceitasPage';
 import { DespesasPage } from '../pages/financial/DespesasPage';
 import { MovimentacoesPage } from '../pages/financial/MovimentacoesPage';
+import { ReportsPage } from '../pages/reports/ReportsPage';
 import { SettingsPage } from '../pages/settings/SettingsPage';
 
 export const AppRoutes: React.FC = () => {
@@ -189,6 +190,17 @@ export const AppRoutes: React.FC = () => {
                 element={
                   <ProtectedRoute permission="view_financial">
                     <MovimentacoesPage />
+                  </ProtectedRoute>
+                }
+              />
+
+              {/* Relatórios — sem permissão de rota: a própria tela só oferece os
+                  relatórios cujos módulos o usuário pode visualizar. */}
+              <Route
+                path="relatorios"
+                element={
+                  <ProtectedRoute>
+                    <ReportsPage />
                   </ProtectedRoute>
                 }
               />

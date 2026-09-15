@@ -28,6 +28,9 @@ export type PermissionKey =
   | 'edit_projects'
   | 'view_events'
   | 'edit_events'
+  /** Cadastro de Pessoa em si (distinto de membros/voluntários/beneficiários).
+   * Usada pelo relatório de pessoas, que exige `pessoas.visualizar` no backend. */
+  | 'view_people'
   | 'view_financial'
   | 'edit_financial'
   | 'view_settings'

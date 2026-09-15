@@ -136,3 +136,37 @@ pessoas sem usuário, escolha do endpoint certo em `setAtivo`, vínculo/desvínc
 permissão, propagação de erros 403 e 409 como `ApiError`). Suíte completa do frontend: 26/26
 passando; `tsc --noEmit` e `npm run build` limpos. Sem navegador disponível neste ambiente para
 teste visual manual.
+
+## Pós-entrega — Tela de Relatórios - "Concluído"
+
+A API de relatórios existia desde a tarefa 22, mas não havia tela: os 4 relatórios só eram
+alcançáveis via chamada direta ao endpoint. Nenhum endpoint novo foi necessário; backend não foi
+alterado.
+
+Novos arquivos: `services/reportService.ts` e `pages/reports/ReportsPage.tsx`, mais a rota
+`/relatorios` e o item no `Sidebar`.
+
+A tela expõe os 4 relatórios (financeiro, pessoas, projetos, eventos) em cartões, cada um com seus
+filtros reais e seletor de formato (CSV/Excel/PDF). **Decisão de autorização:** a rota não exige
+permissão — cada relatório é filtrado individualmente pela permissão do módulo que o endpoint
+correspondente exige no backend (`financeiro.visualizar`, `pessoas.visualizar`, etc.), e quem não
+pode ver nenhum recebe um estado vazio explicativo. Isso evita oferecer um download que resultaria
+em 403. Foi preciso criar a chave de UI `view_people` → `pessoas.visualizar`, que não existia
+(o cadastro de Pessoa é distinto de membros/voluntários/beneficiários).
+
+**Achados durante a implementação:** (1) o filtro `tipo` do relatório financeiro recebe
+`ENTRADA`/`SAIDA` — os valores realmente gravados no banco —, não `RECEITA`/`DESPESA`, que é apenas
+como a UI financeira os rotula; confirmado consultando os valores distintos no banco de
+desenvolvimento. (2) O status de projeto ficou como campo livre em vez de select, porque o backend
+filtra com `ILIKE` sobre texto livre e um select fixo esconderia status cadastrados fora da lista
+(hoje existem `ATIVO` e `PLANEJADO`); o campo traz esses exemplos como texto auxiliar.
+
+O download usa `apiClient.getBlob` (a requisição precisa do header `Authorization`, que um link
+comum não envia) e monta o nome do arquivo no cliente, já que o `Content-Disposition` do backend
+não chega ao `<a download>` por esse caminho. Filtros vazios são descartados da query string —
+enviar `?cidade=` faria o backend filtrar por string vazia em vez de não filtrar.
+
+Testes em `services/reportService.test.ts` (7 casos: montagem da query, descarte de filtros vazios,
+escape de caracteres especiais, nome do arquivo, chamada ao endpoint correto com disparo do
+download e propagação de erro). Suíte do frontend: 34/34. `tsc --noEmit` e `npm run build` limpos.
+Sem navegador disponível neste ambiente para teste visual manual.
