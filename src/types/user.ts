@@ -33,5 +33,7 @@ export type PermissionKey =
   | 'view_people'
   | 'view_financial'
   | 'edit_financial'
+  /** Consulta do histórico de auditoria (`auditoria.visualizar`). */
+  | 'view_audit'
   | 'view_settings'
   | 'manage_users';

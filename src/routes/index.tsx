@@ -24,6 +24,7 @@ import { ReceitasPage } from '../pages/financial/ReceitasPage';
 import { DespesasPage } from '../pages/financial/DespesasPage';
 import { MovimentacoesPage } from '../pages/financial/MovimentacoesPage';
 import { ReportsPage } from '../pages/reports/ReportsPage';
+import { AuditPage } from '../pages/audit/AuditPage';
 import { SettingsPage } from '../pages/settings/SettingsPage';
 
 export const AppRoutes: React.FC = () => {
@@ -201,6 +202,16 @@ export const AppRoutes: React.FC = () => {
                 element={
                   <ProtectedRoute>
                     <ReportsPage />
+                  </ProtectedRoute>
+                }
+              />
+
+              {/* Auditoria */}
+              <Route
+                path="auditoria"
+                element={
+                  <ProtectedRoute permission="view_audit">
+                    <AuditPage />
                   </ProtectedRoute>
                 }
               />

@@ -9,6 +9,7 @@ import {
   CalendarDays,
   DollarSign,
   FileText,
+  ScrollText,
   Settings,
   LogOut,
   ChevronDown,
@@ -273,6 +274,24 @@ export const Sidebar: React.FC<SidebarProps> = ({
           >
             <FileText className="w-5 h-5 shrink-0" />
             {isOpen && <span>Relatórios</span>}
+          </NavLink>
+        )}
+
+        {/* Auditoria (restrita a auditoria.visualizar — na prática, Administrador) */}
+        {hasPermission('view_audit') && (
+          <NavLink
+            to="/auditoria"
+            onClick={onMobileClose}
+            className={({ isActive }) =>
+              `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                isActive
+                  ? 'bg-[#004922] text-white font-semibold'
+                  : 'text-[#AEB5B0] hover:bg-[#222824] hover:text-white'
+              }`
+            }
+          >
+            <ScrollText className="w-5 h-5 shrink-0" />
+            {isOpen && <span>Auditoria</span>}
           </NavLink>
         )}
 

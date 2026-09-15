@@ -170,3 +170,36 @@ Testes em `services/reportService.test.ts` (7 casos: montagem da query, descarte
 escape de caracteres especiais, nome do arquivo, chamada ao endpoint correto com disparo do
 download e propagação de erro). Suíte do frontend: 34/34. `tsc --noEmit` e `npm run build` limpos.
 Sem navegador disponível neste ambiente para teste visual manual.
+
+## Pós-entrega — Tela de Auditoria - "Concluído"
+
+`GET /auditoria` existe desde a tarefa 15, mas o histórico não era consultável pela interface.
+Nenhum endpoint novo foi necessário; backend não foi alterado.
+
+Novos arquivos: `services/auditService.ts` e `pages/audit/AuditPage.tsx`, mais a rota `/auditoria`
+(protegida por `view_audit` → `auditoria.visualizar`, na prática só Administrador) e o item no
+`Sidebar`.
+
+A tela lista os registros com data/hora, ator, ação, tabela, registro e IP, filtrável por usuário,
+ação, tabela e período. Um modal mostra `dados_anteriores` e `dados_novos` lado a lado (Antes /
+Depois), que é o conteúdo que dá sentido ao registro. Os selects de ação e tabela usam os valores
+realmente gravados por `app/core/auditoria.py` (criar/editar/excluir/desativar; usuarios, perfis,
+usuario_perfis, perfil_permissoes, pessoas, movimentacoes_financeiras, anexos_financeiros),
+levantados do código em vez de inventados.
+
+**Decisões tomadas:**
+
+- A auditoria guarda apenas `usuario_id`; o nome vem do cadastro de usuários, carregado em paralelo
+  e resolvido por um mapa. Se essa chamada falhar, a tela **não** quebra — cai para `Usuário #id`,
+  porque esconder a auditoria inteira por causa dos rótulos seria pior. Ator nulo é rotulado como
+  "Sistema".
+- `data_fim` é enviado como `T23:59:59`. O backend compara com `created_at`, que é datetime:
+  mandar só a data significaria meia-noite e excluiria todo o último dia escolhido pelo usuário.
+- Paginação por `limit`/`offset` (50 por página). O endpoint não retorna total de registros, então
+  "Próxima" só é habilitada quando a página veio cheia — em vez de exibir uma contagem falsa.
+
+Testes em `services/auditService.test.ts` (9 casos: montagem da query com padrões e paginação,
+omissão de filtros vazios, expansão de `data_fim`, resolução de nome, fallback para id, ator nulo,
+resiliência à falha do cadastro de usuários e propagação de 403). Suíte do frontend: 43/43.
+`tsc --noEmit` e `npm run build` limpos. Sem navegador disponível neste ambiente para teste visual
+manual.
