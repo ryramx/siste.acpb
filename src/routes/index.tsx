@@ -24,6 +24,7 @@ import { ReceitasPage } from '../pages/financial/ReceitasPage';
 import { DespesasPage } from '../pages/financial/DespesasPage';
 import { MovimentacoesPage } from '../pages/financial/MovimentacoesPage';
 import { ReportsPage } from '../pages/reports/ReportsPage';
+import { AssetsList } from '../pages/assets/AssetsList';
 import { AuditPage } from '../pages/audit/AuditPage';
 import { SettingsPage } from '../pages/settings/SettingsPage';
 
@@ -202,6 +203,16 @@ export const AppRoutes: React.FC = () => {
                 element={
                   <ProtectedRoute>
                     <ReportsPage />
+                  </ProtectedRoute>
+                }
+              />
+
+              {/* Patrimônio */}
+              <Route
+                path="patrimonio"
+                element={
+                  <ProtectedRoute permission="view_assets">
+                    <AssetsList />
                   </ProtectedRoute>
                 }
               />

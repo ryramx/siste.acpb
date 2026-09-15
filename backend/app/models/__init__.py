@@ -20,6 +20,7 @@ from app.models.categoria_financeira import CategoriaFinanceira
 from app.models.movimentacao_financeira import MovimentacaoFinanceira
 from app.models.anexo_financeiro import AnexoFinanceiro
 from app.models.auditoria import Auditoria
+from app.models.patrimonio import Patrimonio
 
 __all__ = [
     "Pessoa",
@@ -44,4 +45,5 @@ __all__ = [
     "MovimentacaoFinanceira",
     "AnexoFinanceiro",
     "Auditoria",
+    "Patrimonio",
 ]

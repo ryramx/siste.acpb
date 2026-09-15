@@ -2,7 +2,7 @@ from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
 from app.api.deps import get_current_user
-from app.api.routes import auth, health, pessoas, cargos, membros, voluntarios, projetos, eventos, beneficiarios, inscricoes, dashboard, contas_financeiras, categorias_financeiras, movimentacoes_financeiras, usuarios, perfis, permissoes, auditoria, telefones, cadastros, atendimentos, anexos_financeiros, relatorios
+from app.api.routes import auth, health, pessoas, cargos, membros, voluntarios, projetos, eventos, beneficiarios, inscricoes, dashboard, contas_financeiras, categorias_financeiras, movimentacoes_financeiras, usuarios, perfis, permissoes, auditoria, telefones, cadastros, atendimentos, anexos_financeiros, relatorios, patrimonios
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
@@ -54,3 +54,4 @@ app.include_router(cadastros.router, prefix="/cadastros", tags=["cadastros"], de
 app.include_router(atendimentos.router, prefix="/atendimentos", tags=["atendimentos"], dependencies=_protegido)
 app.include_router(anexos_financeiros.router, prefix="/anexos-financeiros", tags=["anexos financeiros"], dependencies=_protegido)
 app.include_router(relatorios.router, prefix="/relatorios", tags=["relatorios"], dependencies=_protegido)
+app.include_router(patrimonios.router, prefix="/patrimonios", tags=["patrimonio"], dependencies=_protegido)

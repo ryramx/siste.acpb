@@ -33,6 +33,9 @@ export type PermissionKey =
   | 'view_people'
   | 'view_financial'
   | 'edit_financial'
+  /** Patrimônio: bens da associação (`patrimonio.*`). */
+  | 'view_assets'
+  | 'edit_assets'
   /** Consulta do histórico de auditoria (`auditoria.visualizar`). */
   | 'view_audit'
   | 'view_settings'

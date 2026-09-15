@@ -8,6 +8,7 @@ import {
   FolderKanban,
   CalendarDays,
   DollarSign,
+  Building2,
   FileText,
   ScrollText,
   Settings,
@@ -254,6 +255,24 @@ export const Sidebar: React.FC<SidebarProps> = ({
               </div>
             )}
           </div>
+        )}
+
+        {/* Patrimônio */}
+        {hasPermission('view_assets') && (
+          <NavLink
+            to="/patrimonio"
+            onClick={onMobileClose}
+            className={({ isActive }) =>
+              `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                isActive
+                  ? 'bg-[#004922] text-white font-semibold'
+                  : 'text-[#AEB5B0] hover:bg-[#222824] hover:text-white'
+              }`
+            }
+          >
+            <Building2 className="w-5 h-5 shrink-0" />
+            {isOpen && <span>Patrimônio</span>}
+          </NavLink>
         )}
 
         {/* Relatórios — visível para quem puder exportar ao menos um módulo. */}

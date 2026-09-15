@@ -45,7 +45,7 @@ Corrigido trocando `EmailStr` por validação de formato simples (regex `algo@al
 - Tarefa 20 - Modelar anexos financeiros - "Concluído" (provider inicial: sistema de arquivos local em `backend/storage/anexos_financeiros/` — fora do git; nova tabela `anexos_financeiros` — model + migration `4beefe74b866`; upload valida tipo MIME em lista fechada (pdf/png/jpeg) e tamanho máximo 5MB, nome armazenado sempre gerado via `uuid4` — nunca o nome enviado pelo usuário; download só via `GET /anexos-financeiros/{id}/download` autenticado, nada exposto como estático; upload/exclusão auditados; testes em `tests/test_anexos_financeiros.py`)
 - Tarefa 21 - Dashboard financeiro API - "Concluído" (novos endpoints em `app/api/routes/dashboard.py`: `/financeiro/resumo-periodo`, `/financeiro/por-categoria`, `/financeiro/evolucao` (mensal), `/financeiro/despesas-por-projeto`, todos filtráveis por `data_inicio`/`data_fim` e restritos a `financeiro.visualizar`; `/resumo` geral mantido público a qualquer autenticado; testes em `tests/test_dashboard_financeiro.py`)
 - Tarefa 22 - Relatórios e exportações - "Concluído" (escopo inicial: financeiro, pessoas, projetos e eventos, cada um em CSV/Excel/PDF via `app/core/relatorios.py` — `openpyxl` e `reportlab`; `GET /relatorios/{financeiro,pessoas,projetos,eventos}?formato=csv|xlsx|pdf` com filtros por período/status e autorização por módulo (reaproveita as permissões `*.visualizar`); testes em `tests/test_relatorios.py` cobrindo os 3 formatos e autorização)
-- Tarefa 23 - FUTURO: Modelar patrimônio - "Pendente" (fora do escopo inicial por definição do próprio README de `tarefas_pendentes`; não implementado nesta rodada)
+- Tarefa 23 - Modelar patrimônio - "Concluído" (ver seção "Módulo de Patrimônio" ao final deste arquivo)
 - Tarefa 24 - FUTURO: Modelar estoque - "Pendente" (idem — FUTURO, fora do escopo inicial)
 - Tarefa 25 - FUTURO: Modelar doações - "Pendente" (idem — FUTURO, fora do escopo inicial)
 
@@ -203,3 +203,43 @@ omissão de filtros vazios, expansão de `data_fim`, resolução de nome, fallba
 resiliência à falha do cadastro de usuários e propagação de 403). Suíte do frontend: 43/43.
 `tsc --noEmit` e `npm run build` limpos. Sem navegador disponível neste ambiente para teste visual
 manual.
+
+## Módulo de Patrimônio (tarefa 23) - "Concluído"
+
+Primeiro dos três módulos que faltavam. Implementado de ponta a ponta: banco, API e tela.
+
+**Backend:** model `Patrimonio` (tabela `patrimonios`) com código, nome, categoria, data e valor de
+aquisição, local, responsável, status e observações. Migration `8c8e37a26f1d` cria a tabela e semeia
+as 3 permissões do módulo (`patrimonio.visualizar/criar/editar`) com os vínculos de perfil,
+idempotente via `ON CONFLICT DO NOTHING` como o seed original do RBAC. Validada de ponta a ponta:
+upgrade, downgrade (tabela e permissões removidas) e upgrade de novo; `alembic check` sem
+divergência.
+
+**Decisões de modelagem:**
+
+- `codigo` é único: é por ele que a associação identifica o bem fisicamente, e duplicar significaria
+  dois cadastros do mesmo bem. Violação vira 409, não 500.
+- `status` é lista fechada (`ATIVO`, `EM_MANUTENCAO`, `BAIXADO`, `EMPRESTADO`), validada no schema —
+  diferente de `projetos`, onde o status é texto livre. Aqui os filtros e o acompanhamento dependem
+  de o valor ser previsível.
+- `responsavel_id` é nullable e sem cascata: excluir uma pessoa não pode apagar o registro do bem.
+- CRUD auditado (criar/editar/excluir) como o financeiro, por ser patrimônio da associação.
+
+**Autorização:** Administrador e Gestor administram; Financeiro apenas consulta (o valor de
+aquisição interessa ao financeiro, mas manter o cadastro não é atribuição dele). Documentado em
+`backend/RBAC.md`.
+
+**Frontend:** `types/patrimonio.ts`, `services/patrimonioService.ts`, `pages/assets/AssetsList.tsx`,
+rota `/patrimonio` (permissão `view_assets`) e item no `Sidebar`. Lista com busca local, filtro de
+status no backend, totalizador de valor, e modais de criação/edição e de exclusão. Os botões de
+escrita só aparecem com `edit_assets` — a autorização real continua no backend. O diálogo de
+exclusão recomenda usar o status "Baixado" em vez de excluir, para preservar histórico.
+
+**Achado:** `Numeric` do Postgres chega ao frontend como **string** (para não perder precisão), não
+como número — o serviço converte explicitamente, senão o totalizador concatenaria texto em vez de
+somar. Coberto por teste.
+
+Testes: `backend/tests/test_patrimonios.py` (9 casos: CRUD, código duplicado → 409, status inválido
+→ 422, valor negativo → 422, responsável inexistente → 404, filtros, auditoria, 403 para perfil sem
+permissão, 401 sem token) e `src/services/patrimonioService.test.ts` (8 casos). Backend: 97/97.
+Frontend: 52/52. `tsc` e `npm run build` limpos. Sem navegador disponível para teste visual manual.

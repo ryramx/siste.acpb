@@ -30,6 +30,22 @@ Módulos sem uma permissão própria reaproveitam a permissão do módulo mais p
 | **Coordenador** | Visualizar/criar/editar em `projetos`, `eventos`, `inscricoes`, `voluntarios`. Apenas visualizar em `pessoas`, `membros`, `beneficiarios`. Sem `financeiro`, `usuarios`, `auditoria`. |
 | **Voluntário** | Apenas `eventos.visualizar`, `projetos.visualizar`, `inscricoes.visualizar`, `inscricoes.criar` (autoinscrição em eventos). Sem acesso a cadastros de pessoas/beneficiários/financeiro. |
 
+## Módulo de patrimônio (tarefa 23)
+
+Permissões `patrimonio.visualizar`, `patrimonio.criar` e `patrimonio.editar`, semeadas pela
+migration `8c8e37a26f1d` (idempotente, como o seed original do RBAC).
+
+| Perfil | Acesso ao patrimônio |
+|---|---|
+| **Administrador** | Visualizar, criar e editar |
+| **Gestor** | Visualizar, criar e editar — é o perfil de gestão operacional |
+| **Financeiro** | Apenas visualizar: o valor de aquisição dos bens é informação patrimonial relevante para o financeiro, mas manter o cadastro não é atribuição dele |
+| Demais perfis | Sem acesso |
+
+A exclusão de um bem exige `patrimonio.editar` (não há ação `excluir` dedicada), seguindo o mesmo
+padrão de `projetos`. A interface recomenda usar o status `BAIXADO` em vez de excluir, para
+preservar o histórico.
+
 ## Dados sensíveis de beneficiários
 
 Beneficiários carregam dados socioeconômicos sensíveis (renda familiar, composição familiar,
