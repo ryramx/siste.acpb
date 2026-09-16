@@ -1,4 +1,3 @@
-import re
 from datetime import datetime, timedelta
 
 import pytest
@@ -41,20 +40,35 @@ def usuario_teste():
     db.close()
 
 
-def _extrair_token_do_log(caplog) -> str:
-    match = re.search(r"usuario_id=\d+: (\S+) \(expira", caplog.text)
-    assert match, f"token não encontrado no log: {caplog.text}"
-    return match.group(1)
+@pytest.fixture
+def emails_enviados(monkeypatch):
+    """Captura o token pelo canal real de entrega (e-mail) em vez de raspar o log.
+
+    Antes o token era extraído do log, que era o único canal existente. Agora o envio
+    passa por `enviar_recuperacao_senha`; interceptá-lo testa o caminho de produção e
+    deixa de acoplar a suíte ao formato de uma mensagem de log.
+    """
+    enviados: list[tuple[str, str]] = []
+
+    def _fake(destinatario: str, token: str) -> bool:
+        enviados.append((destinatario, token))
+        return True
+
+    monkeypatch.setattr("app.api.routes.auth.enviar_recuperacao_senha", _fake)
+    return enviados
 
 
-def test_solicitar_recuperacao_para_email_existente_gera_token(usuario_teste, caplog):
-    with caplog.at_level("INFO"):
-        response = client.post(
-            "/auth/recuperar-senha", json={"email": usuario_teste.email}
-        )
+def _token_enviado(emails_enviados) -> str:
+    assert len(emails_enviados) == 1, f"esperado 1 e-mail, houve {len(emails_enviados)}"
+    return emails_enviados[0][1]
+
+
+def test_solicitar_recuperacao_para_email_existente_gera_token(usuario_teste, emails_enviados):
+    response = client.post("/auth/recuperar-senha", json={"email": usuario_teste.email})
     assert response.status_code == 202
 
-    token_bruto = _extrair_token_do_log(caplog)
+    assert emails_enviados[0][0] == usuario_teste.email
+    token_bruto = _token_enviado(emails_enviados)
 
     db = SessionLocal()
     registro = (
@@ -75,10 +89,9 @@ def test_solicitar_recuperacao_para_email_inexistente_nao_revela_nada():
     assert "enviadas" in response.json()["detail"]
 
 
-def test_confirmar_recuperacao_com_token_valido_altera_senha(usuario_teste, caplog):
-    with caplog.at_level("INFO"):
-        client.post("/auth/recuperar-senha", json={"email": usuario_teste.email})
-    token_bruto = _extrair_token_do_log(caplog)
+def test_confirmar_recuperacao_com_token_valido_altera_senha(usuario_teste, emails_enviados):
+    client.post("/auth/recuperar-senha", json={"email": usuario_teste.email})
+    token_bruto = _token_enviado(emails_enviados)
 
     response = client.post(
         "/auth/redefinir-senha",
@@ -103,10 +116,9 @@ def test_confirmar_recuperacao_com_token_valido_altera_senha(usuario_teste, capl
     assert login_novo.status_code == 200
 
 
-def test_token_ja_usado_nao_pode_ser_reaproveitado(usuario_teste, caplog):
-    with caplog.at_level("INFO"):
-        client.post("/auth/recuperar-senha", json={"email": usuario_teste.email})
-    token_bruto = _extrair_token_do_log(caplog)
+def test_token_ja_usado_nao_pode_ser_reaproveitado(usuario_teste, emails_enviados):
+    client.post("/auth/recuperar-senha", json={"email": usuario_teste.email})
+    token_bruto = _token_enviado(emails_enviados)
 
     primeira = client.post(
         "/auth/redefinir-senha",

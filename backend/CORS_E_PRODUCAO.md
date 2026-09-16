@@ -48,9 +48,11 @@ Documento de decisão para a tarefa 37.
 ## Logs
 
 - Nunca logar `senha`, `senha_hash`, `access_token` ou o corpo de requisições de autenticação em
-  texto claro. O log de recuperação de senha (`app/api/routes/auth.py::solicitar_recuperacao_senha`)
-  é uma exceção deliberada e temporária enquanto não há provedor de e-mail configurado (ver tarefa
-  14) — remover esse log assim que o envio de e-mail for implementado.
+  texto claro. O token de recuperação de senha passou a ser entregue por e-mail
+  (`app/core/email.py`); em produção o log registra apenas que houve envio, nunca o token.
+  O fallback que imprime o token em log existe só para desenvolvimento sem SMTP — em
+  `ENVIRONMENT=production` a aplicação se recusa a subir sem `SMTP_HOST` justamente para que esse
+  caminho seja inalcançável, já que quem lê os logs poderia assumir qualquer conta.
 - Erros inesperados (500) devem ser logados no servidor com detalhes técnicos, mas a resposta ao
   cliente permanece genérica (já é o padrão em `health.py` e nas rotas que usam
   `tratar_integrity_error`) — não vazar stack trace nem detalhes de schema/banco para o cliente.

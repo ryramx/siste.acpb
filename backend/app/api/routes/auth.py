@@ -14,6 +14,7 @@ from app.core.security import (
     verify_password,
 )
 from app.db.session import get_db
+from app.core.email import enviar_recuperacao_senha
 from app.models.senha_reset_token import SenhaResetToken
 from app.models.usuario import Usuario
 from app.models.usuario_perfil import UsuarioPerfil
@@ -109,15 +110,25 @@ def solicitar_recuperacao_senha(
         )
         db.commit()
 
-        # Sem provedor de e-mail configurado na v1 (ver tarefa 14): o token é registrado em log
-        # para uso manual/desenvolvimento. Quando um provedor for integrado, substituir por envio
-        # real e remover o log do token em texto puro.
-        logger.info(
-            "Token de recuperação de senha gerado para usuario_id=%s: %s (expira em %s)",
-            usuario.id,
-            token_bruto,
-            expira_em.isoformat(),
-        )
+        enviado = enviar_recuperacao_senha(usuario.email, token_bruto)
+        if enviado:
+            # Nunca logar o token em si: o log registra apenas que houve envio.
+            logger.info(
+                "E-mail de recuperação de senha enviado para usuario_id=%s (expira em %s)",
+                usuario.id,
+                expira_em.isoformat(),
+            )
+        else:
+            # Só acontece em desenvolvimento: em produção a aplicação nem sobe sem SMTP
+            # configurado (ver app/core/config.py::_validar_configuracao_producao).
+            logger.warning(
+                "SMTP não configurado — token de recuperação para usuario_id=%s registrado "
+                "apenas em log (ambiente=%s): %s (expira em %s)",
+                usuario.id,
+                settings.ENVIRONMENT,
+                token_bruto,
+                expira_em.isoformat(),
+            )
 
     return {"detail": "Se o e-mail existir, instruções de recuperação foram enviadas"}
 
