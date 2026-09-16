@@ -91,9 +91,17 @@ class S3Storage:
                 endpoint_url=settings.S3_ENDPOINT_URL,
                 aws_access_key_id=settings.S3_ACCESS_KEY_ID,
                 aws_secret_access_key=settings.S3_SECRET_ACCESS_KEY,
-                # R2 ignora região, mas boto3 exige um valor; "auto" é o recomendado.
+                # A região importa para o Supabase (precisa ser a do projeto) e é ignorada
+                # pelo R2 — mas o boto3 exige algum valor nos dois casos.
                 region_name=settings.S3_REGION,
-                config=Config(signature_version="s3v4"),
+                config=Config(
+                    signature_version="s3v4",
+                    # Path-style (bucket no caminho, não como subdomínio). O boto3 usa
+                    # virtual-host por padrão, que exigiria um DNS por bucket — o Supabase
+                    # não tem isso, e quebraria. O R2 aceita as duas formas, então
+                    # path-style serve aos dois provedores.
+                    s3={"addressing_style": "path"},
+                ),
             )
         return self._cliente
 

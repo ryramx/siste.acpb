@@ -123,6 +123,14 @@ class Settings(BaseSettings):
                 erros.append(
                     "STORAGE_BACKEND=s3 exige: " + ", ".join(faltando)
                 )
+            # O Supabase assina a requisição com a região real do projeto; o padrão "auto"
+            # (que serve ao R2) produziria erro de assinatura só no primeiro upload, muito
+            # depois do deploy. Falhar na subida aponta a causa em vez do sintoma.
+            if "supabase" in self.S3_ENDPOINT_URL and self.S3_REGION == "auto":
+                erros.append(
+                    "S3_REGION deve ser a região real do projeto Supabase (ex.: 'us-east-2'), "
+                    "não 'auto'"
+                )
         else:
             erros.append(
                 f"STORAGE_BACKEND inválido: {self.STORAGE_BACKEND!r} (use 'local' ou 's3')"

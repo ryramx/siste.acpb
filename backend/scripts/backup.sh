@@ -13,7 +13,7 @@
 #   AWS_ACCESS_KEY_ID=... AWS_SECRET_ACCESS_KEY=... \
 #   ./scripts/backup.sh
 #
-# Requisitos: pg_dump (client do Postgres, mesma major version do servidor) e awscli.
+# Requisitos: pg_dump (client do Postgres, versao >= a do servidor) e awscli.
 
 set -euo pipefail
 
@@ -22,6 +22,10 @@ set -euo pipefail
 : "${S3_BUCKET:?defina S3_BUCKET}"
 : "${AWS_ACCESS_KEY_ID:?defina AWS_ACCESS_KEY_ID}"
 : "${AWS_SECRET_ACCESS_KEY:?defina AWS_SECRET_ACCESS_KEY}"
+
+# O bucket vai no caminho, nao como subdominio: o Supabase nao tem um DNS por bucket,
+# e o awscli usa virtual-host por padrao. O R2 aceita as duas formas.
+export AWS_S3_ADDRESSING_STYLE=path
 
 RETENCAO_DIAS="${RETENCAO_DIAS:-30}"
 CARIMBO="$(date -u +%Y%m%d_%H%M%S)"

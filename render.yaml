@@ -35,7 +35,7 @@ services:
       - key: FRONTEND_URL
         sync: false
       # Armazenamento de arquivos: o disco do plano gratuito e efemero, entao anexos e
-      # fotos vao para o Cloudflare R2.
+      # fotos vao para object storage S3-compativel (Supabase Storage).
       - key: STORAGE_BACKEND
         value: s3
       - key: S3_ENDPOINT_URL
@@ -45,6 +45,9 @@ services:
       - key: S3_ACCESS_KEY_ID
         sync: false
       - key: S3_SECRET_ACCESS_KEY
+        sync: false
+      # Precisa ser a regiao real do projeto no Supabase (o R2 ignoraria).
+      - key: S3_REGION
         sync: false
       # SMTP (Brevo) para o e-mail de recuperacao de senha.
       - key: SMTP_HOST

@@ -77,3 +77,36 @@ def test_remover_seguro_nao_propaga_falha(caplog):
     # a exceção original de um commit que falhou.
     remover_seguro(BackendQuebrado(), CHAVE, "contexto de teste", "anexo")
     assert "Requer limpeza manual" in caplog.text
+
+
+def test_cliente_s3_usa_path_style(monkeypatch):
+    """O bucket precisa ir no caminho, não como subdomínio.
+
+    O boto3 usa virtual-host por padrão (`bucket.host/chave`), que exigiria um DNS por
+    bucket — o Supabase não tem isso e a conexão falharia. Path-style funciona nos dois
+    provedores, então é o formato fixado aqui.
+    """
+    import app.core.object_storage as mod
+
+    monkeypatch.setattr(mod.settings, "S3_ENDPOINT_URL", "https://proj.supabase.co/storage/v1/s3")
+    monkeypatch.setattr(mod.settings, "S3_ACCESS_KEY_ID", "chave")
+    monkeypatch.setattr(mod.settings, "S3_SECRET_ACCESS_KEY", "segredo")
+    monkeypatch.setattr(mod.settings, "S3_REGION", "us-east-2")
+
+    cliente = S3Storage("anexos_financeiros")._client()
+    url = cliente.generate_presigned_url(
+        "get_object",
+        Params={"Bucket": "acpb-arquivos", "Key": "anexos_financeiros/abc.pdf"},
+        ExpiresIn=60,
+    )
+    assert "/storage/v1/s3/acpb-arquivos/anexos_financeiros/abc.pdf" in url
+    assert "acpb-arquivos.proj.supabase.co" not in url
+
+
+def test_prefixo_separa_anexos_de_fotos(monkeypatch):
+    """Os dois módulos compartilham o mesmo bucket; o prefixo é o que evita colisão."""
+    import app.core.object_storage as mod
+
+    monkeypatch.setattr(mod.settings, "S3_BUCKET", "acpb-arquivos")
+    assert S3Storage("anexos_financeiros")._key(CHAVE) == f"anexos_financeiros/{CHAVE}"
+    assert S3Storage("fotos_pessoas")._key(CHAVE) == f"fotos_pessoas/{CHAVE}"

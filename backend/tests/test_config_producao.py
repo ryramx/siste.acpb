@@ -134,3 +134,31 @@ def test_producao_aceita_database_url_no_lugar_da_senha_avulsa():
     config = {**PRODUCAO_VALIDA, "DATABASE_PASSWORD": ""}
     config["DATABASE_URL"] = "postgresql://u:p@ep-abc.neon.tech/acpb?sslmode=require"
     assert Settings(**config).ENVIRONMENT == "production"
+
+
+def test_producao_rejeita_regiao_auto_no_supabase():
+    """'auto' serve ao R2, mas o Supabase assina com a regiao real do projeto — o erro
+    apareceria so no primeiro upload, muito depois do deploy."""
+    with pytest.raises(ValueError, match="S3_REGION"):
+        Settings(
+            **{
+                **PRODUCAO_VALIDA,
+                "S3_ENDPOINT_URL": "https://proj.supabase.co/storage/v1/s3",
+                "S3_REGION": "auto",
+            }
+        )
+
+
+def test_producao_aceita_supabase_com_regiao_explicita():
+    config = {
+        **PRODUCAO_VALIDA,
+        "S3_ENDPOINT_URL": "https://proj.supabase.co/storage/v1/s3",
+        "S3_REGION": "us-east-2",
+    }
+    assert Settings(**config).ENVIRONMENT == "production"
+
+
+def test_regiao_auto_continua_valida_fora_do_supabase():
+    """Nao quebrar quem usar R2 ou outro provedor que ignora a regiao."""
+    config = {**PRODUCAO_VALIDA, "S3_ENDPOINT_URL": "https://x.r2.cloudflarestorage.com"}
+    assert Settings(**config).S3_REGION == "auto"

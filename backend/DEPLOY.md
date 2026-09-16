@@ -12,7 +12,7 @@ O sistema é dividido em quatro serviços, cada um numa plataforma com plano gra
 | Frontend (`dist/`) | Cloudflare Pages | Estático; banda ilimitada no plano gratuito |
 | API (FastAPI) | Render (plano free) | Hiberna após ~15 min sem uso |
 | Postgres | Neon | O Postgres gratuito do Render **expira**; o do Neon não |
-| Anexos e fotos | Cloudflare R2 | O disco do Render é efêmero — ver "Armazenamento" |
+| Anexos e fotos | Supabase Storage | O disco do Render é efêmero — ver "Armazenamento" |
 | E-mail | Brevo (SMTP) | 300 mensagens/dia, sem cartão |
 
 **Consequência aceita conscientemente:** no plano gratuito do Render a API hiberna. A primeira
@@ -24,7 +24,7 @@ aceitável, a migração natural é para o Google Cloud Run (mesma aplicação, 
 `STORAGE_BACKEND` escolhe onde ficam anexos financeiros e fotos de pessoas:
 
 - `local` — disco. Usado em desenvolvimento e nos testes.
-- `s3` — object storage S3-compatível (Cloudflare R2). **Obrigatório em produção.**
+- `s3` — object storage S3-compatível (Supabase Storage). **Obrigatório em produção.**
 
 O disco de plataformas de PaaS em plano gratuito é efêmero: todo redeploy o zera. Como anexos
 financeiros são comprovantes de prestação de contas, perdê-los silenciosamente é inaceitável —
@@ -44,11 +44,26 @@ Crie um projeto e copie a connection string (algo como
 Use a string inteira, não os campos separados: ela já traz o `sslmode=require` que o Neon exige e
 que se perderia ao remontar a URI por partes.
 
-**2. Arquivos (Cloudflare R2)**
-Crie um bucket (ex.: `acpb-arquivos`) e um API token com permissão de leitura e escrita nele.
-Isso dá `S3_ENDPOINT_URL`, `S3_BUCKET`, `S3_ACCESS_KEY_ID` e `S3_SECRET_ACCESS_KEY`.
-O bucket deve ser **privado**: os arquivos são servidos pela API, que verifica permissão a cada
-download — um bucket público entregaria comprovantes financeiros a quem tivesse a URL.
+**2. Arquivos (Supabase Storage)**
+Crie um projeto, depois um bucket **privado** chamado `acpb-arquivos`, e em
+Project Settings → Storage gere uma chave de acesso S3. Isso dá `S3_ENDPOINT_URL`
+(`https://<ref-do-projeto>.supabase.co/storage/v1/s3`), `S3_BUCKET`, `S3_ACCESS_KEY_ID`,
+`S3_SECRET_ACCESS_KEY` e `S3_REGION`.
+
+O bucket precisa ser **privado**: os arquivos são servidos pela API, que verifica permissão a
+cada download — um bucket público entregaria comprovantes financeiros a quem tivesse a URL.
+
+`S3_REGION` aqui não é decorativa: o Supabase exige a região real do projeto na assinatura da
+requisição (diferente do R2, que ignora e aceita `auto`). Ela aparece no painel do projeto.
+
+**Por que Supabase e não Cloudflare R2:** o R2 tem franquia maior (10 GB contra 1 GB), mas exige
+cadastrar cartão de crédito mesmo no plano gratuito. A camada de storage é S3-compatível genérica
+(`app/core/object_storage.py`), então trocar de provedor é mudar variáveis de ambiente, não código.
+
+**Ressalva do plano gratuito do Supabase:** projetos sem atividade por cerca de uma semana são
+pausados, e um projeto pausado não responde — fotos e anexos passariam a dar 404 até alguém
+reativar pelo painel. Se o sistema ficar longos períodos sem uso, vale incluir o Supabase no
+mesmo uptime check que mantém a API acordada.
 
 **3. E-mail (Brevo)**
 Crie uma conta, verifique o domínio ou o remetente, e gere uma chave de SMTP.
@@ -107,11 +122,11 @@ Feito isso, faça o login com esse usuário e troque a senha.
 | `BACKEND_CORS_ORIGINS` | Sim | URL do frontend. Lista explícita, nunca `*` |
 | `FRONTEND_URL` | Sim | URL do frontend (link do e-mail de senha) |
 | `STORAGE_BACKEND` | Sim | `s3` |
-| `S3_ENDPOINT_URL` | Sim | Endpoint S3 do R2 |
-| `S3_BUCKET` | Sim | Nome do bucket |
-| `S3_ACCESS_KEY_ID` | Sim | Token do R2 |
-| `S3_SECRET_ACCESS_KEY` | Sim | Token do R2 |
-| `S3_REGION` | Não | `auto` (padrão; o R2 ignora, mas o cliente exige um valor) |
+| `S3_ENDPOINT_URL` | Sim | `https://<ref>.supabase.co/storage/v1/s3` |
+| `S3_BUCKET` | Sim | Nome do bucket (`acpb-arquivos`) |
+| `S3_ACCESS_KEY_ID` | Sim | Chave S3 do Supabase |
+| `S3_SECRET_ACCESS_KEY` | Sim | Chave S3 do Supabase |
+| `S3_REGION` | Sim | Região real do projeto Supabase — o padrão `auto` só serve ao R2 |
 | `SMTP_HOST` | Sim | `smtp-relay.brevo.com` |
 | `SMTP_PORT` | Não | `587` (padrão) |
 | `SMTP_USER` / `SMTP_PASSWORD` | Sim | Credenciais do Brevo |
@@ -207,15 +222,18 @@ disponíveis — no plano gratuito do Render, com 512 MB, mantenha um worker só
 ## Backup
 
 Ver `BACKUP_E_RESTAURACAO.md` para a política (retenção, teste de restauração trimestral).
-A execução está em `scripts/backup.sh`: gera um `pg_dump` e envia para o R2, com expiração
+A execução está em `scripts/backup.sh`: gera um `pg_dump` e envia para o bucket, com expiração
 automática por idade.
 
 O plano gratuito do Neon **não** oferece restauração de longo prazo — sem esse script, um erro
 humano (um `DELETE` sem `WHERE`, uma migration destrutiva) é definitivo. Agende-o em qualquer
 executor de cron externo com as variáveis documentadas no cabeçalho do script.
 
-Os arquivos em si (anexos e fotos) ficam no R2, que é durável e não some em redeploy; ainda assim
-vale habilitar versionamento no bucket, porque o R2 não protege contra remoção acidental.
+Os arquivos em si (anexos e fotos) ficam no object storage, que é durável e não some em redeploy —
+mas nenhum provedor protege contra remoção acidental, então o bucket não substitui backup.
+
+Atenção ao compartilhamento de cota: no Supabase, backups do banco e arquivos do sistema disputam
+o mesmo 1 GB. Se o volume apertar, mande os dumps para outro destino antes de reduzir retenção.
 
 ## Monitoramento mínimo
 
@@ -224,7 +242,7 @@ vale habilitar versionamento no bucket, porque o R2 não protege contra remoçã
 - Banco: consumo em relação ao limite do plano gratuito do Neon (0,5 GB). As tabelas
   `movimentacoes_financeiras` e `auditoria` crescem continuamente — a de auditoria é a que mais
   cresce, e é a primeira candidata a uma política de expurgo quando o limite se aproximar.
-- Armazenamento no R2: consumo em relação aos 10 GB gratuitos. Não há limpeza automática de
-  anexos antigos.
+- Armazenamento no Supabase: consumo em relação ao 1 GB gratuito, disputado entre anexos, fotos e
+  dumps de backup. Não há limpeza automática de anexos antigos.
 - Uptime check externo: além de detectar queda, mantém a API acordada e reduz o cold start.
 - Alertas de falha de backup (ver `BACKUP_E_RESTAURACAO.md`).
