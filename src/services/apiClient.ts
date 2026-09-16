@@ -1,6 +1,22 @@
 import { getSession, clearSession } from './session';
 
-const API_BASE_URL = 'http://127.0.0.1:8000';
+/** URL da API, definida por ambiente em tempo de build (`VITE_API_URL`).
+ *
+ * O fallback só serve ao desenvolvimento local: um build de produção sem essa variável
+ * apontaria para a máquina de quem compilou, e o sistema não carregaria nada para
+ * ninguém. Por isso o build de produção falha explicitamente em vez de usar o fallback.
+ */
+const API_BASE_URL: string = (() => {
+  const configurada = import.meta.env.VITE_API_URL;
+  if (configurada) return configurada.replace(/\/$/, '');
+  if (import.meta.env.PROD) {
+    throw new Error(
+      'VITE_API_URL não definida no build de produção. Configure a variável de ambiente ' +
+        'na plataforma de deploy (ver backend/DEPLOY.md) antes de gerar o build.'
+    );
+  }
+  return 'http://127.0.0.1:8000';
+})();
 
 export class ApiError extends Error {
   status: number;
