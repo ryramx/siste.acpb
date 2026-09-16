@@ -1,0 +1,59 @@
+# Blueprint do Render para a API (plano gratuito).
+#
+# O frontend NAO fica aqui: ele e estatico e vai para o Cloudflare Pages (ver DEPLOY.md).
+# O banco tambem nao: o Postgres gratuito do Render expira, entao usamos o Neon (ver DEPLOY.md).
+#
+# Variaveis marcadas com `sync: false` nao sao versionadas: o Render pede o valor na
+# criacao do servico. Segredo nenhum entra neste arquivo.
+
+services:
+  - type: web
+    name: acpb-api
+    runtime: python
+    plan: free
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    # As migrations rodam antes de subir a aplicacao, nunca depois (ver DEPLOY.md).
+    # `alembic upgrade head` e idempotente: num banco ja atualizado e um no-op rapido,
+    # o que importa porque o plano gratuito hiberna e reexecuta isso a cada retorno.
+    startCommand: alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    # Liveness: nao depende do banco, entao um Postgres fora do ar nao derruba o servico.
+    healthCheckPath: /health/
+    envVars:
+      - key: ENVIRONMENT
+        value: production
+      - key: PYTHON_VERSION
+        value: "3.12"
+      # Neon: connection string completa, com sslmode=require.
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_SECRET_KEY
+        generateValue: true
+      # Origem do frontend no Cloudflare Pages. Sem '*' — a aplicacao recusa subir.
+      - key: BACKEND_CORS_ORIGINS
+        sync: false
+      - key: FRONTEND_URL
+        sync: false
+      # Armazenamento de arquivos: o disco do plano gratuito e efemero, entao anexos e
+      # fotos vao para o Cloudflare R2.
+      - key: STORAGE_BACKEND
+        value: s3
+      - key: S3_ENDPOINT_URL
+        sync: false
+      - key: S3_BUCKET
+        sync: false
+      - key: S3_ACCESS_KEY_ID
+        sync: false
+      - key: S3_SECRET_ACCESS_KEY
+        sync: false
+      # SMTP (Brevo) para o e-mail de recuperacao de senha.
+      - key: SMTP_HOST
+        value: smtp-relay.brevo.com
+      - key: SMTP_PORT
+        value: "587"
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASSWORD
+        sync: false
+      - key: SMTP_FROM
+        sync: false
