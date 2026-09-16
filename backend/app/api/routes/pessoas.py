@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile, status
-from fastapi.responses import FileResponse
+from fastapi.responses import Response
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 
@@ -12,10 +12,11 @@ from app.core.auditoria import model_to_dict, obter_ip_cliente, registrar_audito
 from app.core.foto_pessoa_storage import (
     TAMANHO_MAXIMO_BYTES,
     TIPOS_PERMITIDOS,
-    caminho_fisico,
     gerar_nome_armazenado,
+    ler_conteudo,
     remover_arquivo_seguro,
     salvar_conteudo,
+    tipo_mime_de,
 )
 from app.core.config import settings
 from app.models.pessoa import Pessoa
@@ -166,7 +167,7 @@ async def enviar_foto_pessoa(
 
     nome_antigo = pessoa.foto_arquivo
     novo_nome = gerar_nome_armazenado(arquivo.content_type)
-    salvar_conteudo(novo_nome, conteudo)
+    salvar_conteudo(novo_nome, conteudo, arquivo.content_type)
 
     pessoa.foto_arquivo = novo_nome
     pessoa.updated_at = datetime.utcnow()
@@ -196,12 +197,11 @@ def obter_foto_pessoa(
     if not pessoa or not pessoa.foto_arquivo:
         raise HTTPException(status_code=404, detail="Esta pessoa não tem foto cadastrada")
 
-    caminho = caminho_fisico(pessoa.foto_arquivo)
-    if not caminho.exists():
+    conteudo = ler_conteudo(pessoa.foto_arquivo)
+    if conteudo is None:
         raise HTTPException(status_code=404, detail="Arquivo de foto não encontrado no armazenamento")
 
-    tipo_mime = "image/png" if caminho.suffix == ".png" else "image/jpeg"
-    return FileResponse(path=caminho, media_type=tipo_mime)
+    return Response(content=conteudo, media_type=tipo_mime_de(pessoa.foto_arquivo))
 
 
 @router.delete("/{id}/foto", status_code=status.HTTP_204_NO_CONTENT)

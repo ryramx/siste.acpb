@@ -1,10 +1,7 @@
-import logging
 import uuid
-from pathlib import Path
 
 from app.core.config import settings
-
-logger = logging.getLogger(__name__)
+from app.core.object_storage import criar_backend, remover_seguro
 
 TIPOS_PERMITIDOS = {
     "image/png": ".png",
@@ -13,11 +10,7 @@ TIPOS_PERMITIDOS = {
 
 TAMANHO_MAXIMO_BYTES = settings.FOTOS_TAMANHO_MAXIMO_MB * 1024 * 1024
 
-
-def _storage_dir() -> Path:
-    caminho = Path(settings.FOTOS_STORAGE_DIR)
-    caminho.mkdir(parents=True, exist_ok=True)
-    return caminho
+_backend = criar_backend(settings.FOTOS_STORAGE_DIR, "fotos_pessoas")
 
 
 def gerar_nome_armazenado(tipo_mime: str) -> str:
@@ -25,36 +18,22 @@ def gerar_nome_armazenado(tipo_mime: str) -> str:
     return f"{uuid.uuid4().hex}{extensao}"
 
 
-def caminho_fisico(nome_armazenado: str) -> Path:
-    # nome_armazenado é sempre gerado por gerar_nome_armazenado (uuid4 + extensão fixa),
-    # nunca o nome enviado pelo usuário — não há risco de path traversal aqui.
-    return _storage_dir() / nome_armazenado
+def tipo_mime_de(nome_armazenado: str) -> str:
+    return "image/png" if nome_armazenado.endswith(".png") else "image/jpeg"
 
 
-def salvar_conteudo(nome_armazenado: str, conteudo: bytes) -> None:
-    caminho_fisico(nome_armazenado).write_bytes(conteudo)
+def salvar_conteudo(nome_armazenado: str, conteudo: bytes, tipo_mime: str) -> None:
+    _backend.salvar(nome_armazenado, conteudo, tipo_mime)
+
+
+def ler_conteudo(nome_armazenado: str) -> bytes | None:
+    """Retorna os bytes da foto, ou None se o arquivo não existir no armazenamento."""
+    return _backend.ler(nome_armazenado)
 
 
 def remover_arquivo(nome_armazenado: str) -> None:
-    caminho = caminho_fisico(nome_armazenado)
-    if caminho.exists():
-        caminho.unlink()
+    _backend.remover(nome_armazenado)
 
 
 def remover_arquivo_seguro(nome_armazenado: str, contexto: str) -> None:
-    """Remove um arquivo sem propagar exceção, para limpeza best-effort (arquivo
-    órfão após falha de commit, ou arquivo antigo após commit bem-sucedido).
-
-    Nunca deve ser usado para desfazer uma transação já commitada nem para mascarar
-    a exceção original de um commit que falhou. Falhas de remoção são apenas
-    logadas, para permitir limpeza manual futura.
-    """
-    try:
-        remover_arquivo(nome_armazenado)
-    except OSError:
-        logger.error(
-            "Falha ao remover arquivo físico de foto '%s' (%s). Requer limpeza manual.",
-            nome_armazenado,
-            contexto,
-            exc_info=True,
-        )
+    remover_seguro(_backend, nome_armazenado, contexto, "foto")

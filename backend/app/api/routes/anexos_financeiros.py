@@ -1,15 +1,15 @@
 from datetime import datetime
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile, status
-from fastapi.responses import FileResponse
+from fastapi.responses import Response
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user, require_permission
 from app.core.anexos_storage import (
     TAMANHO_MAXIMO_BYTES,
     TIPOS_PERMITIDOS,
-    caminho_fisico,
     gerar_nome_armazenado,
+    ler_conteudo,
     remover_arquivo_seguro,
     salvar_conteudo,
 )
@@ -69,7 +69,7 @@ async def enviar_anexo(
         raise HTTPException(status_code=400, detail="Arquivo vazio")
 
     nome_armazenado = gerar_nome_armazenado(arquivo.content_type)
-    salvar_conteudo(nome_armazenado, conteudo)
+    salvar_conteudo(nome_armazenado, conteudo, arquivo.content_type)
 
     obj = AnexoFinanceiro(
         movimentacao_financeira_id=movimentacao_financeira_id,
@@ -113,12 +113,18 @@ def baixar_anexo(id: int, db: Session = Depends(get_db)):
     if not obj:
         raise HTTPException(status_code=404, detail="Anexo não encontrado")
 
-    caminho = caminho_fisico(obj.nome_armazenado)
-    if not caminho.exists():
+    conteudo = ler_conteudo(obj.nome_armazenado)
+    if conteudo is None:
         raise HTTPException(status_code=404, detail="Arquivo não encontrado no armazenamento")
 
-    return FileResponse(
-        path=caminho, media_type=obj.tipo_mime, filename=obj.nome_original
+    # Content-Disposition explícito: sem o atalho do FileResponse (que lê do disco), o nome
+    # original precisa ser devolvido à mão. Aspas escapadas evitam quebrar o header com
+    # nomes de arquivo que contenham aspas.
+    nome = obj.nome_original.replace('"', '\\"')
+    return Response(
+        content=conteudo,
+        media_type=obj.tipo_mime,
+        headers={"Content-Disposition": f'attachment; filename="{nome}"'},
     )
 
 
