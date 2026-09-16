@@ -77,7 +77,23 @@ Volte ao Render e preencha, agora que a URL do passo 5 existe:
 
 **7. Primeiro acesso**
 As migrations rodam sozinhas na subida (`startCommand` do `render.yaml`). Confirme
-`GET /health/db` respondendo e faça o login com o usuário administrador.
+`GET /health/db` respondendo.
+
+Num banco novo ainda **não existe nenhum usuário**: as migrations semeiam perfis e
+permissões, mas todas as rotas que criam usuário exigem estar autenticado e com
+permissão — ou seja, sem um primeiro administrador o sistema fica inacessível. Crie-o
+pelo shell do Render (aba "Shell" do serviço):
+
+```bash
+ADMIN_EMAIL=admin@acpb.org.br ADMIN_SENHA='<senha forte>' ADMIN_NOME='Nome Completo' \
+  python -m scripts.criar_admin
+```
+
+O script só cria o **primeiro** administrador: se já houver um ativo, ele se recusa a
+rodar, para que reexecutá-lo não vire caminho de escalar privilégio ou trocar a senha de
+um admin existente. Daí em diante, usuários são criados pela tela de administração.
+
+Feito isso, faça o login com esse usuário e troque a senha.
 
 ## Variáveis de ambiente
 
