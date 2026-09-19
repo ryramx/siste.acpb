@@ -11,6 +11,10 @@ services:
     name: acpb-api
     runtime: python
     plan: free
+    # Mesma regiao do Neon e do Supabase (us-east-2). Cada tela do sistema dispara varias
+    # consultas ao banco: se a API ficar em outra regiao, cada uma delas atravessa o
+    # continente. O padrao do Render e Oregon, entao isto precisa ser explicito.
+    region: ohio
     rootDir: backend
     buildCommand: pip install -r requirements.txt
     # As migrations rodam antes de subir a aplicacao, nunca depois (ver DEPLOY.md).
