@@ -5,18 +5,21 @@ o deploy e operar o sistema em produção.
 
 ## Arquitetura de produção
 
-O sistema é dividido em quatro serviços, cada um numa plataforma com plano gratuito permanente:
+O sistema é dividido em quatro serviços, em três plataformas com plano gratuito permanente:
 
 | Peça | Plataforma | Por quê |
 |---|---|---|
-| Frontend (`dist/`) | Cloudflare Pages | Estático; banda ilimitada no plano gratuito |
+| Frontend (`dist/`) | Render (site estático) | Mesmo blueprint da API; 100 GB/mês de banda |
 | API (FastAPI) | Render (plano free) | Hiberna após ~15 min sem uso |
 | Postgres | Neon | O Postgres gratuito do Render **expira**; o do Neon não |
 | Anexos e fotos | Supabase Storage | O disco do Render é efêmero — ver "Armazenamento" |
 | E-mail | Gmail (SMTP) | ~500 mensagens/dia; remetente e servidor no mesmo provedor |
 
+Os dois serviços do Render são criados juntos pelo `render.yaml` da raiz.
+
 **Consequência aceita conscientemente:** no plano gratuito do Render a API hiberna. A primeira
-pessoa a acessar depois de um período ocioso espera cerca de 50 segundos. Se isso deixar de ser
+pessoa a acessar depois de um período ocioso espera cerca de 50 segundos. O site estático não
+hiberna — a espera é da primeira chamada à API, com a tela já carregada. Se isso deixar de ser
 aceitável, a migração natural é para o Google Cloud Run (mesma aplicação, sem cold start relevante).
 
 ## Armazenamento de arquivos
@@ -85,15 +88,16 @@ como `sync: false` — são exatamente os dos passos 1 a 3. `JWT_SECRET_KEY` é 
 Render, não precisa inventar.
 Anote a URL pública do serviço (ex.: `https://acpb-api.onrender.com`).
 
-**5. Frontend (Cloudflare Pages)**
-Aponte para o mesmo repositório, com:
-- Comando de build: `npm run build`
-- Diretório de saída: `dist`
-- Variável de ambiente: `VITE_API_URL` = a URL do passo 4
+**5. Frontend (site estático no Render)**
+Vem no mesmo blueprint do passo 4 (serviço `acpb-sistema`), então já foi criado junto. O único
+valor que ele pede é `VITE_API_URL` = a URL do passo 4.
 
 O build **falha de propósito** se `VITE_API_URL` não estiver definida (ver `vite.config.ts`):
 sem ela, o bundle apontaria para `127.0.0.1` e o sistema não carregaria para ninguém.
-Anote a URL do site (ex.: `https://acpb.pages.dev`).
+Anote a URL do site (ex.: `https://acpb-sistema.onrender.com`).
+
+O blueprint declara um rewrite de `/*` para `/index.html`: o roteamento é do react-router, no
+navegador, então sem isso abrir ou recarregar `/membros` direto daria 404 — só a raiz funcionaria.
 
 **6. Fechar o círculo**
 Volte ao Render e preencha, agora que a URL do passo 5 existe:
@@ -148,11 +152,12 @@ A aplicação **recusa subir** em `ENVIRONMENT=production` se faltar qualquer ob
 `BACKEND_CORS_ORIGINS` contiver `*`, se `STORAGE_BACKEND` for `local`, ou se não houver SMTP —
 é melhor falhar no deploy que descobrir o problema com o sistema no ar.
 
-### Frontend (Cloudflare Pages)
+### Frontend (site estático no Render)
 
 | Variável | Obrigatória | Valor |
 |---|---|---|
 | `VITE_API_URL` | Sim | URL pública da API |
+| `NODE_VERSION` | Não | `22` (fixado no blueprint) |
 
 ## Build
 

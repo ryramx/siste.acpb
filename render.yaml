@@ -1,7 +1,9 @@
-# Blueprint do Render para a API (plano gratuito).
+# Blueprint do Render (plano gratuito): dois servicos, a API em Python e o site estatico
+# do frontend.
 #
-# O frontend NAO fica aqui: ele e estatico e vai para o Cloudflare Pages (ver DEPLOY.md).
-# O banco tambem nao: o Postgres gratuito do Render expira, entao usamos o Neon (ver DEPLOY.md).
+# O banco NAO fica aqui - o Postgres gratuito do Render expira, entao usamos o Neon. Os
+# arquivos tambem nao - o disco daqui e efemero, entao vao para o Supabase Storage.
+# Ver DEPLOY.md.
 #
 # Variaveis marcadas com `sync: false` nao sao versionadas: o Render pede o valor na
 # criacao do servico. Segredo nenhum entra neste arquivo.
@@ -33,7 +35,7 @@ services:
         sync: false
       - key: JWT_SECRET_KEY
         generateValue: true
-      # Origem do frontend no Cloudflare Pages. Sem '*' — a aplicacao recusa subir.
+      # Origem do site (o outro servico deste blueprint). Sem '*' - a aplicacao recusa subir.
       - key: BACKEND_CORS_ORIGINS
         sync: false
       - key: FRONTEND_URL
@@ -66,4 +68,26 @@ services:
       - key: SMTP_PASSWORD
         sync: false
       - key: SMTP_FROM
+        sync: false
+
+  - type: web
+    name: acpb-sistema
+    runtime: static
+    plan: free
+    # O frontend fica na raiz do repositorio (o backend e que esta em backend/).
+    buildCommand: npm ci && npm run build
+    staticPublishPath: dist
+    # SPA: o roteamento e do react-router, no navegador. Sem este rewrite, abrir ou
+    # recarregar /membros direto pediria ao servidor um arquivo que nao existe e daria 404 -
+    # so a raiz funcionaria.
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      # URL publica da API (o outro servico deste blueprint). O build falha de proposito
+      # se faltar, em vez de gerar um bundle apontando para 127.0.0.1.
+      - key: VITE_API_URL
         sync: false
