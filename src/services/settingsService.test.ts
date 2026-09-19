@@ -18,7 +18,7 @@ function mockBackend(handler: (method: string, path: string) => Response | undef
   vi.stubGlobal(
     'fetch',
     vi.fn(async (url: string, init?: RequestInit) => {
-      const path = url.replace('http://127.0.0.1:8000', '');
+      const path = url.replace('http://127.0.0.1:8001', '');
       const method = init?.method ?? 'GET';
       const response = handler(method, path);
       if (!response) {

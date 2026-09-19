@@ -25,6 +25,11 @@ export default defineConfig(({ command, mode }) => {
       },
     },
     server: {
+      // Porta fixa e propria deste projeto, para conviver com outros na mesma maquina.
+      // strictPort evita o pior caso: sem ele o Vite escolheria outra porta em silencio,
+      // e o backend recusaria a origem por CORS com um erro que nao explica a causa.
+      port: 5174,
+      strictPort: true,
       watch: {
         // Sem isso o watcher do dev server vigia as copias do repositorio em
         // .claude/worktrees e mantem handles abertos nelas, o que impede remove-las.

@@ -159,6 +159,47 @@ A aplicação **recusa subir** em `ENVIRONMENT=production` se faltar qualquer ob
 | `VITE_API_URL` | Sim | URL pública da API |
 | `NODE_VERSION` | Não | `22` (fixado no blueprint) |
 
+## Desenvolvimento local
+
+O projeto usa **portas fixas e proprias**, diferentes dos padroes, para conviver com outros
+projetos rodando na mesma maquina:
+
+| Peca | Porta | Padrao que seria usado |
+|---|---|---|
+| API (uvicorn) | **8001** | 8000 |
+| Frontend (Vite) | **5174** | 5173 |
+
+Sem isso, dois backends na mesma porta fazem o frontend conversar com o projeto errado — e o
+sintoma e confuso, porque as rotas simplesmente nao existem do outro lado e tudo vira 404.
+
+**Subir a API:**
+```bash
+cd backend
+./venv/Scripts/python.exe -m uvicorn app.main:app --reload --port 8001
+```
+Use `python -m uvicorn` e nao o `uvicorn.exe` do venv: o executavel tem o caminho de criacao do
+venv embutido e quebra se a pasta do projeto for movida.
+
+**Subir o frontend:**
+```bash
+npm run dev
+```
+A porta 5174 esta fixada em `vite.config.ts` com `strictPort`. Se ela estiver ocupada, o Vite
+falha em vez de escolher outra em silencio — uma porta diferente mudaria a origem e o backend
+recusaria as chamadas por CORS, com um erro que nao explica a causa.
+
+O frontend encontra a API sozinho: sem `VITE_API_URL`, ele usa `http://127.0.0.1:8001` em
+desenvolvimento. Em producao essa variavel e obrigatoria e o build falha sem ela.
+
+**Antes de subir para producao:** rode a suite dos dois lados e confira no navegador.
+```bash
+cd backend && ./venv/Scripts/python.exe -m pytest -q
+npm test && npx tsc --noEmit
+```
+
+Um push na branch `main` dispara deploy automatico no Render. Para trabalhar sem publicar,
+use uma branch e so faca merge quando tiver validado localmente.
+
 ## Build
 
 **Backend** (Python/FastAPI):

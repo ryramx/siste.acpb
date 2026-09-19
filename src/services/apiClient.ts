@@ -15,7 +15,9 @@ const API_BASE_URL: string = (() => {
         'na plataforma de deploy (ver backend/DEPLOY.md) antes de gerar o build.'
     );
   }
-  return 'http://127.0.0.1:8000';
+  // Porta 8001 (e nao a 8000 padrao) para nao colidir com outro projeto rodando na
+  // mesma maquina - ver a secao de desenvolvimento local em backend/DEPLOY.md.
+  return 'http://127.0.0.1:8001';
 })();
 
 export class ApiError extends Error {
