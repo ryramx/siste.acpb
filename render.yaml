@@ -73,7 +73,6 @@ services:
   - type: web
     name: acpb-sistema
     runtime: static
-    plan: free
     # O frontend fica na raiz do repositorio (o backend e que esta em backend/).
     buildCommand: npm ci && npm run build
     staticPublishPath: dist
