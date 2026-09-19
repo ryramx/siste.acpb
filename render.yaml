@@ -49,9 +49,12 @@ services:
       # Precisa ser a regiao real do projeto no Supabase (o R2 ignoraria).
       - key: S3_REGION
         sync: false
-      # SMTP (Brevo) para o e-mail de recuperacao de senha.
+      # SMTP do Gmail para o e-mail de recuperacao de senha. Enviar pelo servidor do
+      # proprio provedor do remetente mantem SPF/DKIM alinhados - um relay de terceiro
+      # enviando em nome de um @gmail.com nao consegue assinar como tal, e cairia em spam.
+      # SMTP_PASSWORD e uma "App Password" do Google, nao a senha da conta.
       - key: SMTP_HOST
-        value: smtp-relay.brevo.com
+        value: smtp.gmail.com
       - key: SMTP_PORT
         value: "587"
       - key: SMTP_USER

@@ -13,7 +13,7 @@ O sistema é dividido em quatro serviços, cada um numa plataforma com plano gra
 | API (FastAPI) | Render (plano free) | Hiberna após ~15 min sem uso |
 | Postgres | Neon | O Postgres gratuito do Render **expira**; o do Neon não |
 | Anexos e fotos | Supabase Storage | O disco do Render é efêmero — ver "Armazenamento" |
-| E-mail | Brevo (SMTP) | 300 mensagens/dia, sem cartão |
+| E-mail | Gmail (SMTP) | ~500 mensagens/dia; remetente e servidor no mesmo provedor |
 
 **Consequência aceita conscientemente:** no plano gratuito do Render a API hiberna. A primeira
 pessoa a acessar depois de um período ocioso espera cerca de 50 segundos. Se isso deixar de ser
@@ -65,9 +65,19 @@ pausados, e um projeto pausado não responde — fotos e anexos passariam a dar 
 reativar pelo painel. Se o sistema ficar longos períodos sem uso, vale incluir o Supabase no
 mesmo uptime check que mantém a API acordada.
 
-**3. E-mail (Brevo)**
-Crie uma conta, verifique o domínio ou o remetente, e gere uma chave de SMTP.
-Isso dá `SMTP_USER`, `SMTP_PASSWORD` e `SMTP_FROM`.
+**3. E-mail (Gmail)**
+Na conta Google do sistema, ative a verificação em duas etapas e gere uma
+**App Password** (Conta Google → Segurança → Senhas de app). Isso dá `SMTP_PASSWORD`;
+`SMTP_USER` e `SMTP_FROM` são o próprio endereço da conta.
+
+**Por que o SMTP do Gmail e não um relay de terceiro (Brevo, SendGrid):** enquanto a
+associação não tiver domínio próprio, o remetente é um `@gmail.com`. Um relay de terceiro
+enviando em nome desse endereço não consegue assinar como o Google, então SPF/DKIM não
+alinham e as mensagens caem em spam. Pelo servidor do próprio Google, alinham.
+
+Quando a associação tiver domínio, reavaliar: com domínio próprio um relay dedicado passa
+a ser a opção melhor (limites maiores e métricas de entrega), e aí o remetente vira
+`sistema@acpb.org.br`.
 
 **4. API (Render)**
 Aponte o Render para este repositório; ele lê o `render.yaml` da raiz e pede os valores marcados
@@ -127,10 +137,10 @@ Feito isso, faça o login com esse usuário e troque a senha.
 | `S3_ACCESS_KEY_ID` | Sim | Chave S3 do Supabase |
 | `S3_SECRET_ACCESS_KEY` | Sim | Chave S3 do Supabase |
 | `S3_REGION` | Sim | Região real do projeto Supabase — o padrão `auto` só serve ao R2 |
-| `SMTP_HOST` | Sim | `smtp-relay.brevo.com` |
+| `SMTP_HOST` | Sim | `smtp.gmail.com` |
 | `SMTP_PORT` | Não | `587` (padrão) |
-| `SMTP_USER` / `SMTP_PASSWORD` | Sim | Credenciais do Brevo |
-| `SMTP_FROM` | Sim | Remetente verificado |
+| `SMTP_USER` / `SMTP_PASSWORD` | Sim | E-mail da conta e a **App Password** do Google |
+| `SMTP_FROM` | Sim | O mesmo endereço de `SMTP_USER` |
 | `SMTP_FROM_NOME` | Não | `Sistema ACPB` (padrão) |
 | `JWT_EXPIRE_MINUTES`, `RESET_PASSWORD_TOKEN_EXPIRE_MINUTES` | Não | Padrões razoáveis; revisar por ambiente |
 
