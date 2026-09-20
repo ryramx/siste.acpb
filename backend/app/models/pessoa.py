@@ -84,6 +84,11 @@ class Pessoa(Base, TimestampMixin):
         nullable=True
     )
 
+    bairro: Mapped[str | None] = mapped_column(
+        String(100),
+        nullable=True
+    )
+
     cidade: Mapped[str | None] = mapped_column(
         String(100),
         nullable=True
@@ -91,6 +96,13 @@ class Pessoa(Base, TimestampMixin):
 
     estado: Mapped[str | None] = mapped_column(
         String(2),
+        nullable=True
+    )
+
+    # Somente digitos, sem mascara: a formatacao e responsabilidade da exibicao. Guardar
+    # "50000-000" e "50000000" na mesma coluna tornaria busca e comparacao pouco confiaveis.
+    cep: Mapped[str | None] = mapped_column(
+        String(8),
         nullable=True
     )
 

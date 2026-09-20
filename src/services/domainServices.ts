@@ -21,8 +21,10 @@ interface ApiPessoa {
   data_nascimento: string | null;
   email: string | null;
   endereco: string | null;
+  bairro: string | null;
   cidade: string | null;
   estado: string | null;
+  cep: string | null;
   tem_foto: boolean;
 }
 
@@ -67,10 +69,10 @@ const toMember = (
   phone: telefone?.numero ?? '',
   whatsapp: telefone?.whatsapp ? telefone.numero : '',
   email: pessoa.email ?? '',
-  cep: '',
+  cep: pessoa.cep ?? '',
   address: pessoa.endereco ?? '',
   number: '',
-  neighborhood: '',
+  neighborhood: pessoa.bairro ?? '',
   city: pessoa.cidade ?? '',
   state: pessoa.estado ?? '',
   entryDate: membro.data_entrada,
@@ -87,7 +89,9 @@ export interface NovoMembroInput {
   phone: string;
   whatsapp: string;
   email: string;
+  cep: string;
   address: string;
+  neighborhood: string;
   city: string;
   state: string;
   entryDate: string;
@@ -149,8 +153,10 @@ export const memberService = {
         data_nascimento: data.birthDate || null,
         email: data.email || null,
         endereco: data.address || null,
+        bairro: data.neighborhood || null,
         cidade: data.city || null,
-        estado: data.state || null
+        estado: data.state || null,
+        cep: data.cep || null
       },
       papel: 'membro',
       membro: {
@@ -186,8 +192,10 @@ export const memberService = {
     if (data.birthDate !== undefined) pessoaPatch.data_nascimento = data.birthDate || null;
     if (data.email !== undefined) pessoaPatch.email = data.email || null;
     if (data.address !== undefined) pessoaPatch.endereco = data.address || null;
+    if (data.neighborhood !== undefined) pessoaPatch.bairro = data.neighborhood || null;
     if (data.city !== undefined) pessoaPatch.cidade = data.city || null;
     if (data.state !== undefined) pessoaPatch.estado = data.state || null;
+    if (data.cep !== undefined) pessoaPatch.cep = data.cep || null;
     if (Object.keys(pessoaPatch).length > 0) {
       await apiClient.put(`/pessoas/${membroAtual.pessoa_id}`, pessoaPatch);
     }

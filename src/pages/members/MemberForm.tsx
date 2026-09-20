@@ -5,7 +5,14 @@ import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Select } from '../../components/ui/Select';
 import { memberService, CargoOption } from '../../services/domainServices';
+import { buscarEnderecoPorCEP, CEPError } from '../../services/cepService';
 import { useToast } from '../../contexts/ToastContext';
+import {
+  apenasDigitos,
+  formatarCEP,
+  formatarCPF,
+  formatarTelefone
+} from '../../utils/mascaras';
 
 export const MemberForm: React.FC = () => {
   const navigate = useNavigate();
@@ -16,6 +23,8 @@ export const MemberForm: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [loadingInitialData, setLoadingInitialData] = useState(isEditing);
   const [cargos, setCargos] = useState<CargoOption[]>([]);
+  const [buscandoCep, setBuscandoCep] = useState(false);
+  const [erroCep, setErroCep] = useState<string | null>(null);
 
   const [formData, setFormData] = useState({
     name: '',
@@ -24,7 +33,9 @@ export const MemberForm: React.FC = () => {
     phone: '',
     whatsapp: '',
     email: '',
+    cep: '',
     address: '',
+    neighborhood: '',
     city: 'Recife',
     state: 'PE',
     entryDate: new Date().toISOString().split('T')[0],
@@ -46,12 +57,15 @@ export const MemberForm: React.FC = () => {
       if (membro) {
         setFormData({
           name: membro.name,
-          cpf: membro.cpf,
+          cpf: formatarCPF(membro.cpf),
           birthDate: membro.birthDate,
-          phone: membro.phone,
-          whatsapp: membro.whatsapp,
+          phone: formatarTelefone(membro.phone),
+          whatsapp: formatarTelefone(membro.whatsapp),
           email: membro.email,
+          // A API devolve so digitos; a mascara e aplicada aqui, na entrada do formulario.
+          cep: formatarCEP(membro.cep),
           address: membro.address,
+          neighborhood: membro.neighborhood,
           city: membro.city,
           state: membro.state,
           entryDate: membro.entryDate,
@@ -64,21 +78,68 @@ export const MemberForm: React.FC = () => {
     });
   }, [id]);
 
+  /** Campos que sao exibidos com mascara enquanto o usuario digita. O que vai para a API
+   * sao os digitos puros — ver `dadosParaEnvio`. */
+  const MASCARAS: Record<string, (valor: string) => string> = {
+    cpf: formatarCPF,
+    phone: formatarTelefone,
+    whatsapp: formatarTelefone,
+    cep: formatarCEP
+  };
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    const mascara = MASCARAS[name];
+    setFormData((prev) => ({ ...prev, [name]: mascara ? mascara(value) : value }));
+  };
+
+  const handleCepChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    handleChange(e);
+    const digitos = apenasDigitos(e.target.value);
+    setErroCep(null);
+    // Busca no oitavo digito, sem esperar o usuario sair do campo: ele acabou de terminar
+    // de digitar e o resultado aparece de imediato.
+    if (digitos.length !== 8) return;
+
+    setBuscandoCep(true);
+    try {
+      const endereco = await buscarEnderecoPorCEP(digitos);
+      setFormData((prev) => ({
+        ...prev,
+        // Preenche apenas o que o ViaCEP devolveu: CEPs de cidades pequenas costumam vir
+        // sem logradouro, e apagar o que o usuario ja digitou seria pior que nao preencher.
+        address: endereco.logradouro || prev.address,
+        neighborhood: endereco.bairro || prev.neighborhood,
+        city: endereco.cidade || prev.city,
+        state: endereco.estado || prev.state
+      }));
+    } catch (err) {
+      setErroCep(err instanceof CEPError ? err.message : 'Nao foi possivel consultar o CEP.');
+    } finally {
+      setBuscandoCep(false);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
+    // A mascara e so da exibicao: o banco guarda digitos, para que busca e comparacao nao
+    // dependam de qual formato foi digitado.
+    const dadosParaEnvio = {
+      ...formData,
+      cpf: apenasDigitos(formData.cpf),
+      phone: apenasDigitos(formData.phone),
+      whatsapp: apenasDigitos(formData.whatsapp),
+      cep: apenasDigitos(formData.cep)
+    };
+
     try {
       if (isEditing && id) {
-        await memberService.update(id, formData);
+        await memberService.update(id, dadosParaEnvio);
         addToast({ type: 'success', title: 'Membro atualizado', message: 'Os dados foram salvos com sucesso.' });
       } else {
-        await memberService.create(formData);
+        await memberService.create(dadosParaEnvio);
         addToast({
           type: 'success',
           title: 'Membro cadastrado',
@@ -135,6 +196,7 @@ export const MemberForm: React.FC = () => {
               value={formData.cpf}
               onChange={handleChange}
               placeholder="000.000.000-00"
+              inputMode="numeric"
             />
             <Input
               label="Data de Nascimento"
@@ -158,13 +220,16 @@ export const MemberForm: React.FC = () => {
               value={formData.phone}
               onChange={handleChange}
               placeholder="(81) 99999-9999"
+              inputMode="tel"
             />
             <Input
               label="WhatsApp"
               name="whatsapp"
               value={formData.whatsapp}
               onChange={handleChange}
-              placeholder="Deixe igual ao telefone se for o mesmo número"
+              placeholder="(81) 99999-9999"
+              inputMode="tel"
+              helperText="Deixe igual ao telefone se for o mesmo número"
             />
             <Input
               label="E-mail"
@@ -183,6 +248,16 @@ export const MemberForm: React.FC = () => {
             3. Endereço
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Input
+              label="CEP"
+              name="cep"
+              value={formData.cep}
+              onChange={handleCepChange}
+              placeholder="00000-000"
+              inputMode="numeric"
+              error={erroCep ?? undefined}
+              helperText={buscandoCep ? 'Buscando endereço...' : 'Preenche o endereço automaticamente'}
+            />
             <div className="md:col-span-2">
               <Input
                 label="Endereço"
@@ -192,6 +267,13 @@ export const MemberForm: React.FC = () => {
                 placeholder="Rua das Flores, 123"
               />
             </div>
+            <Input
+              label="Bairro"
+              name="neighborhood"
+              value={formData.neighborhood}
+              onChange={handleChange}
+              placeholder="Centro"
+            />
             <Input label="Cidade" name="city" value={formData.city} onChange={handleChange} />
             <Input label="Estado" name="state" value={formData.state} onChange={handleChange} />
           </div>

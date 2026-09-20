@@ -8,6 +8,7 @@ import { Member } from '../../types/domain';
 import { useAuth } from '../../contexts/AuthContext';
 import { AvatarUpload } from '../../components/ui/AvatarUpload';
 import { Avatar } from '../../components/ui/Avatar';
+import { exibirCEP, exibirCPF, exibirTelefone } from '../../utils/mascaras';
 
 export const MemberDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -74,7 +75,7 @@ export const MemberDetails: React.FC = () => {
                 {member.status}
               </Badge>
             </div>
-            <p className="text-xs text-[#AEB5B0] mt-1">CPF: {member.cpf}</p>
+            <p className="text-xs text-[#AEB5B0] mt-1">CPF: {exibirCPF(member.cpf)}</p>
             <p className="text-xs text-[#F8D800] font-medium mt-0.5">
               Cargo: {member.cargoName || 'Sem cargo associado'}
             </p>
@@ -108,7 +109,7 @@ export const MemberDetails: React.FC = () => {
             <div className="flex justify-between py-1 border-b border-[#222824]/50">
               <span className="text-[#AEB5B0]">Telefone Principal</span>
               <span className="text-white font-medium flex items-center gap-1.5">
-                <Phone className="w-3.5 h-3.5 text-[#F8D800]" /> {member.phone}
+                <Phone className="w-3.5 h-3.5 text-[#F8D800]" /> {exibirTelefone(member.phone)}
               </span>
             </div>
             <div className="flex justify-between py-1 border-b border-[#222824]/50">
@@ -139,9 +140,13 @@ export const MemberDetails: React.FC = () => {
                   {member.address}, {member.number} {member.complement ? `- ${member.complement}` : ''}
                 </p>
                 <p className="text-xs text-[#727A74]">
-                  {member.neighborhood} - {member.city} / {member.state}
+                  {[member.neighborhood, [member.city, member.state].filter(Boolean).join(' / ')]
+                    .filter(Boolean)
+                    .join(' - ')}
                 </p>
-                <p className="text-xs text-[#727A74]">CEP: {member.cep}</p>
+                {member.cep && (
+                  <p className="text-xs text-[#727A74]">CEP: {exibirCEP(member.cep)}</p>
+                )}
               </div>
             </div>
 

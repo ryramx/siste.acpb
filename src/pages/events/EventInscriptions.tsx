@@ -6,6 +6,7 @@ import { Badge } from '../../components/ui/Badge';
 import { StatCard } from '../../components/ui/StatCard';
 import { eventService } from '../../services/domainServices';
 import { EventItem } from '../../types/domain';
+import { exibirTelefone } from '../../utils/mascaras';
 
 export const EventInscriptions: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -77,7 +78,7 @@ export const EventInscriptions: React.FC = () => {
               <tr key={ins.id} className="hover:bg-[#1e2521] transition-colors">
                 <td className="py-3.5 px-4 font-semibold text-white">
                   <div>{ins.participantName}</div>
-                  <div className="text-xs text-[#727A74]">{ins.participantPhone}</div>
+                  <div className="text-xs text-[#727A74]">{exibirTelefone(ins.participantPhone)}</div>
                 </td>
                 <td className="py-3.5 px-4 text-[#AEB5B0] text-xs">{ins.inscriptionDate}</td>
                 <td className="py-3.5 px-4">

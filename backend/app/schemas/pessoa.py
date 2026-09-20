@@ -14,8 +14,10 @@ class PessoaBase(BaseModel):
     nome_mae: str | None = None
     nome_pai: str | None = None
     endereco: str | None = None
+    bairro: str | None = None
     cidade: str | None = None
     estado: str | None = None
+    cep: str | None = None
 
 class PessoaCreate(PessoaBase):
     pass
@@ -33,8 +35,10 @@ class PessoaUpdate(BaseModel):
     nome_mae: str | None = None
     nome_pai: str | None = None
     endereco: str | None = None
+    bairro: str | None = None
     cidade: str | None = None
     estado: str | None = None
+    cep: str | None = None
 
 class PessoaResponse(PessoaBase):
     id: int

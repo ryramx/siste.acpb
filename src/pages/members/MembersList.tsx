@@ -6,6 +6,7 @@ import { Input } from '../../components/ui/Input';
 import { Select } from '../../components/ui/Select';
 import { Badge } from '../../components/ui/Badge';
 import { TableSkeleton } from '../../components/ui/Skeleton';
+import { apenasDigitos, exibirCPF, exibirTelefone } from '../../utils/mascaras';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { Modal } from '../../components/ui/Modal';
 import { Avatar } from '../../components/ui/Avatar';
@@ -51,7 +52,7 @@ export const MembersList: React.FC = () => {
   const filteredMembers = members.filter((m) => {
     const matchesSearch =
       m.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      m.cpf.includes(searchTerm) ||
+      apenasDigitos(m.cpf).includes(apenasDigitos(searchTerm)) ||
       m.email.toLowerCase().includes(searchTerm.toLowerCase());
 
     const matchesStatus = statusFilter === 'TODOS' || m.status === statusFilter;
@@ -164,14 +165,14 @@ export const MembersList: React.FC = () => {
                         <Avatar pessoaId={m.pessoaId} nome={m.name} temFoto={m.temFoto} size="sm" />
                         <div>
                           <div className="font-semibold text-white">{m.name}</div>
-                          <div className="text-xs text-[#727A74]">CPF: {m.cpf}</div>
+                          <div className="text-xs text-[#727A74]">CPF: {exibirCPF(m.cpf)}</div>
                         </div>
                       </div>
                     </td>
                     <td className="py-3.5 px-4 hidden md:table-cell text-[#AEB5B0]">
                       <div className="flex flex-col text-xs space-y-0.5">
                         <span className="flex items-center gap-1">
-                          <Phone className="w-3 h-3 text-[#F8D800]" /> {m.phone}
+                          <Phone className="w-3 h-3 text-[#F8D800]" /> {exibirTelefone(m.phone)}
                         </span>
                         <span className="flex items-center gap-1 text-[#727A74]">
                           <Mail className="w-3 h-3" /> {m.email}
