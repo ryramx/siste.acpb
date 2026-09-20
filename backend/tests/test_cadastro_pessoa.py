@@ -167,3 +167,56 @@ def test_requer_ambos_pessoa_id_e_pessoa_como_erro(token_admin):
         },
     )
     assert response.status_code == 422
+
+
+def test_cadastra_pessoa_sem_cpf(token_admin):
+    """CPF em branco é legítimo: nem sempre a associação tem o documento em mãos no
+    momento do cadastro, e exigi-lo impediria registrar a pessoa."""
+    resposta = client.post(
+        "/cadastros/pessoa-vinculo",
+        headers={"Authorization": f"Bearer {token_admin}"},
+        json={
+            "pessoa": {"nome_completo": "Pessoa Sem Documento"},
+            "papel": "voluntario",
+            "voluntario": {"data_inicio": "2026-01-10", "ativo": True},
+        },
+    )
+    assert resposta.status_code == 201, resposta.text
+    assert resposta.json()["pessoa"]["cpf"] is None
+
+    db = SessionLocal()
+    pessoa_id = resposta.json()["pessoa"]["id"]
+    try:
+        assert db.query(Pessoa).filter(Pessoa.id == pessoa_id).first().cpf is None
+    finally:
+        db.query(Voluntario).filter(Voluntario.pessoa_id == pessoa_id).delete()
+        db.query(Pessoa).filter(Pessoa.id == pessoa_id).delete()
+        db.commit()
+        db.close()
+
+
+def test_varias_pessoas_sem_cpf_nao_colidem(token_admin):
+    """`pessoas.cpf` tem índice único. No Postgres, NULL não conflita com NULL — mas se
+    alguém trocar o nulo por string vazia, a segunda pessoa sem documento passaria a ser
+    rejeitada por duplicidade. Este teste trava esse comportamento."""
+    criados = []
+    try:
+        for nome in ("Sem Documento Um", "Sem Documento Dois"):
+            resposta = client.post(
+                "/cadastros/pessoa-vinculo",
+                headers={"Authorization": f"Bearer {token_admin}"},
+                json={
+                    "pessoa": {"nome_completo": nome},
+                    "papel": "voluntario",
+                    "voluntario": {"data_inicio": "2026-01-10", "ativo": True},
+                },
+            )
+            assert resposta.status_code == 201, resposta.text
+            criados.append(resposta.json()["pessoa"]["id"])
+    finally:
+        db = SessionLocal()
+        for pessoa_id in criados:
+            db.query(Voluntario).filter(Voluntario.pessoa_id == pessoa_id).delete()
+            db.query(Pessoa).filter(Pessoa.id == pessoa_id).delete()
+        db.commit()
+        db.close()

@@ -9,6 +9,7 @@ import { buscarEnderecoPorCEP, CEPError } from '../../services/cepService';
 import { useToast } from '../../contexts/ToastContext';
 import {
   apenasDigitos,
+  cpfValido,
   formatarCEP,
   formatarCPF,
   formatarTelefone
@@ -86,6 +87,16 @@ export const MemberForm: React.FC = () => {
     whatsapp: formatarTelefone,
     cep: formatarCEP
   };
+
+  /** CPF em branco e legitimo: nem sempre a associacao tem o documento em maos no momento
+   * do cadastro, e exigi-lo impediria registrar a pessoa. Por isso o aviso so aparece com os
+   * 11 digitos preenchidos e invalidos — ou seja, erro de digitacao — e nunca bloqueia o
+   * salvamento. Campo vazio e salvo como null. */
+  const cpfDigitado = apenasDigitos(formData.cpf);
+  const avisoCpf =
+    cpfDigitado.length === 11 && !cpfValido(cpfDigitado)
+      ? 'Confira os dígitos: este CPF não passa na validação.'
+      : undefined;
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -197,6 +208,7 @@ export const MemberForm: React.FC = () => {
               onChange={handleChange}
               placeholder="000.000.000-00"
               inputMode="numeric"
+              helperText={avisoCpf ?? 'Opcional — deixe em branco se ainda não tiver o documento'}
             />
             <Input
               label="Data de Nascimento"
