@@ -23,6 +23,11 @@ from app.models.usuario_perfil import UsuarioPerfil
 
 BACKEND_DIR = Path(__file__).resolve().parent.parent
 EMAIL = "admin.bootstrap.teste@example.com"
+EMAIL_SECUNDARIO = "outro.admin@example.com"
+# Todos os e-mails que algum caso desta suite pode criar. A limpeza precisa cobrir todos:
+# um deles sobrando faz os casos seguintes falharem por "e-mail ja cadastrado", sintoma que
+# nao aponta para a causa.
+EMAILS_DE_TESTE = (EMAIL, EMAIL_SECUNDARIO)
 SENHA = "senhaForteDeTeste123"
 
 
@@ -50,6 +55,22 @@ def limpar_admin():
     Admins ativos pré-existentes são apenas desativados e restaurados no final: apagá-los
     destruiria dados de outro teste ou do ambiente."""
     db = SessionLocal()
+
+    def _remover_usuario_de_teste() -> None:
+        for email in EMAILS_DE_TESTE:
+            usuario = db.query(Usuario).filter(Usuario.email == email).first()
+            if usuario:
+                db.query(UsuarioPerfil).filter(UsuarioPerfil.usuario_id == usuario.id).delete()
+                pessoa_id = usuario.pessoa_id
+                db.query(Usuario).filter(Usuario.id == usuario.id).delete()
+                db.query(Pessoa).filter(Pessoa.id == pessoa_id).delete()
+        db.commit()
+
+    # Limpa tambem na entrada, nao so na saida: se um teste anterior morrer antes do
+    # teardown, a sobra deixaria todos os seguintes falhando com "e-mail ja cadastrado" —
+    # um sintoma que nao aponta para a causa real.
+    _remover_usuario_de_teste()
+
     perfil = _perfil_admin(db)
     preexistentes = (
         db.query(Usuario)
@@ -63,12 +84,7 @@ def limpar_admin():
 
     yield
 
-    usuario = db.query(Usuario).filter(Usuario.email == EMAIL).first()
-    if usuario:
-        db.query(UsuarioPerfil).filter(UsuarioPerfil.usuario_id == usuario.id).delete()
-        pessoa_id = usuario.pessoa_id
-        db.query(Usuario).filter(Usuario.id == usuario.id).delete()
-        db.query(Pessoa).filter(Pessoa.id == pessoa_id).delete()
+    _remover_usuario_de_teste()
     for u in preexistentes:
         u.ativo = True
     db.commit()
@@ -111,7 +127,7 @@ def test_recusa_quando_ja_existe_administrador_ativo(limpar_admin):
     assert primeiro.returncode == 0, primeiro.stderr
 
     segundo = _rodar(
-        ADMIN_EMAIL="outro.admin@example.com",
+        ADMIN_EMAIL=EMAIL_SECUNDARIO,
         ADMIN_SENHA=SENHA,
         ADMIN_NOME="Outro Admin",
     )
@@ -119,7 +135,7 @@ def test_recusa_quando_ja_existe_administrador_ativo(limpar_admin):
     assert "já existe administrador ativo" in segundo.stderr
 
     db = SessionLocal()
-    assert db.query(Usuario).filter(Usuario.email == "outro.admin@example.com").first() is None
+    assert db.query(Usuario).filter(Usuario.email == EMAIL_SECUNDARIO).first() is None
     db.close()
 
 
