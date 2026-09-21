@@ -15,6 +15,7 @@ from app.models.projeto import Projeto
 from app.models.evento import Evento
 from app.models.inscricao import Inscricao
 from app.models.projeto_voluntario import ProjetoVoluntario
+from app.models.projeto_beneficiario import ProjetoBeneficiario
 from app.models.conta_financeira import ContaFinanceira
 from app.models.categoria_financeira import CategoriaFinanceira
 from app.models.movimentacao_financeira import MovimentacaoFinanceira
@@ -40,6 +41,7 @@ __all__ = [
     "Evento",
     "Inscricao",
     "ProjetoVoluntario",
+    "ProjetoBeneficiario",
     "ContaFinanceira",
     "CategoriaFinanceira",
     "MovimentacaoFinanceira",

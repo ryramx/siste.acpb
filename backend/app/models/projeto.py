@@ -12,6 +12,7 @@ if TYPE_CHECKING:
     from app.models.pessoa import Pessoa
     from app.models.evento import Evento
     from app.models.movimentacao_financeira import MovimentacaoFinanceira
+    from app.models.projeto_beneficiario import ProjetoBeneficiario
     from app.models.projeto_voluntario import ProjetoVoluntario
 
 
@@ -81,5 +82,8 @@ class Projeto(Base, TimestampMixin):
         back_populates="projeto"
     )
     voluntarios_vinculados: Mapped[list["ProjetoVoluntario"]] = relationship(
+        back_populates="projeto"
+    )
+    beneficiarios_vinculados: Mapped[list["ProjetoBeneficiario"]] = relationship(
         back_populates="projeto"
     )

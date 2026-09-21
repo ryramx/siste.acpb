@@ -38,6 +38,8 @@ e unicidade.
 | `inscricoes.evento_id` | `eventos.id` | N:1 | não | NO ACTION | par único com `pessoa_id` |
 | `projeto_voluntarios.projeto_id` | `projetos.id` | N:1 | não | NO ACTION | par único com `voluntario_id` |
 | `projeto_voluntarios.voluntario_id` | `voluntarios.id` | N:1 | não | NO ACTION | par único com `projeto_id` |
+| `projeto_beneficiarios.projeto_id` | `projetos.id` | N:1 | não | NO ACTION | par único com `beneficiario_id` |
+| `projeto_beneficiarios.beneficiario_id` | `beneficiarios.id` | N:1 | não | NO ACTION | par único com `projeto_id` |
 | `movimentacoes_financeiras.conta_financeira_id` | `contas_financeiras.id` | N:1 | não | NO ACTION | não |
 | `movimentacoes_financeiras.categoria_id` | `categorias_financeiras.id` | N:1 | não | NO ACTION | não |
 | `movimentacoes_financeiras.projeto_id` | `projetos.id` | N:1 | sim | NO ACTION | não |

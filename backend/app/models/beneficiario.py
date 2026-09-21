@@ -11,6 +11,7 @@ from app.models.mixins import TimestampMixin
 if TYPE_CHECKING:
     from app.models.pessoa import Pessoa
     from app.models.atendimento import Atendimento
+    from app.models.projeto_beneficiario import ProjetoBeneficiario
 
 
 class Beneficiario(Base, TimestampMixin):
@@ -76,3 +77,6 @@ class Beneficiario(Base, TimestampMixin):
 
     pessoa: Mapped["Pessoa"] = relationship(back_populates="beneficiario")
     atendimentos: Mapped[list["Atendimento"]] = relationship(back_populates="beneficiario")
+    projetos_vinculados: Mapped[list["ProjetoBeneficiario"]] = relationship(
+        back_populates="beneficiario"
+    )

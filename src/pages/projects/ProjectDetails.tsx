@@ -1,11 +1,43 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { ChevronRight, HeartHandshake, Users, Calendar, DollarSign, ArrowLeft } from 'lucide-react';
+import {
+  ChevronRight,
+  HeartHandshake,
+  Users,
+  Calendar,
+  DollarSign,
+  ArrowLeft,
+  Plus,
+  Trash2,
+  UserCog
+} from 'lucide-react';
 import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
 import { StatCard } from '../../components/ui/StatCard';
-import { projectService, eventService, financialService } from '../../services/domainServices';
-import { Project, Beneficiary, Volunteer, EventItem, FinancialTransaction } from '../../types/domain';
+import { Modal } from '../../components/ui/Modal';
+import { Select } from '../../components/ui/Select';
+import { Input } from '../../components/ui/Input';
+import { EmptyState } from '../../components/ui/EmptyState';
+import {
+  projectService,
+  eventService,
+  financialService,
+  volunteerService,
+  beneficiaryService
+} from '../../services/domainServices';
+import {
+  Project,
+  ProjectVolunteerLink,
+  ProjectBeneficiaryLink,
+  EventItem,
+  FinancialTransaction
+} from '../../types/domain';
+
+/** Opção de pessoa disponível para vincular (voluntário ou beneficiário ainda não no projeto). */
+interface CandidateOption {
+  id: string;
+  name: string;
+}
 
 export const ProjectDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -15,31 +47,146 @@ export const ProjectDetails: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'overview' | 'beneficiaries' | 'volunteers' | 'events' | 'financial'>('overview');
   const [loading, setLoading] = useState(true);
 
-  // Mocks Relacionados
-  const [beneficiaries, setBeneficiaries] = useState<Beneficiary[]>([]);
-  const [volunteers, setVolunteers] = useState<Volunteer[]>([]);
+  const [beneficiaries, setBeneficiaries] = useState<ProjectBeneficiaryLink[]>([]);
+  const [volunteers, setVolunteers] = useState<ProjectVolunteerLink[]>([]);
   const [events, setEvents] = useState<EventItem[]>([]);
   const [financials, setFinancials] = useState<FinancialTransaction[]>([]);
 
+  // Modais de vínculo. `saving` trava o botão para não criar o mesmo vínculo duas vezes
+  // com um duplo clique — o backend rejeitaria com 409, mas o erro confundiria o usuário.
+  const [volunteerModalOpen, setVolunteerModalOpen] = useState(false);
+  const [beneficiaryModalOpen, setBeneficiaryModalOpen] = useState(false);
+  const [responsibleModalOpen, setResponsibleModalOpen] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
+
+  const [volunteerOptions, setVolunteerOptions] = useState<CandidateOption[]>([]);
+  const [beneficiaryOptions, setBeneficiaryOptions] = useState<CandidateOption[]>([]);
+  const [personOptions, setPersonOptions] = useState<CandidateOption[]>([]);
+
+  const [volunteerForm, setVolunteerForm] = useState({ id: '', role: '', entryDate: '' });
+  const [beneficiaryForm, setBeneficiaryForm] = useState({ id: '', role: '', entryDate: '' });
+  const [responsibleId, setResponsibleId] = useState('');
+
   useEffect(() => {
-    if (id) {
-      Promise.all([
-        projectService.getById(id),
-        eventService.getAll(),
-        financialService.getAll()
-      ]).then(([p, eList, fList]) => {
-        setProject(p || null);
-        // Beneficiários e voluntários ainda não têm vínculo de projeto exposto pela API
-        // (backend não relaciona Beneficiario a Projeto; Voluntario↔Projeto existe via
-        // projeto_voluntarios, mas sem rota própria ainda — ver tarefa 30).
-        setBeneficiaries([]);
-        setVolunteers([]);
-        setEvents(eList);
-        setFinancials(fList.filter((item) => item.projectId === id));
-        setLoading(false);
-      });
-    }
+    if (!id) return;
+    Promise.all([
+      projectService.getById(id),
+      projectService.getBeneficiaries(id),
+      projectService.getVolunteers(id),
+      eventService.getAll(),
+      financialService.getAll()
+    ]).then(([p, bList, vList, eList, fList]) => {
+      setProject(p || null);
+      setBeneficiaries(bList);
+      setVolunteers(vList);
+      setEvents(eList.filter((e) => e.projectId === id));
+      setFinancials(fList.filter((item) => item.projectId === id));
+      setLoading(false);
+    });
   }, [id]);
+
+  /** Carrega candidatos sob demanda, ao abrir o modal — listar todos no load da página
+   *  custaria duas varreduras de /pessoas/ que a maioria das visitas nunca usa. */
+  const openVolunteerModal = useCallback(async () => {
+    setFormError(null);
+    setVolunteerForm({ id: '', role: '', entryDate: '' });
+    setVolunteerModalOpen(true);
+    const todos = await volunteerService.getAll();
+    const jaVinculados = new Set(volunteers.map((v) => v.volunteerId));
+    setVolunteerOptions(
+      todos
+        .filter((v) => !jaVinculados.has(v.id))
+        .map((v) => ({ id: v.id, name: v.name }))
+    );
+  }, [volunteers]);
+
+  const openBeneficiaryModal = useCallback(async () => {
+    setFormError(null);
+    setBeneficiaryForm({ id: '', role: '', entryDate: '' });
+    setBeneficiaryModalOpen(true);
+    const todos = await beneficiaryService.getAll();
+    const jaVinculados = new Set(beneficiaries.map((b) => b.beneficiaryId));
+    setBeneficiaryOptions(
+      todos
+        .filter((b) => !jaVinculados.has(b.id))
+        .map((b) => ({ id: b.id, name: b.name }))
+    );
+  }, [beneficiaries]);
+
+  const openResponsibleModal = useCallback(async () => {
+    setFormError(null);
+    setResponsibleId(project?.responsibleId ?? '');
+    setResponsibleModalOpen(true);
+    setPersonOptions(await projectService.getPessoasParaResponsavel());
+  }, [project]);
+
+  const handleAddVolunteer = async () => {
+    if (!id || !volunteerForm.id) return;
+    setSaving(true);
+    setFormError(null);
+    try {
+      const criado = await projectService.addVolunteer(id, {
+        volunteerId: volunteerForm.id,
+        role: volunteerForm.role,
+        entryDate: volunteerForm.entryDate
+      });
+      setVolunteers((atuais) => [...atuais, criado]);
+      setVolunteerModalOpen(false);
+    } catch (e) {
+      setFormError(e instanceof Error ? e.message : 'Não foi possível vincular o voluntário.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleAddBeneficiary = async () => {
+    if (!id || !beneficiaryForm.id) return;
+    setSaving(true);
+    setFormError(null);
+    try {
+      const criado = await projectService.addBeneficiary(id, {
+        beneficiaryId: beneficiaryForm.id,
+        role: beneficiaryForm.role,
+        entryDate: beneficiaryForm.entryDate
+      });
+      setBeneficiaries((atuais) => [...atuais, criado]);
+      setBeneficiaryModalOpen(false);
+    } catch (e) {
+      setFormError(e instanceof Error ? e.message : 'Não foi possível vincular o beneficiário.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleSaveResponsible = async () => {
+    if (!id) return;
+    setSaving(true);
+    setFormError(null);
+    try {
+      const atualizado = await projectService.update(id, { responsibleId: responsibleId || null });
+      setProject(atualizado);
+      setResponsibleModalOpen(false);
+    } catch (e) {
+      setFormError(e instanceof Error ? e.message : 'Não foi possível salvar o responsável.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleRemoveVolunteer = async (link: ProjectVolunteerLink) => {
+    if (!id) return;
+    if (!window.confirm(`Remover ${link.personName} deste projeto?`)) return;
+    await projectService.removeVolunteer(id, link.id);
+    setVolunteers((atuais) => atuais.filter((v) => v.id !== link.id));
+  };
+
+  const handleRemoveBeneficiary = async (link: ProjectBeneficiaryLink) => {
+    if (!id) return;
+    if (!window.confirm(`Remover ${link.personName} deste projeto?`)) return;
+    await projectService.removeBeneficiary(id, link.id);
+    setBeneficiaries((atuais) => atuais.filter((b) => b.id !== link.id));
+  };
 
   if (loading) return <div className="p-8 text-center text-[#AEB5B0]">Carregando detalhes do projeto...</div>;
   if (!project) return <div className="p-8 text-center text-white">Projeto não encontrado.</div>;
@@ -66,6 +213,14 @@ export const ProjectDetails: React.FC = () => {
             Responsável Técnico: {project.responsibleName ?? 'Não definido'}
           </p>
         </div>
+        <Button
+          variant="outline"
+          size="sm"
+          leftIcon={<UserCog className="w-4 h-4" />}
+          onClick={openResponsibleModal}
+        >
+          {project.responsibleName ? 'Alterar responsável' : 'Definir responsável'}
+        </Button>
       </div>
 
       {/* Cards de Visão Geral das Relações */}
@@ -92,7 +247,7 @@ export const ProjectDetails: React.FC = () => {
           { key: 'overview', label: 'Visão Geral' },
           { key: 'beneficiaries', label: `Beneficiários (${beneficiaries.length})` },
           { key: 'volunteers', label: `Voluntários (${volunteers.length})` },
-          { key: 'events', label: 'Eventos' },
+          { key: 'events', label: `Eventos (${events.length})` },
           { key: 'financial', label: `Financeiro (${financials.length})` }
         ].map((tab) => (
           <button
@@ -121,29 +276,114 @@ export const ProjectDetails: React.FC = () => {
         )}
 
         {activeTab === 'beneficiaries' && (
-          <div className="space-y-3">
-            {beneficiaries.map((b) => (
-              <div key={b.id} className="p-3 bg-[#0F1210] border border-[#222824] rounded-xl flex justify-between items-center">
-                <span className="text-sm font-medium text-white">{b.name}</span>
-                <span className="text-xs text-[#AEB5B0]">{b.ageGroup}</span>
+          <div className="space-y-4">
+            <div className="flex justify-end">
+              <Button
+                size="sm"
+                leftIcon={<Plus className="w-4 h-4" />}
+                onClick={openBeneficiaryModal}
+              >
+                Adicionar Beneficiário
+              </Button>
+            </div>
+            {beneficiaries.length === 0 ? (
+              <EmptyState
+                title="Nenhum beneficiário vinculado"
+                description="Vincule as pessoas atendidas por este projeto para acompanhar quem ele alcança."
+                icon={<HeartHandshake className="w-8 h-8" />}
+                actionLabel="Adicionar Beneficiário"
+                onAction={openBeneficiaryModal}
+              />
+            ) : (
+              <div className="space-y-3">
+                {beneficiaries.map((b) => (
+                  <div
+                    key={b.id}
+                    className="p-3 bg-[#0F1210] border border-[#222824] rounded-xl flex justify-between items-center gap-3"
+                  >
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-white truncate">{b.personName}</p>
+                      {b.role && <p className="text-xs text-[#AEB5B0]">{b.role}</p>}
+                    </div>
+                    <button
+                      onClick={() => handleRemoveBeneficiary(b)}
+                      aria-label={`Remover ${b.personName} do projeto`}
+                      className="text-[#AEB5B0] hover:text-red-400 transition-colors p-1.5 rounded-lg hover:bg-[#222824] shrink-0"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                ))}
               </div>
-            ))}
+            )}
           </div>
         )}
 
         {activeTab === 'volunteers' && (
-          <div className="space-y-3">
-            {volunteers.map((v) => (
-              <div key={v.id} className="p-3 bg-[#0F1210] border border-[#222824] rounded-xl flex justify-between items-center">
-                <span className="text-sm font-medium text-white">{v.name}</span>
-                <span className="text-xs text-[#F8D800]">{v.area}</span>
+          <div className="space-y-4">
+            <div className="flex justify-end">
+              <Button
+                size="sm"
+                leftIcon={<Plus className="w-4 h-4" />}
+                onClick={openVolunteerModal}
+              >
+                Adicionar Voluntário
+              </Button>
+            </div>
+            {volunteers.length === 0 ? (
+              <EmptyState
+                title="Nenhum voluntário vinculado"
+                description="Vincule os voluntários que atuam neste projeto para montar a equipe."
+                icon={<Users className="w-8 h-8" />}
+                actionLabel="Adicionar Voluntário"
+                onAction={openVolunteerModal}
+              />
+            ) : (
+              <div className="space-y-3">
+                {volunteers.map((v) => (
+                  <div
+                    key={v.id}
+                    className="p-3 bg-[#0F1210] border border-[#222824] rounded-xl flex justify-between items-center gap-3"
+                  >
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-white truncate">{v.personName}</p>
+                      <p className="text-xs text-[#AEB5B0]">
+                        {v.role || 'Sem função definida'}
+                        {v.area && <span className="text-[#F8D800]"> · {v.area}</span>}
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => handleRemoveVolunteer(v)}
+                      aria-label={`Remover ${v.personName} do projeto`}
+                      className="text-[#AEB5B0] hover:text-red-400 transition-colors p-1.5 rounded-lg hover:bg-[#222824] shrink-0"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                ))}
               </div>
-            ))}
+            )}
           </div>
         )}
 
         {activeTab === 'events' && (
-          <p className="text-sm text-[#AEB5B0]">Nenhum evento diretamente associado a este projeto no momento.</p>
+          <div className="space-y-3">
+            {events.length === 0 ? (
+              <p className="text-sm text-[#AEB5B0]">
+                Nenhum evento diretamente associado a este projeto no momento.
+              </p>
+            ) : (
+              events.map((e) => (
+                <div
+                  key={e.id}
+                  className="p-3 bg-[#0F1210] border border-[#222824] rounded-xl flex justify-between items-center"
+                >
+                  <span className="text-sm font-medium text-white">{e.title}</span>
+                  <span className="text-xs text-[#AEB5B0]">{e.date}</span>
+                </div>
+              ))
+            )}
+          </div>
         )}
 
         {activeTab === 'financial' && (
@@ -157,6 +397,134 @@ export const ProjectDetails: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* Modal: vincular voluntário */}
+      <Modal
+        isOpen={volunteerModalOpen}
+        onClose={() => setVolunteerModalOpen(false)}
+        title="Adicionar Voluntário ao Projeto"
+        footer={
+          <>
+            <Button variant="outline" onClick={() => setVolunteerModalOpen(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={handleAddVolunteer} isLoading={saving} disabled={!volunteerForm.id}>
+              Vincular
+            </Button>
+          </>
+        }
+      >
+        <Select
+          label="Voluntário"
+          required
+          value={volunteerForm.id}
+          onChange={(e) => setVolunteerForm({ ...volunteerForm, id: e.target.value })}
+          options={[
+            { value: '', label: 'Selecione um voluntário' },
+            ...volunteerOptions.map((v) => ({ value: v.id, label: v.name }))
+          ]}
+        />
+        <Input
+          label="Função no projeto"
+          placeholder="Ex.: Instrutor, Apoio logístico"
+          value={volunteerForm.role}
+          onChange={(e) => setVolunteerForm({ ...volunteerForm, role: e.target.value })}
+        />
+        <Input
+          label="Data de entrada"
+          type="date"
+          value={volunteerForm.entryDate}
+          onChange={(e) => setVolunteerForm({ ...volunteerForm, entryDate: e.target.value })}
+        />
+        {volunteerOptions.length === 0 && (
+          <p className="text-xs text-[#AEB5B0]">
+            Todos os voluntários cadastrados já estão neste projeto.
+          </p>
+        )}
+        {formError && <p className="text-xs text-red-500">{formError}</p>}
+      </Modal>
+
+      {/* Modal: vincular beneficiário */}
+      <Modal
+        isOpen={beneficiaryModalOpen}
+        onClose={() => setBeneficiaryModalOpen(false)}
+        title="Adicionar Beneficiário ao Projeto"
+        footer={
+          <>
+            <Button variant="outline" onClick={() => setBeneficiaryModalOpen(false)}>
+              Cancelar
+            </Button>
+            <Button
+              onClick={handleAddBeneficiary}
+              isLoading={saving}
+              disabled={!beneficiaryForm.id}
+            >
+              Vincular
+            </Button>
+          </>
+        }
+      >
+        <Select
+          label="Beneficiário"
+          required
+          value={beneficiaryForm.id}
+          onChange={(e) => setBeneficiaryForm({ ...beneficiaryForm, id: e.target.value })}
+          options={[
+            { value: '', label: 'Selecione um beneficiário' },
+            ...beneficiaryOptions.map((b) => ({ value: b.id, label: b.name }))
+          ]}
+        />
+        <Input
+          label="Papel no projeto"
+          placeholder="Ex.: Aluno, Família atendida"
+          value={beneficiaryForm.role}
+          onChange={(e) => setBeneficiaryForm({ ...beneficiaryForm, role: e.target.value })}
+        />
+        <Input
+          label="Data de entrada"
+          type="date"
+          value={beneficiaryForm.entryDate}
+          onChange={(e) => setBeneficiaryForm({ ...beneficiaryForm, entryDate: e.target.value })}
+        />
+        {beneficiaryOptions.length === 0 && (
+          <p className="text-xs text-[#AEB5B0]">
+            Todos os beneficiários cadastrados já estão neste projeto.
+          </p>
+        )}
+        {formError && <p className="text-xs text-red-500">{formError}</p>}
+      </Modal>
+
+      {/* Modal: responsável técnico */}
+      <Modal
+        isOpen={responsibleModalOpen}
+        onClose={() => setResponsibleModalOpen(false)}
+        title="Responsável Técnico do Projeto"
+        footer={
+          <>
+            <Button variant="outline" onClick={() => setResponsibleModalOpen(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={handleSaveResponsible} isLoading={saving}>
+              Salvar
+            </Button>
+          </>
+        }
+      >
+        <Select
+          label="Responsável"
+          value={responsibleId}
+          onChange={(e) => setResponsibleId(e.target.value)}
+          options={[
+            { value: '', label: 'Sem responsável definido' },
+            ...personOptions.map((p) => ({ value: p.id, label: p.name }))
+          ]}
+        />
+        {formError && <p className="text-xs text-red-500">{formError}</p>}
+      </Modal>
+
+      <Button variant="ghost" leftIcon={<ArrowLeft className="w-4 h-4" />} onClick={() => navigate('/projetos')}>
+        Voltar para Projetos
+      </Button>
     </div>
   );
 };
