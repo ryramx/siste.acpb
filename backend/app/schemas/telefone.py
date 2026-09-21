@@ -5,7 +5,7 @@ from pydantic import BaseModel, ConfigDict, field_validator
 TIPOS_VALIDOS = {"CELULAR", "FIXO", "COMERCIAL", "OUTRO"}
 
 
-def _validar_numero(numero: str) -> str:
+def normalizar_numero_telefone(numero: str) -> str:
     apenas_digitos = re.sub(r"\D", "", numero)
     if len(apenas_digitos) not in (10, 11):
         raise ValueError(
@@ -24,7 +24,7 @@ class TelefoneBase(BaseModel):
     @field_validator("numero")
     @classmethod
     def validar_numero(cls, v: str) -> str:
-        return _validar_numero(v)
+        return normalizar_numero_telefone(v)
 
     @field_validator("tipo")
     @classmethod
@@ -48,7 +48,7 @@ class TelefoneUpdate(BaseModel):
     @field_validator("numero")
     @classmethod
     def validar_numero(cls, v: str | None) -> str | None:
-        return _validar_numero(v) if v is not None else v
+        return normalizar_numero_telefone(v) if v is not None else v
 
     @field_validator("tipo")
     @classmethod

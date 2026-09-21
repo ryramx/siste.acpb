@@ -1,5 +1,6 @@
-import { Member, Volunteer, Beneficiary, Project, EventItem, EventInscription, FinancialTransaction, AttendanceRecord } from '../types/domain';
+import { Member, Volunteer, Beneficiary, Project, ProjectVolunteerLink, ProjectBeneficiaryLink, EventItem, EventInscription, InscriptionStatus, FinancialTransaction, AttendanceRecord } from '../types/domain';
 import { apiClient } from './apiClient';
+import { apenasDigitos } from '../utils/mascaras';
 
 interface ApiMembro {
   id: number;
@@ -424,9 +425,27 @@ interface ApiInscricao {
   pessoa_id: number;
   evento_id: number;
   data_inscricao: string;
-  status: string;
+  status: InscriptionStatus;
   observacoes: string | null;
+  // Denormalizados pelo backend (rotas de inscrição) — evitam uma busca de pessoa por linha.
+  pessoa_nome: string | null;
+  pessoa_telefone: string | null;
 }
+
+const toEventInscription = (i: ApiInscricao): EventInscription => ({
+  id: String(i.id),
+  pessoaId: String(i.pessoa_id),
+  participantName: i.pessoa_nome ?? '',
+  participantPhone: i.pessoa_telefone ?? '',
+  inscriptionDate: i.data_inscricao,
+  status: i.status,
+  notes: i.observacoes ?? undefined
+});
+
+/** Vagas ocupadas: inscrições canceladas ficam no histórico, mas devolvem a vaga
+ *  (mesma regra aplicada pelo backend ao aceitar novas inscrições). */
+const contarOcupadas = (inscricoes: ApiInscricao[]): number =>
+  inscricoes.filter((i) => i.status !== 'CANCELADA').length;
 
 interface ApiDespesaPorProjeto {
   projeto_id: number;
@@ -476,6 +495,52 @@ function toProject(
   };
 }
 
+interface ApiProjetoVoluntario {
+  id: number;
+  projeto_id: number;
+  voluntario_id: number;
+  funcao: string | null;
+  data_entrada: string | null;
+  data_saida: string | null;
+  observacoes: string | null;
+  pessoa_id: number | null;
+  pessoa_nome: string | null;
+  area: string | null;
+}
+
+interface ApiProjetoBeneficiario {
+  id: number;
+  projeto_id: number;
+  beneficiario_id: number;
+  papel: string | null;
+  data_entrada: string | null;
+  data_saida: string | null;
+  observacoes: string | null;
+  pessoa_id: number | null;
+  pessoa_nome: string | null;
+}
+
+function toProjectVolunteerLink(v: ApiProjetoVoluntario): ProjectVolunteerLink {
+  return {
+    id: String(v.id),
+    volunteerId: String(v.voluntario_id),
+    personName: v.pessoa_nome ?? 'Sem nome',
+    area: v.area,
+    role: v.funcao,
+    entryDate: v.data_entrada
+  };
+}
+
+function toProjectBeneficiaryLink(b: ApiProjetoBeneficiario): ProjectBeneficiaryLink {
+  return {
+    id: String(b.id),
+    beneficiaryId: String(b.beneficiario_id),
+    personName: b.pessoa_nome ?? 'Sem nome',
+    role: b.papel,
+    entryDate: b.data_entrada
+  };
+}
+
 export const projectService = {
   async getAll(): Promise<Project[]> {
     const [projetos, eventos, despesas] = await Promise.all([
@@ -518,6 +583,91 @@ export const projectService = {
       status: data.status
     });
     return toProject(criado, null, 0, 0);
+  },
+
+  /** Atualização parcial — só o que for passado é enviado ao backend. */
+  async update(
+    id: string,
+    data: { name?: string; description?: string; status?: string; responsibleId?: string | null }
+  ): Promise<Project> {
+    const corpo: Record<string, unknown> = {};
+    if (data.name !== undefined) corpo.nome = data.name;
+    if (data.description !== undefined) corpo.descricao = data.description || null;
+    if (data.status !== undefined) corpo.status = data.status;
+    // '' no select significa "sem responsável" e precisa virar null, não ser omitido:
+    // omitir manteria o responsável antigo (o PUT é parcial, via exclude_unset).
+    if (data.responsibleId !== undefined) {
+      corpo.responsavel_id = data.responsibleId ? Number(data.responsibleId) : null;
+    }
+
+    const atualizado = await apiClient.put<ApiProjeto>(`/projetos/${id}`, corpo);
+    const nome = await resolverNomePessoa(atualizado.responsavel_id, new Map());
+    const [eventos, despesas] = await Promise.all([
+      apiClient.get<ApiEvento[]>('/eventos/'),
+      despesasPorProjeto()
+    ]);
+    const eventsCount = eventos.filter((e) => e.projeto_id === atualizado.id).length;
+    return toProject(atualizado, nome, eventsCount, despesas.get(atualizado.id) ?? 0);
+  },
+
+  async getVolunteers(projectId: string): Promise<ProjectVolunteerLink[]> {
+    const lista = await apiClient.get<ApiProjetoVoluntario[]>(
+      `/projetos/${projectId}/voluntarios`
+    );
+    return lista.map(toProjectVolunteerLink);
+  },
+
+  async addVolunteer(
+    projectId: string,
+    data: { volunteerId: string; role?: string; entryDate?: string }
+  ): Promise<ProjectVolunteerLink> {
+    const criado = await apiClient.post<ApiProjetoVoluntario>(
+      `/projetos/${projectId}/voluntarios`,
+      {
+        voluntario_id: Number(data.volunteerId),
+        funcao: data.role || null,
+        data_entrada: data.entryDate || null
+      }
+    );
+    return toProjectVolunteerLink(criado);
+  },
+
+  async removeVolunteer(projectId: string, linkId: string): Promise<void> {
+    await apiClient.delete(`/projetos/${projectId}/voluntarios/${linkId}`);
+  },
+
+  async getBeneficiaries(projectId: string): Promise<ProjectBeneficiaryLink[]> {
+    const lista = await apiClient.get<ApiProjetoBeneficiario[]>(
+      `/projetos/${projectId}/beneficiarios`
+    );
+    return lista.map(toProjectBeneficiaryLink);
+  },
+
+  async addBeneficiary(
+    projectId: string,
+    data: { beneficiaryId: string; role?: string; entryDate?: string }
+  ): Promise<ProjectBeneficiaryLink> {
+    const criado = await apiClient.post<ApiProjetoBeneficiario>(
+      `/projetos/${projectId}/beneficiarios`,
+      {
+        beneficiario_id: Number(data.beneficiaryId),
+        papel: data.role || null,
+        data_entrada: data.entryDate || null
+      }
+    );
+    return toProjectBeneficiaryLink(criado);
+  },
+
+  async removeBeneficiary(projectId: string, linkId: string): Promise<void> {
+    await apiClient.delete(`/projetos/${projectId}/beneficiarios/${linkId}`);
+  },
+
+  /** Pessoas cadastradas, para escolher o responsável do projeto. */
+  async getPessoasParaResponsavel(): Promise<{ id: string; name: string }[]> {
+    const pessoas = await apiClient.get<ApiPessoa[]>('/pessoas/');
+    return pessoas
+      .map((p) => ({ id: String(p.id), name: p.nome_completo }))
+      .sort((a, b) => a.name.localeCompare(b.name));
   }
 };
 
@@ -553,7 +703,7 @@ export const eventService = {
         const inscricoes = e.exige_inscricao
           ? await apiClient.get<ApiInscricao[]>(`/inscricoes/?evento_id=${e.id}`)
           : [];
-        return toEventItem(e, nome, inscricoes.length);
+        return toEventItem(e, nome, contarOcupadas(inscricoes));
       })
     );
   },
@@ -561,18 +711,11 @@ export const eventService = {
   async getById(id: string): Promise<EventItem | undefined> {
     const e = await apiClient.get<ApiEvento>(`/eventos/${id}`);
     const nome = await resolverNomePessoa(e.responsavel_id, new Map());
-    const inscricoes = await apiClient.get<ApiInscricao[]>(`/inscricoes/?evento_id=${e.id}`);
-    const pessoasCache = new Map<number, string>();
-    const inscriptions: EventInscription[] = await Promise.all(
-      inscricoes.map(async (i) => ({
-        id: String(i.id),
-        participantName: (await resolverNomePessoa(i.pessoa_id, pessoasCache)) ?? '',
-        participantPhone: '',
-        inscriptionDate: i.data_inscricao,
-        status: i.status
-      }))
-    );
-    return { ...toEventItem(e, nome, inscricoes.length), inscriptions };
+    const inscricoes = await apiClient.get<ApiInscricao[]>(`/eventos/${e.id}/inscricoes`);
+    return {
+      ...toEventItem(e, nome, contarOcupadas(inscricoes)),
+      inscriptions: inscricoes.map(toEventInscription)
+    };
   },
 
   async create(data: {
@@ -594,17 +737,83 @@ export const eventService = {
       exige_inscricao: data.requiresRegistration
     });
     return toEventItem(criado, null, 0);
+  },
+
+  /** Remove o evento. As inscricoes vinculadas caem junto (cascata no backend). */
+  async remove(id: string): Promise<void> {
+    await apiClient.delete(`/eventos/${id}`);
   }
 };
 
+export interface VisitanteAvulsoInput {
+  name: string;
+  phone: string;
+  cpf: string;
+  email: string;
+  notes: string;
+}
+
 export const inscricaoService = {
-  async criar(eventoId: string, pessoaId: string): Promise<void> {
-    await apiClient.post('/inscricoes/', {
+  async listar(eventoId: string): Promise<EventInscription[]> {
+    const inscricoes = await apiClient.get<ApiInscricao[]>(`/eventos/${eventoId}/inscricoes`);
+    return inscricoes.map(toEventInscription);
+  },
+
+  /** Inscreve alguém que já tem cadastro de Pessoa — membro, voluntário, beneficiário ou
+   *  visitante de um evento anterior. */
+  async inscreverPessoa(
+    eventoId: string,
+    pessoaId: string,
+    notes?: string
+  ): Promise<EventInscription> {
+    const criada = await apiClient.post<ApiInscricao>(`/eventos/${eventoId}/inscricoes`, {
       pessoa_id: Number(pessoaId),
-      evento_id: Number(eventoId),
-      data_inscricao: new Date().toISOString(),
-      status: 'CONFIRMADA'
+      status: 'CONFIRMADA',
+      observacoes: notes || null
     });
+    return toEventInscription(criada);
+  },
+
+  /** Inscreve um visitante ainda sem cadastro: o backend cria a Pessoa (sem papel de
+   *  membro/voluntário/beneficiário) e a inscrição na mesma transação. */
+  async inscreverAvulso(
+    eventoId: string,
+    dados: VisitanteAvulsoInput
+  ): Promise<EventInscription> {
+    const criada = await apiClient.post<ApiInscricao>(`/eventos/${eventoId}/inscricoes/avulsa`, {
+      nome_completo: dados.name,
+      telefone: dados.phone ? apenasDigitos(dados.phone) : null,
+      cpf: dados.cpf ? apenasDigitos(dados.cpf) : null,
+      email: dados.email || null,
+      status: 'CONFIRMADA',
+      observacoes: dados.notes || null
+    });
+    return toEventInscription(criada);
+  },
+
+  async alterarStatus(
+    inscricaoId: string,
+    status: InscriptionStatus
+  ): Promise<EventInscription> {
+    const atualizada = await apiClient.put<ApiInscricao>(`/inscricoes/${inscricaoId}`, { status });
+    return toEventInscription(atualizada);
+  },
+
+  async remover(inscricaoId: string): Promise<void> {
+    await apiClient.delete(`/inscricoes/${inscricaoId}`);
+  },
+
+  /** Pessoas ainda não inscritas no evento, para o seletor do modal. */
+  async listarPessoasDisponiveis(eventoId: string): Promise<{ id: string; name: string }[]> {
+    const [pessoas, inscritas] = await Promise.all([
+      apiClient.get<ApiPessoa[]>('/pessoas/'),
+      apiClient.get<ApiInscricao[]>(`/eventos/${eventoId}/inscricoes`)
+    ]);
+    const jaInscritas = new Set(inscritas.map((i) => i.pessoa_id));
+    return pessoas
+      .filter((p) => !jaInscritas.has(p.id))
+      .map((p) => ({ id: String(p.id), name: p.nome_completo }))
+      .sort((a, b) => a.name.localeCompare(b.name));
   }
 };
 

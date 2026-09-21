@@ -58,6 +58,27 @@ export interface Beneficiary {
   attendances: AttendanceRecord[];
 }
 
+/** Voluntário vinculado a um projeto (tabela projeto_voluntarios). */
+export interface ProjectVolunteerLink {
+  /** Id do vínculo, não do voluntário — é ele que a remoção usa. */
+  id: string;
+  volunteerId: string;
+  personName: string;
+  area: string | null;
+  role: string | null;
+  entryDate: string | null;
+}
+
+/** Beneficiário vinculado a um projeto (tabela projeto_beneficiarios). */
+export interface ProjectBeneficiaryLink {
+  /** Id do vínculo, não do beneficiário. */
+  id: string;
+  beneficiaryId: string;
+  personName: string;
+  role: string | null;
+  entryDate: string | null;
+}
+
 export interface Project {
   id: string;
   name: string;
@@ -65,20 +86,22 @@ export interface Project {
   // null quando o projeto não tem responsável vinculado (Projeto.responsavel_id é opcional).
   responsibleName: string | null;
   responsibleId?: string;
-  // Beneficiários/voluntários vinculados ainda não são expostos por uma rota própria no
-  // backend (ver tarefa 30) — só despesas e eventos são derivados de dados reais.
   eventsCount: number;
   totalExpenses: number;
   status: string;
   startDate: string | null;
 }
 
+export type InscriptionStatus = 'CONFIRMADA' | 'PENDENTE' | 'CANCELADA';
+
 export interface EventInscription {
   id: string;
+  pessoaId: string;
   participantName: string;
   participantPhone: string;
   inscriptionDate: string;
-  status: string;
+  status: InscriptionStatus;
+  notes?: string;
 }
 
 export interface EventItem {
