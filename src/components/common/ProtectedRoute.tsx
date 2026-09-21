@@ -11,7 +11,14 @@ interface ProtectedRouteProps {
 }
 
 export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, permission }) => {
-  const { user, hasPermission } = useAuth();
+  const { user, isLoading, hasPermission } = useAuth();
+
+  // O AuthContext restaura a sessão do localStorage num efeito, que só roda depois do
+  // primeiro render. Sem esperar por isso, `user` ainda é null nesse render e todo F5 ou
+  // link direto cairia em /login com a sessão válida — só a navegação in-app funcionaria.
+  if (isLoading) {
+    return <div className="p-8 text-center text-[#AEB5B0]">Carregando...</div>;
+  }
 
   if (!user) {
     return <Navigate to="/login" replace />;
