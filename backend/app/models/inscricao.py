@@ -1,7 +1,15 @@
 from datetime import datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import BigInteger, DateTime, ForeignKey, String, Text, UniqueConstraint
+from sqlalchemy import (
+    BigInteger,
+    CheckConstraint,
+    DateTime,
+    ForeignKey,
+    String,
+    Text,
+    UniqueConstraint,
+)
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
@@ -16,6 +24,12 @@ class Inscricao(Base, TimestampMixin):
     __tablename__ = "inscricoes"
     __table_args__ = (
         UniqueConstraint("pessoa_id", "evento_id", name="uq_inscricao_pessoa_evento"),
+        # Espelha o CHECK criado em d7b41e9c05a3: a coluna e um String livre, e um valor
+        # fora do vocabulario de StatusInscricao quebra a serializacao da resposta.
+        CheckConstraint(
+            "status IN ('CONFIRMADA', 'PENDENTE', 'CANCELADA')",
+            name="ck_inscricao_status",
+        ),
     )
 
     id: Mapped[int] = mapped_column(
