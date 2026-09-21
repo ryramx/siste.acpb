@@ -1,29 +1,84 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { ChevronRight, Calendar, Clock, MapPin, Users, UserCheck, ArrowRight } from 'lucide-react';
+import { ChevronRight, Calendar, Clock, MapPin, Users, UserCheck, ArrowRight, Trash2 } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
+import { Modal } from '../../components/ui/Modal';
 import { StatCard } from '../../components/ui/StatCard';
 import { eventService } from '../../services/domainServices';
 import { EventItem } from '../../types/domain';
+import { useAuth } from '../../contexts/AuthContext';
+import { useToast } from '../../contexts/ToastContext';
 
 export const EventDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { hasPermission } = useAuth();
+  const { addToast } = useToast();
 
   const [event, setEvent] = useState<EventItem | null>(null);
   const [loading, setLoading] = useState(true);
+  const [confirmarExclusao, setConfirmarExclusao] = useState(false);
+  const [excluindo, setExcluindo] = useState(false);
+  const [erroCarregamento, setErroCarregamento] = useState<string | null>(null);
+  // Incrementar dispara o efeito de novo. Recarregar a página inteira seria mais simples,
+  // mas custaria ao usuário o estado da navegação para repetir uma única requisição.
+  const [tentativa, setTentativa] = useState(0);
 
   useEffect(() => {
-    if (id) {
-      eventService.getById(id).then((data) => {
-        setEvent(data || null);
-        setLoading(false);
+    if (!id) return;
+    setLoading(true);
+    setErroCarregamento(null);
+    // Sem o catch, uma falha da API deixava a tela em "Carregando evento..." indefinidamente,
+    // sem dizer o que aconteceu — o pior dos dois mundos para quem esta usando o sistema.
+    eventService
+      .getById(id)
+      .then((data) => setEvent(data || null))
+      .catch((err) => {
+        setErroCarregamento(
+          err instanceof Error ? err.message : 'Não foi possível carregar o evento.'
+        );
+      })
+      .finally(() => setLoading(false));
+  }, [id, tentativa]);
+
+  const excluirEvento = async () => {
+    if (!event) return;
+    setExcluindo(true);
+    try {
+      await eventService.remove(event.id);
+      addToast({
+        type: 'success',
+        title: 'Evento excluído',
+        message: `${event.title} foi removido da agenda.`
       });
+      navigate('/eventos');
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Tente novamente em instantes.';
+      addToast({ type: 'error', title: 'Não foi possível excluir', message });
+      setExcluindo(false);
     }
-  }, [id]);
+  };
 
   if (loading) return <div className="p-8 text-center text-[#AEB5B0]">Carregando evento...</div>;
+
+  if (erroCarregamento) {
+    return (
+      <div className="p-8 text-center space-y-4">
+        <p className="text-white">Não foi possível carregar este evento.</p>
+        <p className="text-xs text-[#AEB5B0]">{erroCarregamento}</p>
+        <div className="flex items-center justify-center gap-2">
+          <Button variant="outline" onClick={() => navigate('/eventos')}>
+            Voltar para a agenda
+          </Button>
+          <Button variant="primary" onClick={() => setTentativa((n) => n + 1)}>
+            Tentar de novo
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   if (!event) return <div className="p-8 text-center text-white">Evento não encontrado.</div>;
 
   return (
@@ -46,13 +101,24 @@ export const EventDetails: React.FC = () => {
           <p className="text-xs text-[#AEB5B0] mt-1">Responsável: {event.responsibleName ?? 'Não definido'}</p>
         </div>
 
-        <Button
-          variant="secondary"
-          onClick={() => navigate(`/eventos/${event.id}/inscricoes`)}
-          rightIcon={<ArrowRight className="w-4 h-4" />}
-        >
-          Ver inscrições
-        </Button>
+        <div className="flex items-center gap-2">
+          {hasPermission('edit_events') && (
+            <Button
+              variant="danger"
+              onClick={() => setConfirmarExclusao(true)}
+              leftIcon={<Trash2 className="w-4 h-4" />}
+            >
+              Excluir evento
+            </Button>
+          )}
+          <Button
+            variant="secondary"
+            onClick={() => navigate(`/eventos/${event.id}/inscricoes`)}
+            rightIcon={<ArrowRight className="w-4 h-4" />}
+          >
+            Ver inscrições
+          </Button>
+        </div>
       </div>
 
       {/* KPIs de Vagas */}
@@ -80,6 +146,34 @@ export const EventDetails: React.FC = () => {
           <div className="flex items-center gap-2"><Users className="w-4 h-4 text-[#F8D800]" /> Público-alvo: <strong className="text-white">{event.targetAudience}</strong></div>
         </div>
       </div>
+
+      <Modal
+        isOpen={confirmarExclusao}
+        onClose={() => setConfirmarExclusao(false)}
+        title="Excluir evento"
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-[#AEB5B0]">
+            Excluir <strong className="text-white">{event.title}</strong> de{' '}
+            {event.date}? Esta ação não pode ser desfeita.
+          </p>
+          {event.filledSlots > 0 && (
+            <p className="text-xs text-red-400">
+              {event.filledSlots === 1
+                ? 'A inscrição deste evento também será apagada.'
+                : `As ${event.filledSlots} inscrições deste evento também serão apagadas.`}
+            </p>
+          )}
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setConfirmarExclusao(false)} disabled={excluindo}>
+              Cancelar
+            </Button>
+            <Button variant="danger" onClick={excluirEvento} disabled={excluindo}>
+              {excluindo ? 'Excluindo...' : 'Excluir'}
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 };

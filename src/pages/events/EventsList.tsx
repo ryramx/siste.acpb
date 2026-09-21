@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { CalendarDays, Plus, MapPin, Clock, Users, ChevronLeft, ChevronRight, Eye } from 'lucide-react';
+import { CalendarDays, Plus, MapPin, Clock, Users, ChevronLeft, ChevronRight, Eye, Trash2 } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
 import { Modal } from '../../components/ui/Modal';
@@ -39,6 +39,8 @@ export const EventsList: React.FC = () => {
   const [dataReferencia, setDataReferencia] = useState(() => new Date());
 
   const [modalOpen, setModalOpen] = useState(false);
+  const [paraExcluir, setParaExcluir] = useState<EventItem | null>(null);
+  const [excluindo, setExcluindo] = useState(false);
   const [newEvent, setNewEvent] = useState({
     title: '',
     description: '',
@@ -50,9 +52,17 @@ export const EventsList: React.FC = () => {
   });
 
   const fetchEvents = async () => {
-    const data = await eventService.getAll();
-    setEvents(data);
-    setLoading(false);
+    try {
+      const data = await eventService.getAll();
+      setEvents(data);
+    } catch (err) {
+      // Sem isto a agenda ficava no esqueleto de carregamento para sempre quando a API
+      // falhava, sem nenhum sinal de que algo deu errado.
+      const message = err instanceof Error ? err.message : 'Tente novamente em instantes.';
+      addToast({ type: 'error', title: 'Erro ao carregar a agenda', message });
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -73,6 +83,26 @@ export const EventsList: React.FC = () => {
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Tente novamente em instantes.';
       addToast({ type: 'error', title: 'Erro ao criar evento', message });
+    }
+  };
+
+  const confirmarExclusao = async () => {
+    if (!paraExcluir) return;
+    setExcluindo(true);
+    try {
+      await eventService.remove(paraExcluir.id);
+      addToast({
+        type: 'success',
+        title: 'Evento excluído',
+        message: `${paraExcluir.title} foi removido da agenda.`
+      });
+      setParaExcluir(null);
+      fetchEvents();
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Tente novamente em instantes.';
+      addToast({ type: 'error', title: 'Não foi possível excluir', message });
+    } finally {
+      setExcluindo(false);
     }
   };
 
@@ -281,14 +311,25 @@ export const EventsList: React.FC = () => {
             </div>
           </div>
 
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => navigate(`/eventos/${evt.id}`)}
-            leftIcon={<Eye className="w-4 h-4" />}
-          >
-            Detalhes
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => navigate(`/eventos/${evt.id}`)}
+              leftIcon={<Eye className="w-4 h-4" />}
+            >
+              Detalhes
+            </Button>
+            {hasPermission('edit_events') && (
+              <Button
+                variant="ghost"
+                size="sm"
+                aria-label={`Excluir ${evt.title}`}
+                onClick={() => setParaExcluir(evt)}
+                leftIcon={<Trash2 className="w-4 h-4 text-red-400" />}
+              />
+            )}
+          </div>
         </div>
       ))}
     </div>
@@ -398,6 +439,34 @@ export const EventsList: React.FC = () => {
             </Button>
           </div>
         </form>
+      </Modal>
+
+      <Modal
+        isOpen={paraExcluir !== null}
+        onClose={() => setParaExcluir(null)}
+        title="Excluir evento"
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-[#AEB5B0]">
+            Excluir <strong className="text-white">{paraExcluir?.title}</strong> de{' '}
+            {paraExcluir?.date}? Esta ação não pode ser desfeita.
+          </p>
+          {(paraExcluir?.filledSlots ?? 0) > 0 && (
+            <p className="text-xs text-red-400">
+              {paraExcluir?.filledSlots === 1
+                ? 'A inscrição deste evento também será apagada.'
+                : `As ${paraExcluir?.filledSlots} inscrições deste evento também serão apagadas.`}
+            </p>
+          )}
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setParaExcluir(null)} disabled={excluindo}>
+              Cancelar
+            </Button>
+            <Button variant="danger" onClick={confirmarExclusao} disabled={excluindo}>
+              {excluindo ? 'Excluindo...' : 'Excluir'}
+            </Button>
+          </div>
+        </div>
       </Modal>
     </div>
   );
