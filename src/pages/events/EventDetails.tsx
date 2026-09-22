@@ -1,12 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { ChevronRight, Calendar, Clock, MapPin, Users, UserCheck, ArrowRight, Trash2 } from 'lucide-react';
+import { ChevronRight, Calendar, Clock, MapPin, Users, UserCheck, ArrowRight, Trash2, Pencil } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
 import { Modal } from '../../components/ui/Modal';
 import { StatCard } from '../../components/ui/StatCard';
 import { eventService } from '../../services/domainServices';
 import { EventItem } from '../../types/domain';
+import { EventFormFields, EventFormValues } from './EventFormFields';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
 
@@ -24,6 +25,8 @@ export const EventDetails: React.FC = () => {
   // Incrementar dispara o efeito de novo. Recarregar a página inteira seria mais simples,
   // mas custaria ao usuário o estado da navegação para repetir uma única requisição.
   const [tentativa, setTentativa] = useState(0);
+  const [edicao, setEdicao] = useState<EventFormValues | null>(null);
+  const [salvando, setSalvando] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -41,6 +44,42 @@ export const EventDetails: React.FC = () => {
       })
       .finally(() => setLoading(false));
   }, [id, tentativa]);
+
+  const abrirEdicao = () => {
+    if (!event) return;
+    setEdicao({
+      title: event.title,
+      description: event.description,
+      date: event.date,
+      // O <input type="time"> não aceita o "HH:MM:SS" que a API devolve; corta os segundos.
+      time: (event.time ?? '').slice(0, 5),
+      location: event.location,
+      maxSlots: event.maxSlots ?? 0,
+      requiresRegistration: event.requiresRegistration
+    });
+  };
+
+  const salvarEdicao = async () => {
+    if (!event || !edicao) return;
+    setSalvando(true);
+    try {
+      await eventService.update(event.id, { ...edicao, maxSlots: edicao.maxSlots || null });
+      addToast({
+        type: 'success',
+        title: 'Evento atualizado',
+        message: `${edicao.title} foi salvo.`
+      });
+      setEdicao(null);
+      // Recarrega em vez de confiar no retorno: a contagem de inscritos e o nome do
+      // responsável não vêm no PUT, e a tela os exibe.
+      setTentativa((n) => n + 1);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Tente novamente em instantes.';
+      addToast({ type: 'error', title: 'Não foi possível salvar', message });
+    } finally {
+      setSalvando(false);
+    }
+  };
 
   const excluirEvento = async () => {
     if (!event) return;
@@ -103,13 +142,22 @@ export const EventDetails: React.FC = () => {
 
         <div className="flex items-center gap-2">
           {hasPermission('edit_events') && (
-            <Button
-              variant="danger"
-              onClick={() => setConfirmarExclusao(true)}
-              leftIcon={<Trash2 className="w-4 h-4" />}
-            >
-              Excluir evento
-            </Button>
+            <>
+              <Button
+                variant="outline"
+                onClick={abrirEdicao}
+                leftIcon={<Pencil className="w-4 h-4" />}
+              >
+                Editar
+              </Button>
+              <Button
+                variant="danger"
+                onClick={() => setConfirmarExclusao(true)}
+                leftIcon={<Trash2 className="w-4 h-4" />}
+              >
+                Excluir evento
+              </Button>
+            </>
           )}
           <Button
             variant="secondary"
@@ -146,6 +194,19 @@ export const EventDetails: React.FC = () => {
           <div className="flex items-center gap-2"><Users className="w-4 h-4 text-[#F8D800]" /> Público-alvo: <strong className="text-white">{event.targetAudience}</strong></div>
         </div>
       </div>
+
+      <Modal isOpen={edicao !== null} onClose={() => setEdicao(null)} title="Editar evento">
+        {edicao && (
+          <EventFormFields
+            values={edicao}
+            onChange={setEdicao}
+            onSubmit={salvarEdicao}
+            onCancel={() => setEdicao(null)}
+            submitLabel="Salvar alterações"
+            saving={salvando}
+          />
+        )}
+      </Modal>
 
       <Modal
         isOpen={confirmarExclusao}

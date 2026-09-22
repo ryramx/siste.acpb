@@ -1,4 +1,4 @@
-import React, { InputHTMLAttributes } from 'react';
+import React, { InputHTMLAttributes, useId } from 'react';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
@@ -12,7 +12,12 @@ interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
 
 export const Input = React.forwardRef<HTMLInputElement, InputProps>(
   ({ label, error, leftIcon, rightIcon, helperText, className, id, ...props }, ref) => {
-    const inputId = id || props.name;
+    // Sem isto, um Input sem `id` nem `name` renderizava `htmlFor` vazio: o rótulo ficava
+    // solto, sem apontar para campo nenhum. Leitor de tela não anuncia o rótulo ao focar o
+    // campo, e clicar no texto não foca o input. Acontecia em 28 dos 52 campos rotulados do
+    // sistema, porque passar `name` é opcional e fácil de esquecer.
+    const idGerado = useId();
+    const inputId = id || props.name || idGerado;
 
     return (
       <div className="w-full flex flex-col gap-1.5">

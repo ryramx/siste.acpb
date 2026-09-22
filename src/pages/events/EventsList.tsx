@@ -6,6 +6,7 @@ import { Badge } from '../../components/ui/Badge';
 import { Modal } from '../../components/ui/Modal';
 import { Input } from '../../components/ui/Input';
 import { eventService } from '../../services/domainServices';
+import { EventFormFields, EventFormValues } from './EventFormFields';
 import { EventItem } from '../../types/domain';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
@@ -41,7 +42,8 @@ export const EventsList: React.FC = () => {
   const [modalOpen, setModalOpen] = useState(false);
   const [paraExcluir, setParaExcluir] = useState<EventItem | null>(null);
   const [excluindo, setExcluindo] = useState(false);
-  const [newEvent, setNewEvent] = useState({
+  const [salvando, setSalvando] = useState(false);
+  const [newEvent, setNewEvent] = useState<EventFormValues>({
     title: '',
     description: '',
     date: formatarDataLocal(new Date()),
@@ -69,8 +71,8 @@ export const EventsList: React.FC = () => {
     fetchEvents();
   }, []);
 
-  const handleCreateEvent = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleCreateEvent = async () => {
+    setSalvando(true);
     try {
       await eventService.create(newEvent);
       addToast({
@@ -83,6 +85,8 @@ export const EventsList: React.FC = () => {
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Tente novamente em instantes.';
       addToast({ type: 'error', title: 'Erro ao criar evento', message });
+    } finally {
+      setSalvando(false);
     }
   };
 
@@ -394,51 +398,14 @@ export const EventsList: React.FC = () => {
 
       {/* Modal Criar Evento */}
       <Modal isOpen={modalOpen} onClose={() => setModalOpen(false)} title="Novo Evento Institucional">
-        <form onSubmit={handleCreateEvent} className="space-y-4">
-          <Input
-            label="Título do Evento"
-            value={newEvent.title}
-            onChange={(e) => setNewEvent({ ...newEvent, title: e.target.value })}
-            required
-          />
-          <div className="grid grid-cols-2 gap-3">
-            <Input
-              label="Data"
-              type="date"
-              value={newEvent.date}
-              onChange={(e) => setNewEvent({ ...newEvent, date: e.target.value })}
-              required
-            />
-            <Input
-              label="Horário"
-              type="time"
-              value={newEvent.time}
-              onChange={(e) => setNewEvent({ ...newEvent, time: e.target.value })}
-              required
-            />
-          </div>
-          <Input
-            label="Local"
-            value={newEvent.location}
-            onChange={(e) => setNewEvent({ ...newEvent, location: e.target.value })}
-            required
-          />
-          <Input
-            label="Vagas Máximas"
-            type="number"
-            value={newEvent.maxSlots}
-            onChange={(e) => setNewEvent({ ...newEvent, maxSlots: Number(e.target.value) })}
-            required
-          />
-          <div className="flex items-center justify-end gap-2 pt-2">
-            <Button type="button" variant="ghost" onClick={() => setModalOpen(false)}>
-              Cancelar
-            </Button>
-            <Button type="submit" variant="primary">
-              Salvar Evento
-            </Button>
-          </div>
-        </form>
+        <EventFormFields
+          values={newEvent}
+          onChange={setNewEvent}
+          onSubmit={handleCreateEvent}
+          onCancel={() => setModalOpen(false)}
+          submitLabel="Salvar Evento"
+          saving={salvando}
+        />
       </Modal>
 
       <Modal

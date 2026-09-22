@@ -739,6 +739,31 @@ export const eventService = {
     return toEventItem(criado, null, 0);
   },
 
+  async update(
+    id: string,
+    data: {
+      title: string;
+      description: string;
+      date: string;
+      time: string;
+      location: string;
+      maxSlots: number | null;
+      requiresRegistration: boolean;
+    }
+  ): Promise<EventItem> {
+    const atualizado = await apiClient.put<ApiEvento>(`/eventos/${id}`, {
+      nome: data.title,
+      descricao: data.description || null,
+      data_evento: data.date,
+      hora_inicio: data.time || null,
+      local: data.location || null,
+      limite_participantes: data.maxSlots,
+      exige_inscricao: data.requiresRegistration
+    });
+    const nome = await resolverNomePessoa(atualizado.responsavel_id, new Map());
+    return toEventItem(atualizado, nome, 0);
+  },
+
   /** Remove o evento. As inscricoes vinculadas caem junto (cascata no backend). */
   async remove(id: string): Promise<void> {
     await apiClient.delete(`/eventos/${id}`);
