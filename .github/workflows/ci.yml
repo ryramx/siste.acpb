@@ -1,0 +1,89 @@
+# Roda as duas suites a cada push e pull request.
+#
+# Existe porque o deploy e push na `main` indo direto para producao, sem staging: sem este
+# passo, uma quebra so aparece com o sistema no ar, para os usuarios da associacao.
+#
+# Os dois jobs sao independentes de proposito -- uma falha no frontend nao esconde o
+# resultado do backend, e vice-versa.
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+
+    services:
+      # A suite monta o schema rodando as proprias migrations (ver backend/conftest.py),
+      # entao aqui basta um Postgres vazio com o banco e o usuario que .env.test espera.
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: acpb_app
+          POSTGRES_PASSWORD: senha_de_teste
+          POSTGRES_DB: acpb_db_test
+        ports:
+          - 5432:5432
+        # Sem isto o job segue antes de o banco aceitar conexao e a suite falha no primeiro
+        # teste, por corrida e nao por defeito.
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    defaults:
+      run:
+        working-directory: backend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          # Mesma versao declarada no render.yaml.
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+
+      - run: pip install -r requirements.txt
+
+      # conftest.py se recusa a rodar se o banco nao for acpb_db_test, justamente para nunca
+      # rodar contra dados reais. O arquivo nao e versionado (contem senha), entao e montado
+      # aqui a partir do exemplo.
+      - name: Preparar .env.test
+        run: |
+          cp .env.test.example .env.test
+          sed -i 's/^DATABASE_PASSWORD=.*/DATABASE_PASSWORD=senha_de_teste/' .env.test
+
+      - run: pytest -q
+
+  frontend:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          # Mesma versao declarada no render.yaml.
+          node-version: "22"
+          cache: npm
+
+      - run: npm ci
+
+      - run: npm test
+
+      - run: npx tsc --noEmit
+
+      # O mesmo build que o Render executa. VITE_API_URL precisa existir: o vite.config.ts
+      # falha de proposito sem ela, para nao gerar bundle apontando para 127.0.0.1. O valor
+      # aqui so precisa ser uma URL valida -- nada e publicado a partir deste job.
+      - name: Build de producao
+        run: npm run build
+        env:
+          VITE_API_URL: https://exemplo-ci.invalid
