@@ -993,5 +993,33 @@ export const financialService = {
       status: criado.status,
       attachmentsCount: 0
     };
+  },
+
+  /** Corrige um lancamento. Campos omitidos ficam como estao (o PUT e parcial no backend). */
+  async update(
+    id: string,
+    data: {
+      description?: string;
+      amount?: number;
+      date?: string;
+      status?: string;
+      paymentMethod?: string | null;
+      categoryId?: string;
+      accountId?: string;
+    }
+  ): Promise<void> {
+    const corpo: Record<string, unknown> = {};
+    if (data.description !== undefined) corpo.descricao = data.description;
+    if (data.amount !== undefined) corpo.valor = data.amount;
+    if (data.date !== undefined) corpo.data_movimentacao = data.date;
+    if (data.status !== undefined) corpo.status = data.status;
+    if (data.paymentMethod !== undefined) corpo.forma_pagamento = data.paymentMethod;
+    if (data.categoryId !== undefined) corpo.categoria_id = Number(data.categoryId);
+    if (data.accountId !== undefined) corpo.conta_financeira_id = Number(data.accountId);
+    await apiClient.put(`/movimentacoes-financeiras/${id}`, corpo);
+  },
+
+  async remove(id: string): Promise<void> {
+    await apiClient.delete(`/movimentacoes-financeiras/${id}`);
   }
 };
