@@ -80,8 +80,37 @@ createdb -h <host> -U acpb_app acpb_db_teste_restauracao
 pg_restore -h <host> -U acpb_app -d acpb_db_teste_restauracao acpb_db_restaurar.dump
 ```
 
-## Escopo desta tarefa
+## Estado da automação
 
-Esta tarefa define a **política e o procedimento**. A automação real (cron/systemd timer, script de
-upload para storage externo, integração de alertas) é trabalho de infraestrutura a ser implantado no
-ambiente de produção real da associação — fora do escopo de código deste repositório de aplicação.
+O backup **diário do banco** está automatizado em `.github/workflows/backup.yml`: `pg_dump -F c`,
+verificação de tamanho, criptografia simétrica e envio para armazenamento externo, com retenção de
+30 dias. Roda às 06:00 UTC e também sob demanda pela aba Actions.
+
+Ele só funciona depois que os segredos do repositório forem preenchidos (a lista está no cabeçalho
+do workflow). Enquanto não estiverem, o job **falha todo dia, de propósito** — um backup silencioso
+que não roda é pior do que nenhum, porque passa a impressão de que existe.
+
+### O que mudou em relação à política acima
+
+A política foi escrita supondo servidor próprio: cópia local em `/var/backups/acpb/` e anexos em
+`backend/storage/`. A produção real é outra — Render com disco efêmero, banco no Neon e anexos no
+Supabase Storage. Consequências:
+
+- **Não há cópia local.** O disco do Render não sobrevive a um restart, então guardar backup nele
+  seria ilusão. O backup nasce direto fora do provedor do banco, que é o que a regra 3-2-1 pede.
+- **A criptografia usa `gpg -c` (AES256)**, não `age`: `gpg` já existe no runner, e trocar a
+  ferramenta evitaria instalar uma dependência só para isso. Os comandos de referência acima
+  continuam válidos para restauração manual, trocando `age -d` por
+  `gpg --decrypt --output <arquivo>.dump <arquivo>.dump.gpg`.
+
+### Pendente
+
+- **Anexos financeiros e fotos no Supabase Storage não têm backup.** Ficam fora do banco, então o
+  `pg_dump` não os alcança — as movimentações seriam restauradas sem os comprovantes. Falta decidir
+  entre replicar o bucket para outro provedor ou baixá-lo junto no mesmo workflow.
+- **Backups semanais (6 meses) e mensais (24 meses)** previstos na tabela de retenção: só o diário
+  está automatizado. O mensal é o que atende à guarda de 24 meses dos registros financeiros.
+- **Alerta de backup ausente por mais de 48h.** Hoje a falha aparece como job vermelho no GitHub,
+  que notifica quem estiver inscrito no repositório; não há verificação independente de que o
+  último arquivo é recente.
+- **Teste de restauração trimestral** continua sendo processo humano, e nunca foi executado.
