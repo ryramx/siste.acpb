@@ -55,10 +55,34 @@ services:
       # Precisa ser a regiao real do projeto no Supabase (o R2 ignoraria).
       - key: S3_REGION
         sync: false
-      # SMTP do Gmail para o e-mail de recuperacao de senha. Enviar pelo servidor do
-      # proprio provedor do remetente mantem SPF/DKIM alinhados - um relay de terceiro
-      # enviando em nome de um @gmail.com nao consegue assinar como tal, e cairia em spam.
-      # SMTP_PASSWORD e uma "App Password" do Google, nao a senha da conta.
+      # E-mail de recuperacao de senha, enviado pela API HTTPS da Brevo.
+      #
+      # Nao e SMTP de proposito: o Render bloqueia as portas 25, 465 e 587 nos servicos do
+      # plano gratuito desde setembro de 2025, para conter spam. Com SMTP (Gmail ou qualquer
+      # outro) o envio falha por timeout por mais correta que esteja a configuracao, e o
+      # sistema dizia "instrucoes enviadas" sem enviar nada. Uma API sobre HTTPS atravessa o
+      # bloqueio. Passar a API para um plano pago tambem resolveria, ao custo da mensalidade.
+      #
+      # BREVO_API_KEY: chave gerada em Brevo > SMTP & API > API Keys.
+      # EMAIL_FROM: remetente verificado na Brevo (um endereco comum serve; a verificacao e
+      # por codigo enviado a ele, sem exigir dominio proprio).
+      #
+      # EMAIL_BACKEND fica como `sync: false` de proposito, em vez de `value: brevo`. O
+      # blueprint sobrescreve valores literais no proximo sync: fixar `brevo` aqui antes de
+      # BREVO_API_KEY existir no painel derrubaria a API no boot, porque a validacao de
+      # producao recusa um backend de e-mail incompleto. A ordem segura e: criar a conta,
+      # preencher BREVO_API_KEY e EMAIL_FROM no painel e so entao trocar EMAIL_BACKEND para
+      # `brevo`. Ate la o valor continua `smtp`, e o SMTP abaixo segue como esta.
+      - key: EMAIL_BACKEND
+        sync: false
+      - key: BREVO_API_KEY
+        sync: false
+      - key: EMAIL_FROM
+        sync: false
+      - key: EMAIL_FROM_NOME
+        value: Sistema ACPB
+      # SMTP mantido para nao ser removido do servico em um sync do blueprint, e porque
+      # volta a ser utilizavel se a API sair do plano gratuito.
       - key: SMTP_HOST
         value: smtp.gmail.com
       - key: SMTP_PORT

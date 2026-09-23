@@ -52,14 +52,38 @@ class Settings(BaseSettings):
     S3_SECRET_ACCESS_KEY: str = ""
     S3_REGION: str = "auto"
 
-    # Envio de e-mail (recuperação de senha). Sem SMTP configurado, o token é apenas
-    # logado — aceitável em desenvolvimento, proibido em produção (ver validação abaixo).
+    # Envio de e-mail (recuperação de senha). Sem nenhum backend configurado, o token é
+    # apenas logado — aceitável em desenvolvimento, proibido em produção (ver validação
+    # abaixo).
+    #
+    # 'brevo' envia por HTTPS; 'smtp' fala direto com um servidor de e-mail. A escolha existe
+    # porque o Render bloqueia as portas de SMTP (25, 465 e 587) nos serviços do plano
+    # gratuito desde setembro de 2025, para conter spam: lá, qualquer SMTP falha por timeout
+    # por mais correta que esteja a configuração. Uma API sobre HTTPS passa pelo bloqueio.
+    # O SMTP continua sendo o caminho natural em desenvolvimento e em servidor próprio.
+    EMAIL_BACKEND: str = "smtp"
+
+    BREVO_API_KEY: str = ""
+
+    # Remetente comum aos dois backends. Vazio herda de SMTP_FROM/SMTP_FROM_NOME, para que
+    # as instalações que já usavam SMTP sigam funcionando sem mexer nas variáveis.
+    EMAIL_FROM: str = ""
+    EMAIL_FROM_NOME: str = ""
+
     SMTP_HOST: str = ""
     SMTP_PORT: int = 587
     SMTP_USER: str = ""
     SMTP_PASSWORD: str = ""
     SMTP_FROM: str = ""
     SMTP_FROM_NOME: str = "Sistema ACPB"
+
+    @property
+    def remetente(self) -> str:
+        return self.EMAIL_FROM or self.SMTP_FROM
+
+    @property
+    def remetente_nome(self) -> str:
+        return self.EMAIL_FROM_NOME or self.SMTP_FROM_NOME
 
     # URL pública do frontend, usada para montar o link de redefinição de senha no e-mail.
     FRONTEND_URL: str = "http://localhost:5173"
@@ -136,20 +160,36 @@ class Settings(BaseSettings):
                 f"STORAGE_BACKEND inválido: {self.STORAGE_BACKEND!r} (use 'local' ou 's3')"
             )
 
-        # Sem SMTP, a recuperação de senha só registraria o token em log — em produção isso
+        # Sem e-mail, a recuperação de senha só registraria o token em log — em produção isso
         # é um vazamento de credencial: quem lê o log assume a conta de qualquer usuário.
-        if not self.SMTP_HOST:
-            erros.append(
-                "SMTP_HOST é obrigatório (sem e-mail, a recuperação de senha expõe o token em log)"
-            )
+        #
+        # A exigência é que o backend escolhido esteja inteiro. Meio configurado é o pior dos
+        # casos: a aplicação sobe, a tela diz "instruções enviadas" e nada é enviado.
+        if self.EMAIL_BACKEND == "brevo":
+            faltando = [
+                nome
+                for nome, valor in (
+                    ("BREVO_API_KEY", self.BREVO_API_KEY),
+                    ("EMAIL_FROM (ou SMTP_FROM)", self.remetente),
+                )
+                if not valor
+            ]
+            if faltando:
+                erros.append("EMAIL_BACKEND=brevo exige: " + ", ".join(faltando))
+        elif self.EMAIL_BACKEND == "smtp":
+            if not self.SMTP_HOST:
+                erros.append(
+                    "SMTP_HOST é obrigatório (sem e-mail, a recuperação de senha expõe o "
+                    "token em log)"
+                )
+            else:
+                for nome in ("SMTP_FROM", "SMTP_USER", "SMTP_PASSWORD"):
+                    if not getattr(self, nome):
+                        erros.append(f"{nome} é obrigatório quando SMTP_HOST está configurado")
         else:
-            # Antes só SMTP_FROM era exigido. Com HOST e FROM preenchidos e as credenciais
-            # em branco, a aplicação subia normalmente e o envio falhava em silêncio: o
-            # usuário via "instruções enviadas" e nenhum e-mail chegava. Exigir tudo faz o
-            # deploy falhar na configuração incompleta, que é onde o erro é barato.
-            for nome in ("SMTP_FROM", "SMTP_USER", "SMTP_PASSWORD"):
-                if not getattr(self, nome):
-                    erros.append(f"{nome} é obrigatório quando SMTP_HOST está configurado")
+            erros.append(
+                f"EMAIL_BACKEND inválido: {self.EMAIL_BACKEND!r} (use 'smtp' ou 'brevo')"
+            )
 
         if erros:
             raise ValueError(

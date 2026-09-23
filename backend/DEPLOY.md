@@ -13,7 +13,7 @@ O sistema é dividido em quatro serviços, em três plataformas com plano gratui
 | API (FastAPI) | Render (plano free) | Hiberna após ~15 min sem uso |
 | Postgres | Neon | O Postgres gratuito do Render **expira**; o do Neon não |
 | Anexos e fotos | Supabase Storage | O disco do Render é efêmero — ver "Armazenamento" |
-| E-mail | Gmail (SMTP) | ~500 mensagens/dia; remetente e servidor no mesmo provedor |
+| E-mail | Brevo (API HTTPS) | 300 mensagens/dia; HTTPS porque o Render bloqueia SMTP no plano gratuito |
 
 Os dois serviços do Render são criados juntos pelo `render.yaml` da raiz.
 
@@ -68,15 +68,28 @@ pausados, e um projeto pausado não responde — fotos e anexos passariam a dar 
 reativar pelo painel. Se o sistema ficar longos períodos sem uso, vale incluir o Supabase no
 mesmo uptime check que mantém a API acordada.
 
-**3. E-mail (Gmail)**
-Na conta Google do sistema, ative a verificação em duas etapas e gere uma
-**App Password** (Conta Google → Segurança → Senhas de app). Isso dá `SMTP_PASSWORD`;
-`SMTP_USER` e `SMTP_FROM` são o próprio endereço da conta.
+**3. E-mail (Brevo)**
+Crie uma conta gratuita na Brevo (300 mensagens/dia, sem cartão). Em **SMTP & API → API
+Keys**, gere uma chave: ela vira `BREVO_API_KEY`. Em **Senders**, cadastre o endereço
+remetente e confirme com o código que chega nele — esse endereço vira `EMAIL_FROM`. Não é
+preciso ter domínio próprio; um endereço comum serve. Contas novas passam por uma aprovação
+manual da Brevo antes do primeiro envio.
 
-**Por que o SMTP do Gmail e não um relay de terceiro (Brevo, SendGrid):** enquanto a
-associação não tiver domínio próprio, o remetente é um `@gmail.com`. Um relay de terceiro
-enviando em nome desse endereço não consegue assinar como o Google, então SPF/DKIM não
-alinham e as mensagens caem em spam. Pelo servidor do próprio Google, alinham.
+**Por que não SMTP (nem o do Gmail):** o Render **bloqueia as portas 25, 465 e 587 nos
+serviços do plano gratuito** desde setembro de 2025, para conter spam. Lá, qualquer SMTP
+falha por timeout por mais correta que esteja a configuração — e foi o que aconteceu: o
+sistema respondia "instruções enviadas" e nenhum e-mail saía, sem erro visível na tela. Uma
+API sobre HTTPS atravessa o bloqueio.
+
+A decisão anterior era o oposto (SMTP do Gmail, para alinhar SPF/DKIM de um remetente
+`@gmail.com` e não cair em spam). Esse raciocínio continua válido em si, mas perdeu para uma
+restrição mais dura: um e-mail que não sai não tem entregabilidade nenhuma. Se a associação
+migrar para um plano pago do Render, `EMAIL_BACKEND=smtp` volta a ser possível sem mudar
+código. Com domínio próprio, vale verificá-lo na Brevo (DKIM) para melhorar a entrega.
+
+**Se o e-mail parar de funcionar:** um administrador consegue definir senha provisória para
+qualquer usuário em **Configurações → Usuários → Redefinir senha**, sem depender de envio.
+A ação fica registrada na auditoria.
 
 Quando a associação tiver domínio, reavaliar: com domínio próprio um relay dedicado passa
 a ser a opção melhor (limites maiores e métricas de entrega), e aí o remetente vira
@@ -141,11 +154,11 @@ Feito isso, faça o login com esse usuário e troque a senha.
 | `S3_ACCESS_KEY_ID` | Sim | Chave S3 do Supabase |
 | `S3_SECRET_ACCESS_KEY` | Sim | Chave S3 do Supabase |
 | `S3_REGION` | Sim | Região real do projeto Supabase — o padrão `auto` só serve ao R2 |
-| `SMTP_HOST` | Sim | `smtp.gmail.com` |
-| `SMTP_PORT` | Não | `587` (padrão) |
-| `SMTP_USER` / `SMTP_PASSWORD` | Sim | E-mail da conta e a **App Password** do Google |
-| `SMTP_FROM` | Sim | O mesmo endereço de `SMTP_USER` |
-| `SMTP_FROM_NOME` | Não | `Sistema ACPB` (padrão) |
+| `EMAIL_BACKEND` | Sim | `brevo` em produção (`smtp` só fora do plano gratuito do Render) |
+| `BREVO_API_KEY` | Sim | Chave gerada em Brevo → SMTP & API → API Keys |
+| `EMAIL_FROM` | Sim | Remetente verificado na Brevo |
+| `EMAIL_FROM_NOME` | Não | `Sistema ACPB` (padrão) |
+| `SMTP_*` | Não | Só com `EMAIL_BACKEND=smtp` (desenvolvimento ou servidor próprio) |
 | `JWT_EXPIRE_MINUTES`, `RESET_PASSWORD_TOKEN_EXPIRE_MINUTES` | Não | Padrões razoáveis; revisar por ambiente |
 
 A aplicação **recusa subir** em `ENVIRONMENT=production` se faltar qualquer obrigatória, se
