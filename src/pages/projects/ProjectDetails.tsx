@@ -9,7 +9,8 @@ import {
   ArrowLeft,
   Plus,
   Trash2,
-  UserCog
+  UserCog,
+  Pencil
 } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
@@ -57,6 +58,11 @@ export const ProjectDetails: React.FC = () => {
   const [volunteerModalOpen, setVolunteerModalOpen] = useState(false);
   const [beneficiaryModalOpen, setBeneficiaryModalOpen] = useState(false);
   const [responsibleModalOpen, setResponsibleModalOpen] = useState(false);
+  const [edicao, setEdicao] = useState<{
+    name: string;
+    description: string;
+    status: string;
+  } | null>(null);
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
 
@@ -113,6 +119,30 @@ export const ProjectDetails: React.FC = () => {
         .map((b) => ({ id: b.id, name: b.name }))
     );
   }, [beneficiaries]);
+
+  const abrirEdicao = () => {
+    if (!project) return;
+    setFormError(null);
+    setEdicao({
+      name: project.name,
+      description: project.description ?? '',
+      status: project.status
+    });
+  };
+
+  const salvarEdicao = async () => {
+    if (!id || !edicao) return;
+    setSaving(true);
+    try {
+      const atualizado = await projectService.update(id, edicao);
+      setProject(atualizado);
+      setEdicao(null);
+    } catch (e) {
+      setFormError(e instanceof Error ? e.message : 'Não foi possível salvar o projeto.');
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const openResponsibleModal = useCallback(async () => {
     setFormError(null);
@@ -213,14 +243,24 @@ export const ProjectDetails: React.FC = () => {
             Responsável Técnico: {project.responsibleName ?? 'Não definido'}
           </p>
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          leftIcon={<UserCog className="w-4 h-4" />}
-          onClick={openResponsibleModal}
-        >
-          {project.responsibleName ? 'Alterar responsável' : 'Definir responsável'}
-        </Button>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            leftIcon={<Pencil className="w-4 h-4" />}
+            onClick={abrirEdicao}
+          >
+            Editar
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            leftIcon={<UserCog className="w-4 h-4" />}
+            onClick={openResponsibleModal}
+          >
+            {project.responsibleName ? 'Alterar responsável' : 'Definir responsável'}
+          </Button>
+        </div>
       </div>
 
       {/* Cards de Visão Geral das Relações */}
@@ -495,6 +535,45 @@ export const ProjectDetails: React.FC = () => {
       </Modal>
 
       {/* Modal: responsável técnico */}
+      <Modal isOpen={edicao !== null} onClose={() => setEdicao(null)} title="Editar projeto">
+        {edicao && (
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              salvarEdicao();
+            }}
+            className="space-y-4"
+          >
+            <Input
+              label="Nome do Projeto"
+              value={edicao.name}
+              onChange={(e) => setEdicao({ ...edicao, name: e.target.value })}
+              required
+            />
+            <Input
+              label="Descrição"
+              value={edicao.description}
+              onChange={(e) => setEdicao({ ...edicao, description: e.target.value })}
+            />
+            <Input
+              label="Status"
+              value={edicao.status}
+              onChange={(e) => setEdicao({ ...edicao, status: e.target.value })}
+              required
+            />
+            {formError && <p className="text-xs text-red-500">{formError}</p>}
+            <div className="flex justify-end gap-2 pt-2">
+              <Button type="button" variant="outline" onClick={() => setEdicao(null)} disabled={saving}>
+                Cancelar
+              </Button>
+              <Button type="submit" isLoading={saving}>
+                Salvar
+              </Button>
+            </div>
+          </form>
+        )}
+      </Modal>
+
       <Modal
         isOpen={responsibleModalOpen}
         onClose={() => setResponsibleModalOpen(false)}
