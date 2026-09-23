@@ -1,3 +1,4 @@
+import codecs
 from datetime import datetime
 
 import pytest
@@ -105,6 +106,25 @@ def test_relatorio_pessoas_csv(token_admin):
     )
     assert response.status_code == 200
     assert b"nome_completo" in response.content
+
+
+def test_relatorio_csv_usa_ponto_e_virgula_e_bom(token_admin):
+    """O Excel em portugues so divide as colunas com ';' e so reconhece o UTF-8 com BOM.
+
+    Com virgula, a planilha abria com todas as colunas espremidas numa so -- reportado no
+    teste visual como "arquivo baguncado".
+    """
+    response = client.get(
+        "/relatorios/pessoas",
+        headers={"Authorization": f"Bearer {token_admin}"},
+        params={"formato": "csv"},
+    )
+    assert response.status_code == 200
+    assert response.content.startswith(codecs.BOM_UTF8)
+
+    cabecalho = response.content.decode("utf-8-sig").splitlines()[0]
+    assert ";" in cabecalho
+    assert "," not in cabecalho
 
 
 def test_relatorio_projetos_xlsx(token_admin):

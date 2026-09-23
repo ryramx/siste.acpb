@@ -23,10 +23,14 @@ def _linhas_como_texto(colunas: list[str], linhas: list[dict[str, Any]]) -> list
 
 def gerar_csv(colunas: list[str], linhas: list[dict[str, Any]]) -> bytes:
     buffer = io.StringIO()
-    writer = csv.writer(buffer)
+    # Ponto e virgula, nao virgula: o Excel em portugues usa a virgula como separador decimal
+    # e por isso espera ';' entre as colunas. Com ',' ele nao divide nada e a planilha abre com
+    # tudo espremido numa coluna so -- que era o "arquivo baguncado" relatado no teste visual.
+    # O BOM abaixo ja existia pela mesma razao (fazer o Excel reconhecer o UTF-8).
+    writer = csv.writer(buffer, delimiter=";")
     writer.writerow(colunas)
     writer.writerows(_linhas_como_texto(colunas, linhas))
-    return buffer.getvalue().encode("utf-8-sig")  # BOM para abrir corretamente no Excel
+    return buffer.getvalue().encode("utf-8-sig")
 
 
 def gerar_xlsx(colunas: list[str], linhas: list[dict[str, Any]]) -> bytes:
