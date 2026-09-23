@@ -13,7 +13,7 @@ import { exibirCEP, exibirCPF, exibirTelefone } from '../../utils/mascaras';
 export const MemberDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { hasPermission } = useAuth();
+  const { hasPermission, user, updateUserPhotoStatus } = useAuth();
 
   const [member, setMember] = useState<Member | null>(null);
   const [loading, setLoading] = useState(true);
@@ -63,7 +63,13 @@ export const MemberDetails: React.FC = () => {
               pessoaId={member.pessoaId}
               nome={member.name}
               temFoto={member.temFoto}
-              onChange={(temFotoAgora) => setMember({ ...member, temFoto: temFotoAgora })}
+              onChange={(temFotoAgora) => {
+                setMember({ ...member, temFoto: temFotoAgora });
+                // Editar a propria foto precisa alcancar o avatar da barra superior, que le
+                // do contexto de autenticacao. Sem isto ele so mudaria no proximo login,
+                // e este passou a ser o unico lugar onde a troca acontece.
+                if (user?.pessoaId === member.pessoaId) updateUserPhotoStatus(temFotoAgora);
+              }}
             />
           ) : (
             <Avatar pessoaId={member.pessoaId} nome={member.name} temFoto={member.temFoto} size="xl" />

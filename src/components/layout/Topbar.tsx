@@ -3,7 +3,6 @@ import { Menu, LogOut, ChevronDown } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { Avatar } from '../ui/Avatar';
-import { AvatarUpload } from '../ui/AvatarUpload';
 
 interface TopbarProps {
   title?: string;
@@ -11,7 +10,7 @@ interface TopbarProps {
 }
 
 export const Topbar: React.FC<TopbarProps> = ({ title, onMobileMenuToggle }) => {
-  const { user, logout, updateUserPhotoStatus } = useAuth();
+  const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [profileOpen, setProfileOpen] = useState(false);
 
@@ -63,11 +62,13 @@ export const Topbar: React.FC<TopbarProps> = ({ title, onMobileMenuToggle }) => 
           {profileOpen && user && (
             <div className="absolute right-0 mt-2 w-56 bg-[#181D1A] border border-[#222824] rounded-xl shadow-2xl py-2 z-50 animate-slide-in">
               <div className="px-4 py-3 border-b border-[#222824] flex items-center gap-3">
-                <AvatarUpload
+                {/* Só exibição: a foto se troca no cadastro do membro, não por aqui. Os
+                    botões de enviar e remover ficavam sobre o menu, numa área pequena e sem
+                    o contexto de quem está sendo editado. */}
+                <Avatar
                   pessoaId={user.pessoaId}
                   nome={user.name}
                   temFoto={user.temFoto}
-                  onChange={updateUserPhotoStatus}
                   size="sm"
                 />
                 <div className="min-w-0">
