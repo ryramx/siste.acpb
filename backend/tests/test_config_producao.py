@@ -58,6 +58,8 @@ PRODUCAO_VALIDA = dict(
     S3_SECRET_ACCESS_KEY="segredo",
     SMTP_HOST="smtp-relay.brevo.com",
     SMTP_FROM="sistema@acpb.example.com",
+    SMTP_USER="sistema@acpb.example.com",
+    SMTP_PASSWORD="senha-de-aplicativo",
 )
 
 
@@ -92,6 +94,16 @@ def test_producao_exige_smtp():
 def test_producao_exige_remetente_quando_ha_smtp():
     with pytest.raises(ValueError, match="SMTP_FROM"):
         Settings(**{**PRODUCAO_VALIDA, "SMTP_FROM": ""})
+
+
+def test_producao_exige_credenciais_smtp_completas():
+    """Com HOST e FROM preenchidos e credenciais em branco, a aplicacao subia e o envio
+    falhava em silencio: a tela dizia "instrucoes enviadas" e nenhum e-mail chegava."""
+    with pytest.raises(ValueError, match="SMTP_USER"):
+        Settings(**{**PRODUCAO_VALIDA, "SMTP_USER": ""})
+
+    with pytest.raises(ValueError, match="SMTP_PASSWORD"):
+        Settings(**{**PRODUCAO_VALIDA, "SMTP_PASSWORD": ""})
 
 
 def test_desenvolvimento_nao_exige_nada_disso():

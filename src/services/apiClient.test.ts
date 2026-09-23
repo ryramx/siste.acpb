@@ -88,6 +88,40 @@ describe('apiClient', () => {
     expect(getSession()).toBeNull();
   });
 
+  it('em 401 sem sessão (login), preserva a mensagem do servidor e não dispara o handler', async () => {
+    // Credencial errada e sessão expirada chegavam as duas como 401 e eram tratadas igual,
+    // então quem errava a senha via "Sessão expirada. Faça login novamente." sem nunca ter
+    // entrado. Sem sessão, o 401 é do próprio login e a mensagem do servidor precisa passar.
+    mockFetchOnce({
+      ok: false,
+      status: 401,
+      jsonBody: { detail: 'Usuário ou senha incorretos' }
+    });
+
+    const handler = vi.fn();
+    setOnUnauthorized(handler);
+
+    await expect(apiClient.post('/auth/login', {})).rejects.toMatchObject({
+      status: 401,
+      message: 'Usuário ou senha incorretos'
+    });
+    expect(handler).not.toHaveBeenCalled();
+  });
+
+  it('converte demora sem resposta em erro de conexão, em vez de ficar pendurado', async () => {
+    // No celular, uma requisição feita ao perder o sinal não falha sozinha: fica pendurada e a
+    // tela some no "Carregando..." para sempre.
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockRejectedValue(new DOMException('abortado', 'AbortError'))
+    );
+
+    await expect(apiClient.get('/lento')).rejects.toMatchObject({
+      status: 0,
+      message: expect.stringContaining('demorou demais')
+    });
+  });
+
   it('retorna undefined para respostas 204 sem corpo', async () => {
     mockFetchOnce({ ok: true, status: 204, jsonBody: undefined });
     const resultado = await apiClient.delete('/algo/1');

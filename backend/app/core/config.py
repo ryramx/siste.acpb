@@ -142,8 +142,14 @@ class Settings(BaseSettings):
             erros.append(
                 "SMTP_HOST é obrigatório (sem e-mail, a recuperação de senha expõe o token em log)"
             )
-        elif not self.SMTP_FROM:
-            erros.append("SMTP_FROM é obrigatório quando SMTP_HOST está configurado")
+        else:
+            # Antes só SMTP_FROM era exigido. Com HOST e FROM preenchidos e as credenciais
+            # em branco, a aplicação subia normalmente e o envio falhava em silêncio: o
+            # usuário via "instruções enviadas" e nenhum e-mail chegava. Exigir tudo faz o
+            # deploy falhar na configuração incompleta, que é onde o erro é barato.
+            for nome in ("SMTP_FROM", "SMTP_USER", "SMTP_PASSWORD"):
+                if not getattr(self, nome):
+                    erros.append(f"{nome} é obrigatório quando SMTP_HOST está configurado")
 
         if erros:
             raise ValueError(

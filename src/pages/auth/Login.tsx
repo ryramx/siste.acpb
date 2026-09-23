@@ -23,10 +23,16 @@ export const Login: React.FC = () => {
       setErrorMessage('Informe seu e-mail acima para receber as instruções de recuperação.');
       return;
     }
+    // A confirmação aparece antes da resposta, de propósito. O backend envia o e-mail dentro
+    // da própria requisição, e um servidor SMTP lento segura a resposta por até 15 segundos —
+    // tempo em que a tela ficava sem reação nenhuma e parecia que o clique não funcionou.
+    // A mensagem não afirma que o e-mail existe, então não depende do resultado da chamada.
+    setRecoveryMessage('Se o e-mail existir, instruções de recuperação foram enviadas.');
     try {
       await apiClient.post('/auth/recuperar-senha', { email });
-    } finally {
-      setRecoveryMessage('Se o e-mail existir, instruções de recuperação foram enviadas.');
+    } catch {
+      // Silencioso por decisão de segurança: responder diferente para e-mail existente e
+      // inexistente revelaria quem tem cadastro.
     }
   };
 

@@ -68,15 +68,43 @@ async function extrairMensagemDeErro(response: Response): Promise<string> {
   return `Erro HTTP ${response.status}`;
 }
 
-async function request<T>(method: string, path: string, body?: unknown): Promise<T> {
-  const temCorpo = body !== undefined;
-  const response = await fetch(`${API_BASE_URL}${path}`, {
-    method,
-    headers: buildHeaders(temCorpo),
-    body: temCorpo ? JSON.stringify(body) : undefined
-  });
+/** Tempo-limite das chamadas. Sem ele, no celular uma requisição feita ao perder o sinal não
+ * falha: fica pendurada indefinidamente, e a tela some no "Carregando..." para sempre. No
+ * computador o navegador costuma cortar sozinho, e por isso o problema só aparecia no celular.
+ * Uploads levam mais tempo por natureza, então têm folga maior. */
+const TIMEOUT_PADRAO_MS = 15000;
+const TIMEOUT_UPLOAD_MS = 60000;
 
-  if (response.status === 401) {
+async function fetchComTimeout(
+  url: string,
+  init: RequestInit,
+  timeoutMs: number
+): Promise<Response> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(url, { ...init, signal: controller.signal });
+  } catch (erro) {
+    if (erro instanceof DOMException && erro.name === 'AbortError') {
+      throw new ApiError(
+        0,
+        'O servidor demorou demais para responder. Verifique sua conexão e tente de novo.'
+      );
+    }
+    throw new ApiError(0, 'Não foi possível falar com o servidor. Verifique sua conexão.');
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+/** Trata a resposta comum a todas as chamadas.
+ *
+ * `tinhaSessao` distingue os dois 401 possiveis, que antes eram tratados como um só: com sessão,
+ * o token expirou ou foi revogado e a mensagem é "Sessão expirada"; sem sessão, a chamada é de
+ * login ou de recuperação de senha, e o 401 significa credencial errada -- dizer "Sessão
+ * expirada" a quem nunca entrou é confuso e esconde o motivo real. */
+async function tratarResposta<T>(response: Response, tinhaSessao: boolean): Promise<T> {
+  if (response.status === 401 && tinhaSessao) {
     clearSession();
     onUnauthorized?.();
     throw new ApiError(401, 'Sessão expirada. Faça login novamente.');
@@ -95,6 +123,22 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
     return (await response.json()) as T;
   }
   return undefined as T;
+}
+
+async function request<T>(method: string, path: string, body?: unknown): Promise<T> {
+  const temCorpo = body !== undefined;
+  const tinhaSessao = getSession() !== null;
+  const response = await fetchComTimeout(
+    `${API_BASE_URL}${path}`,
+    {
+      method,
+      headers: buildHeaders(temCorpo),
+      body: temCorpo ? JSON.stringify(body) : undefined
+    },
+    TIMEOUT_PADRAO_MS
+  );
+
+  return tratarResposta<T>(response, tinhaSessao);
 }
 
 async function requestForm<T>(method: string, path: string, formData: FormData): Promise<T> {
@@ -105,32 +149,27 @@ async function requestForm<T>(method: string, path: string, formData: FormData):
   }
   // Sem Content-Type manual: o browser define o boundary do multipart/form-data sozinho.
 
-  const response = await fetch(`${API_BASE_URL}${path}`, { method, headers, body: formData });
+  const tinhaSessao = session !== null;
+  const response = await fetchComTimeout(
+    `${API_BASE_URL}${path}`,
+    { method, headers, body: formData },
+    TIMEOUT_UPLOAD_MS
+  );
 
-  if (response.status === 401) {
-    clearSession();
-    onUnauthorized?.();
-    throw new ApiError(401, 'Sessão expirada. Faça login novamente.');
-  }
-  if (!response.ok) {
-    throw new ApiError(response.status, await extrairMensagemDeErro(response));
-  }
-  if (response.status === 204) {
-    return undefined as T;
-  }
-  const tipoConteudo = response.headers.get('content-type') ?? '';
-  if (tipoConteudo.includes('application/json')) {
-    return (await response.json()) as T;
-  }
-  return undefined as T;
+  return tratarResposta<T>(response, tinhaSessao);
 }
 
 /** Busca um recurso binário (ex.: foto, comprovante) autenticado e retorna um Blob — usado
  * quando o elemento consumidor (ex.: <img>) não consegue enviar o header Authorization sozinho. */
 async function requestBlob(path: string): Promise<Blob> {
-  const response = await fetch(`${API_BASE_URL}${path}`, { headers: buildHeaders(false) });
+  const tinhaSessao = getSession() !== null;
+  const response = await fetchComTimeout(
+    `${API_BASE_URL}${path}`,
+    { headers: buildHeaders(false) },
+    TIMEOUT_PADRAO_MS
+  );
 
-  if (response.status === 401) {
+  if (response.status === 401 && tinhaSessao) {
     clearSession();
     onUnauthorized?.();
     throw new ApiError(401, 'Sessão expirada. Faça login novamente.');
