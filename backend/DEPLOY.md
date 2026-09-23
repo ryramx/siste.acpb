@@ -99,7 +99,10 @@ a ser a opção melhor (limites maiores e métricas de entrega), e aí o remeten
 Aponte o Render para este repositório; ele lê o `render.yaml` da raiz e pede os valores marcados
 como `sync: false` — são exatamente os dos passos 1 a 3. `JWT_SECRET_KEY` é gerada pelo próprio
 Render, não precisa inventar.
-Anote a URL pública do serviço (ex.: `https://acpb-api.onrender.com`).
+Anote a URL pública do serviço. O Render acrescenta um sufixo aleatório ao nome, então
+ela **não** é `https://<nome-do-servico>.onrender.com` — a da associação hoje é
+`https://acpb-api-r64f.onrender.com`. Confira no painel: seguir o palpite leva a um
+endereço que responde 404.
 
 **5. Frontend (site estático no Render)**
 Vem no mesmo blueprint do passo 4 (serviço `acpb-sistema`), então já foi criado junto. O único
@@ -245,6 +248,26 @@ cada retorno.
   usuários com antecedência; a maioria das migrations deste projeto são aditivas (criar tabela/coluna)
   e não exigem downtime.
 - Nunca gerar uma migration em produção com `--autogenerate` sem revisar o arquivo antes de aplicar.
+
+### Uma migration não pode derrubar a API
+
+O `startCommand` encadeia as duas coisas: `alembic upgrade head && uvicorn ...`. O `&&`
+significa que **uma exceção na migration impede a aplicação de subir**. O prejuízo não fica
+contido na mudança que falhou: o sistema inteiro fica fora do ar, para todos.
+
+Por isso, uma migration que encontra dado inesperado deve **registrar e seguir**, não abortar
+— salvo quando continuar for pior do que o sistema parar (dado corrompido, risco de perda).
+
+O exemplo no repositório é `d7b41e9c05a3` (normalização do status das inscrições). Ela
+converte as formas antigas que conhece; para as que não conhece, não chuta um valor — status
+de inscrição decide quem tem vaga. Mas também não levanta exceção: cria o CHECK como
+`NOT VALID` (aceito mesmo com linhas violando, e já valendo para toda escrita nova) e tenta
+validar as linhas antigas dentro de um SAVEPOINT. Se a validação falhar, o log do deploy
+recebe um aviso nomeando os valores a revisar, e a API sobe normalmente.
+
+Ao escrever uma migration nova, vale perguntar: *se o banco de produção tiver um dado que eu
+não previ, isto derruba o sistema?* Se a resposta for sim, refaça o passo como o exemplo
+acima.
 
 ## Subindo a aplicação
 

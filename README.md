@@ -11,8 +11,8 @@ O projeto tem como objetivo reduzir a dependência de controles manuais e inform
 **Em desenvolvimento — primeira versão funcional integrada**
 
 > O back-end está implementado e o front-end já consome a API real (nenhuma tela
-> usa dados fictícios). Os módulos de Patrimônio, Estoque e Doações permanecem
-> previstos, mas ainda não foram modelados.
+> usa dados fictícios). Estoque e Doações permanecem previstos, mas ainda não foram
+> modelados.
 
 | Módulo                                 | Back-end | Front-end |
 | -------------------------------------- | -------- | --------- |
@@ -24,18 +24,21 @@ O projeto tem como objetivo reduzir a dependência de controles manuais e inform
 | Beneficiários e atendimentos           | ✅        | ✅         |
 | Projetos                               | ✅        | ✅         |
 | Eventos, calendário e inscrições       | ✅        | ✅         |
-| Financeiro e anexos/comprovantes       | ✅        | ✅         |
+| Financeiro                             | ✅        | ✅         |
+| Anexos/comprovantes financeiros        | ✅        | ⏳ API pronta; a tela apenas conta os anexos, não envia nem abre |
 | Foto de pessoa (upload/remoção)        | ✅        | ✅         |
 | Dashboards (geral e financeiro)        | ✅        | ✅         |
-| Relatórios (CSV / Excel / PDF)         | ✅        | ⏳ API pronta, tela pendente |
-| Auditoria                              | ✅        | ⏳ API pronta, tela pendente |
-| Patrimônio                             | ⬜        | ⬜         |
+| Relatórios (CSV / Excel / PDF)         | ✅        | ✅         |
+| Auditoria                              | ✅        | ✅         |
+| Patrimônio                             | ✅        | ✅         |
+| Cadastros de apoio (contas, categorias financeiras, cargos) | ✅ | ⏳ somente leitura na interface |
 | Estoque                                | ⬜        | ⬜         |
 | Doações                                | ⬜        | ⬜         |
 
-**Ressalva de validação:** o front-end foi validado por build TypeScript, testes
-automatizados e chamadas end-to-end reais à API, mas ainda não passou por uma
-revisão visual completa em navegador.
+**Ressalva de validação:** as telas passaram a ser exercitadas em navegador, e há testes
+automatizados de tela cobrindo os fluxos que já quebraram (sessão ao recarregar, tela de
+evento, busca de membros). A cobertura de tela ainda é parcial: a maior parte da suite do
+front-end testa serviços, não componentes.
 
 O andamento detalhado, tarefa a tarefa, está em
 [`tarefas_pendentes/progresso.md`](tarefas_pendentes/progresso.md).
