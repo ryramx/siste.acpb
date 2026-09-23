@@ -13,6 +13,8 @@ class PessoaBase(BaseModel):
     escolaridade: str | None = None
     nome_mae: str | None = None
     nome_pai: str | None = None
+    responsavel_nome: str | None = None
+    responsavel_telefone: str | None = None
     endereco: str | None = None
     bairro: str | None = None
     cidade: str | None = None
@@ -35,6 +37,8 @@ class PessoaUpdate(BaseModel):
     escolaridade: str | None = None
     nome_mae: str | None = None
     nome_pai: str | None = None
+    responsavel_nome: str | None = None
+    responsavel_telefone: str | None = None
     endereco: str | None = None
     bairro: str | None = None
     cidade: str | None = None

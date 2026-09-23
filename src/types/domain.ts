@@ -13,6 +13,9 @@ export interface Member {
   education: string;
   motherName: string;
   fatherName: string;
+  /** Responsável legal, preenchido quando a pessoa é menor de idade. */
+  guardianName: string;
+  guardianPhone: string;
   temFoto: boolean;
   phone: string;
   whatsapp: string;

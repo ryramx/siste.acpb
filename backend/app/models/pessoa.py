@@ -109,6 +109,18 @@ class Pessoa(Base, TimestampMixin):
     # Nome gerado (uuid4 + extensão) do arquivo de foto no armazenamento local — nunca um nome
     # enviado pelo usuário, mesma lógica de segurança dos anexos financeiros (tarefa 20). Nulo
     # por padrão: nenhuma pessoa tem foto até que alguém faça upload explicitamente.
+    # Responsável legal, preenchido quando a pessoa é menor de idade. Texto livre porque o
+    # responsável costuma não ter cadastro próprio na associação.
+    responsavel_nome: Mapped[str | None] = mapped_column(
+        String(150),
+        nullable=True
+    )
+
+    responsavel_telefone: Mapped[str | None] = mapped_column(
+        String(20),
+        nullable=True
+    )
+
     foto_arquivo: Mapped[str | None] = mapped_column(
         String(255),
         unique=True,

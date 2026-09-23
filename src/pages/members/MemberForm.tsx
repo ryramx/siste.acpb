@@ -7,6 +7,7 @@ import { Select } from '../../components/ui/Select';
 import { memberService, CargoOption } from '../../services/domainServices';
 import { buscarEnderecoPorCEP, CEPError } from '../../services/cepService';
 import { useToast } from '../../contexts/ToastContext';
+import { ehMenorDeIdade, idadeEmAnos } from '../../utils/idade';
 import {
   apenasDigitos,
   cpfValido,
@@ -54,6 +55,8 @@ export const MemberForm: React.FC = () => {
     education: '',
     motherName: '',
     fatherName: '',
+    guardianName: '',
+    guardianPhone: '',
     phone: '',
     whatsapp: '',
     email: '',
@@ -90,6 +93,8 @@ export const MemberForm: React.FC = () => {
           education: membro.education,
           motherName: membro.motherName,
           fatherName: membro.fatherName,
+          guardianName: membro.guardianName,
+          guardianPhone: formatarTelefone(membro.guardianPhone),
           phone: formatarTelefone(membro.phone),
           whatsapp: formatarTelefone(membro.whatsapp),
           email: membro.email,
@@ -115,6 +120,7 @@ export const MemberForm: React.FC = () => {
     cpf: formatarCPF,
     phone: formatarTelefone,
     whatsapp: formatarTelefone,
+    guardianPhone: formatarTelefone,
     cep: formatarCEP
   };
 
@@ -311,6 +317,36 @@ export const MemberForm: React.FC = () => {
               onChange={handleChange}
             />
           </div>
+
+          {/* Só para menores, e decidido pela data já digitada -- não é preciso salvar para
+              a seção aparecer. Mostrá-la sempre poluiria o cadastro da maioria, que é
+              adulta; omiti-la deixaria sem contato as crianças atendidas nos projetos. */}
+          {ehMenorDeIdade(formData.birthDate) && (
+            <div className="bg-[#0F1210] border border-[#F8D800]/30 rounded-xl p-4 space-y-3">
+              <p className="text-xs text-[#F8D800]">
+                Pessoa com {idadeEmAnos(formData.birthDate)} anos — informe quem responde por
+                ela.
+              </p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Input
+                  label="Responsável legal"
+                  name="guardianName"
+                  value={formData.guardianName}
+                  onChange={handleChange}
+                  placeholder="Nome de quem responde pelo menor"
+                />
+                <Input
+                  label="Telefone do responsável"
+                  name="guardianPhone"
+                  value={formData.guardianPhone}
+                  onChange={handleChange}
+                  placeholder="(81) 99999-9999"
+                  inputMode="tel"
+                  helperText="Contato para emergências durante as atividades"
+                />
+              </div>
+            </div>
+          )}
         </div>
 
         {/* SEÇÃO 2: CONTATO */}

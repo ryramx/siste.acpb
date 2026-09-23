@@ -137,6 +137,11 @@ export const MemberDetails: React.FC = () => {
             <LinhaOpcional rotulo="Escolaridade" valor={member.education} />
             <LinhaOpcional rotulo="Nome da mãe" valor={member.motherName} />
             <LinhaOpcional rotulo="Nome do pai" valor={member.fatherName} />
+            <LinhaOpcional rotulo="Responsável legal" valor={member.guardianName} />
+            <LinhaOpcional
+              rotulo="Telefone do responsável"
+              valor={exibirTelefone(member.guardianPhone)}
+            />
             <div className="flex justify-between py-1 border-b border-[#222824]/50">
               <span className="text-[#AEB5B0]">Telefone Principal</span>
               <span className="text-white font-medium flex items-center gap-1.5">

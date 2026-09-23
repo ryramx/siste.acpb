@@ -24,6 +24,8 @@ function membro(id: string, name: string, cpf: string, email: string): Member {
     education: '',
     motherName: '',
     fatherName: '',
+    guardianName: '',
+    guardianPhone: '',
     temFoto: false,
     phone: '',
     whatsapp: '',

@@ -27,6 +27,8 @@ interface ApiPessoa {
   escolaridade: string | null;
   nome_mae: string | null;
   nome_pai: string | null;
+  responsavel_nome: string | null;
+  responsavel_telefone: string | null;
   email: string | null;
   endereco: string | null;
   bairro: string | null;
@@ -80,6 +82,8 @@ const toMember = (
   education: pessoa.escolaridade ?? '',
   motherName: pessoa.nome_mae ?? '',
   fatherName: pessoa.nome_pai ?? '',
+  guardianName: pessoa.responsavel_nome ?? '',
+  guardianPhone: pessoa.responsavel_telefone ?? '',
   temFoto: pessoa.tem_foto,
   phone: telefone?.numero ?? '',
   whatsapp: telefone?.whatsapp ? telefone.numero : '',
@@ -108,6 +112,8 @@ export interface NovoMembroInput {
   education: string;
   motherName: string;
   fatherName: string;
+  guardianName: string;
+  guardianPhone: string;
   phone: string;
   whatsapp: string;
   email: string;
@@ -180,6 +186,8 @@ export const memberService = {
         escolaridade: data.education || null,
         nome_mae: data.motherName || null,
         nome_pai: data.fatherName || null,
+        responsavel_nome: data.guardianName || null,
+        responsavel_telefone: apenasDigitos(data.guardianPhone) || null,
         email: data.email || null,
         endereco: data.address || null,
         bairro: data.neighborhood || null,
@@ -226,6 +234,11 @@ export const memberService = {
     if (data.education !== undefined) pessoaPatch.escolaridade = data.education || null;
     if (data.motherName !== undefined) pessoaPatch.nome_mae = data.motherName || null;
     if (data.fatherName !== undefined) pessoaPatch.nome_pai = data.fatherName || null;
+    if (data.guardianName !== undefined) pessoaPatch.responsavel_nome = data.guardianName || null;
+    if (data.guardianPhone !== undefined) {
+      // Só dígitos, como os demais telefones do sistema.
+      pessoaPatch.responsavel_telefone = apenasDigitos(data.guardianPhone) || null;
+    }
     if (data.email !== undefined) pessoaPatch.email = data.email || null;
     if (data.address !== undefined) pessoaPatch.endereco = data.address || null;
     if (data.neighborhood !== undefined) pessoaPatch.bairro = data.neighborhood || null;
