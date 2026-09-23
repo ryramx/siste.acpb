@@ -7,6 +7,7 @@ import { StatCard } from '../../components/ui/StatCard';
 import { Badge } from '../../components/ui/Badge';
 import { Modal } from '../../components/ui/Modal';
 import { Input } from '../../components/ui/Input';
+import { InputValor } from '../../components/ui/InputValor';
 import { Select } from '../../components/ui/Select';
 import { financialService, OpcaoFinanceira } from '../../services/domainServices';
 import { FinancialTransaction } from '../../types/domain';
@@ -322,12 +323,9 @@ export const FinancialDashboard: React.FC = () => {
             required
           />
           <div className="grid grid-cols-2 gap-3">
-            <Input
-              label="Valor (R$)"
-              type="number"
-              step="0.01"
+            <InputValor
               value={newTx.amount}
-              onChange={(e) => setNewTx({ ...newTx, amount: Number(e.target.value) })}
+              onChange={(amount) => setNewTx({ ...newTx, amount: amount ?? 0 })}
               required
             />
             <Input

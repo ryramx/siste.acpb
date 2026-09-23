@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { Building2, Plus, Pencil, Trash2, Search } from 'lucide-react';
 import { Input } from '../../components/ui/Input';
+import { InputValor } from '../../components/ui/InputValor';
 import { Select } from '../../components/ui/Select';
 import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
@@ -363,19 +364,10 @@ export const AssetsList: React.FC = () => {
               value={form.dataAquisicao ?? ''}
               onChange={(e) => setForm((f) => ({ ...f, dataAquisicao: e.target.value }))}
             />
-            <Input
-              id="asset-valor"
+            <InputValor
               label="Valor de aquisição"
-              type="number"
-              min="0"
-              step="0.01"
-              value={form.valorAquisicao ?? ''}
-              onChange={(e) =>
-                setForm((f) => ({
-                  ...f,
-                  valorAquisicao: e.target.value === '' ? null : Number(e.target.value)
-                }))
-              }
+              value={form.valorAquisicao ?? null}
+              onChange={(valorAquisicao) => setForm((f) => ({ ...f, valorAquisicao }))}
             />
             <Input
               id="asset-local"

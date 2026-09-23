@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { ArrowDownRight, Plus, Search, Paperclip } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
+import { InputValor } from '../../components/ui/InputValor';
 import { Select } from '../../components/ui/Select';
 import { Badge } from '../../components/ui/Badge';
 import { Modal } from '../../components/ui/Modal';
@@ -198,8 +199,8 @@ export const DespesasPage: React.FC = () => {
           <Input label="Descrição da Despesa" value={newDespesa.description}
             onChange={(e) => setNewDespesa({ ...newDespesa, description: e.target.value })} required />
           <div className="grid grid-cols-2 gap-3">
-            <Input label="Valor (R$)" type="number" step="0.01" value={newDespesa.amount}
-              onChange={(e) => setNewDespesa({ ...newDespesa, amount: Number(e.target.value) })} required />
+            <InputValor value={newDespesa.amount}
+              onChange={(amount) => setNewDespesa({ ...newDespesa, amount: amount ?? 0 })} required />
             <Input label="Data" type="date" value={newDespesa.date}
               onChange={(e) => setNewDespesa({ ...newDespesa, date: e.target.value })} required />
           </div>

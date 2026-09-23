@@ -1,4 +1,4 @@
-/** Formatação de CPF, telefone e CEP.
+/** Formatação de CPF, telefone, CEP e valor em reais.
  *
  * O banco guarda **somente dígitos**; a máscara é responsabilidade da exibição. Misturar
  * "50000-000" e "50000000" na mesma coluna tornaria busca e comparação pouco confiáveis,
@@ -83,4 +83,49 @@ export function cpfValido(valor: string): boolean {
   };
 
   return digitoVerificador(8) === Number(d[9]) && digitoVerificador(9) === Number(d[10]);
+}
+
+/** Valor em reais, preenchido da direita para a esquerda.
+ *
+ * É o comportamento dos aplicativos de banco: cada dígito digitado empurra os anteriores,
+ * então "1" é R$ 0,01, "12" é R$ 0,12 e "12345" é R$ 123,45. A vírgula nunca é digitada,
+ * o que elimina a dúvida de onde ela vai e o caso em que a pessoa escreve "150" querendo
+ * cento e cinquenta reais e o sistema entende cento e cinquenta centavos -- ou o contrário.
+ *
+ * O campo `type="number"` que existia antes também aceitava "020" e "1e5", e no celular
+ * abria o teclado com setas de incremento em vez do teclado numérico simples.
+ */
+
+/** Teto de 12 dígitos: R$ 9.999.999.999,99. Sem limite, colar um texto longo geraria um
+ * número que perde precisão em ponto flutuante antes mesmo de chegar ao servidor. */
+const MAXIMO_DIGITOS_VALOR = 12;
+
+/** Recebe o que a pessoa digitou e devolve a máscara pronta, sempre com os centavos. */
+export function formatarValor(valor: string): string {
+  const d = apenasDigitos(valor).slice(0, MAXIMO_DIGITOS_VALOR);
+  if (!d) return '';
+  const centavos = d.padStart(3, '0');
+  const reais = centavos.slice(0, -2).replace(/^0+(?=\d)/, '');
+  const decimais = centavos.slice(-2);
+  return `${reais.replace(/\B(?=(\d{3})+(?!\d))/g, '.')},${decimais}`;
+}
+
+/** Da máscara para o número que o backend recebe. Campo vazio vale zero. */
+export function valorParaNumero(mascarado: string): number {
+  const d = apenasDigitos(mascarado).slice(0, MAXIMO_DIGITOS_VALOR);
+  if (!d) return 0;
+  return Number(d) / 100;
+}
+
+/** Do número guardado para a máscara, ao abrir um formulário de edição.
+ *
+ * Arredonda antes de formatar porque um valor vindo do banco pode chegar como 12.345000001
+ * em ponto flutuante, e truncar exibiria um centavo a menos.
+ *
+ * Zero sai vazio, e não "0,00": um campo obrigatório ainda em branco não deve parecer
+ * preenchido, nem no cadastro novo nem numa edição cujo valor foi apagado.
+ */
+export function numeroParaValor(valor: number | null | undefined): string {
+  if (!valor || Number.isNaN(valor)) return '';
+  return formatarValor(String(Math.round(valor * 100)));
 }

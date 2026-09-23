@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { ArrowUpRight, ArrowDownRight, Search, SlidersHorizontal, Pencil, Trash2 } from 'lucide-react';
 import { Input } from '../../components/ui/Input';
+import { InputValor } from '../../components/ui/InputValor';
 import { Select } from '../../components/ui/Select';
 import { Badge } from '../../components/ui/Badge';
 import { TableSkeleton } from '../../components/ui/Skeleton';
@@ -254,13 +255,9 @@ export const MovimentacoesPage: React.FC = () => {
               required
             />
             <div className="grid grid-cols-2 gap-3">
-              <Input
-                label="Valor (R$)"
-                type="number"
-                step="0.01"
-                min={0}
+              <InputValor
                 value={edicao.amount}
-                onChange={(e) => setEdicao({ ...edicao, amount: Number(e.target.value) })}
+                onChange={(amount) => setEdicao({ ...edicao, amount: amount ?? 0 })}
                 required
               />
               <Input
