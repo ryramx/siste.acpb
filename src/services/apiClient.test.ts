@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { apiClient, ApiError, setOnUnauthorized } from './apiClient';
+import { apiClient, ApiError, setOnUnauthorized, assinarEsperaLonga } from './apiClient';
 import { setSession, clearSession } from './session';
 
 function mockFetchOnce(response: Partial<Response> & { jsonBody?: unknown }) {
@@ -163,6 +163,59 @@ describe('apiClient', () => {
       status: 0,
       message: expect.stringContaining('demorou demais')
     });
+  });
+
+  it('avisa quando uma chamada passa do limiar, e para de avisar quando ela termina', async () => {
+    // O servidor hibernando deixa a tela parada por ate um minuto; sem sinal nenhum, parece
+    // travamento. O aviso nasce aqui porque so o apiClient sabe o que esta pendente.
+    vi.useFakeTimers();
+    let resolver: (r: unknown) => void = () => {};
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockImplementation(() => new Promise((res) => {
+        resolver = res;
+      }))
+    );
+
+    const estados: boolean[] = [];
+    const cancelar = assinarEsperaLonga((esperando) => estados.push(esperando));
+    expect(estados).toEqual([false]);
+
+    const promessa = apiClient.get('/lento');
+
+    // Antes do limiar, nada é mostrado: uma chamada normal termina muito antes.
+    vi.advanceTimersByTime(9000);
+    expect(estados).toEqual([false]);
+
+    vi.advanceTimersByTime(2000);
+    expect(estados).toEqual([false, true]);
+
+    resolver({
+      ok: true,
+      status: 200,
+      headers: new Headers({ 'content-type': 'application/json' }),
+      json: async () => ({})
+    });
+    await promessa;
+    expect(estados).toEqual([false, true, false]);
+
+    cancelar();
+    vi.useRealTimers();
+  });
+
+  it('não avisa quando a chamada responde rápido', async () => {
+    vi.useFakeTimers();
+    mockFetchOnce({ jsonBody: { ok: true } });
+
+    const estados: boolean[] = [];
+    const cancelar = assinarEsperaLonga((esperando) => estados.push(esperando));
+
+    await apiClient.get('/rapido');
+    vi.advanceTimersByTime(30000);
+
+    expect(estados).toEqual([false]);
+    cancelar();
+    vi.useRealTimers();
   });
 
   it('retorna undefined para respostas 204 sem corpo', async () => {

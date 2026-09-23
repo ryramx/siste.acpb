@@ -28,12 +28,16 @@ import { ReportsPage } from '../pages/reports/ReportsPage';
 import { AssetsList } from '../pages/assets/AssetsList';
 import { AuditPage } from '../pages/audit/AuditPage';
 import { SettingsPage } from '../pages/settings/SettingsPage';
+import { AvisoServidorIniciando } from '../components/common/AvisoServidorIniciando';
 
 export const AppRoutes: React.FC = () => {
   return (
     <BrowserRouter>
       <AuthProvider>
         <ToastProvider>
+          {/* Fora das rotas: vale em qualquer tela, inclusive no login e enquanto a sessão
+              está sendo restaurada na abertura do app. */}
+          <AvisoServidorIniciando />
           <Routes>
             {/* Rota de Login */}
             <Route path="/login" element={<Login />} />

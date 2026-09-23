@@ -104,6 +104,65 @@ async function extrairMensagemDeErro(response: Response): Promise<string> {
 const TIMEOUT_PADRAO_MS = 75000;
 const TIMEOUT_UPLOAD_MS = 120000;
 
+/** Aviso de espera longa.
+ *
+ * Com o tempo-limite de 75s, um servidor hibernando deixa a tela carregando por até um minuto
+ * sem dizer nada. Tecnicamente correto, mas parece travamento para quem não sabe que o plano
+ * gratuito do Render desliga o serviço quando ele fica ocioso.
+ *
+ * Fica aqui, e não em cada tela, porque o apiClient é o único lugar que sabe quais chamadas
+ * estão pendentes -- e assim vale para qualquer tela, inclusive o login e a abertura do app.
+ *
+ * O aviso só aparece depois do limiar: uma chamada normal termina muito antes e ninguém vê
+ * nada. */
+const LIMIAR_ESPERA_LONGA_MS = 10000;
+
+type OuvinteDeEspera = (esperando: boolean) => void;
+
+const ouvintes = new Set<OuvinteDeEspera>();
+let chamadasPendentes = 0;
+let temporizadorDoAviso: ReturnType<typeof setTimeout> | null = null;
+let avisando = false;
+
+function notificar(novoEstado: boolean): void {
+  if (avisando === novoEstado) return;
+  avisando = novoEstado;
+  ouvintes.forEach((ouvinte) => ouvinte(novoEstado));
+}
+
+/** Avisa quando alguma chamada passa do limiar, e quando todas terminam. */
+export function assinarEsperaLonga(ouvinte: OuvinteDeEspera): () => void {
+  ouvintes.add(ouvinte);
+  ouvinte(avisando);
+  return () => {
+    ouvintes.delete(ouvinte);
+  };
+}
+
+function registrarChamada(): () => void {
+  chamadasPendentes += 1;
+  if (temporizadorDoAviso === null) {
+    temporizadorDoAviso = setTimeout(() => {
+      temporizadorDoAviso = null;
+      if (chamadasPendentes > 0) notificar(true);
+    }, LIMIAR_ESPERA_LONGA_MS);
+  }
+
+  let encerrada = false;
+  return () => {
+    if (encerrada) return;
+    encerrada = true;
+    chamadasPendentes -= 1;
+    if (chamadasPendentes === 0) {
+      if (temporizadorDoAviso !== null) {
+        clearTimeout(temporizadorDoAviso);
+        temporizadorDoAviso = null;
+      }
+      notificar(false);
+    }
+  };
+}
+
 function estaOffline(): boolean {
   // `navigator.onLine` e conservador: falso so quando o aparelho sabe que nao tem rede.
   return typeof navigator !== 'undefined' && navigator.onLine === false;
@@ -124,6 +183,7 @@ async function fetchComTimeout(
 
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
+  const encerrarChamada = registrarChamada();
   try {
     return await fetch(url, { ...init, signal: controller.signal });
   } catch (erro) {
@@ -145,6 +205,7 @@ async function fetchComTimeout(
     );
   } finally {
     clearTimeout(timer);
+    encerrarChamada();
   }
 }
 
