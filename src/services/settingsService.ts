@@ -156,6 +156,12 @@ export const userManagementService = {
     }
   },
 
+  /** Define uma senha provisória sem exigir a senha antiga — o caminho de volta para quem
+   * esquece a senha, já que a recuperação por e-mail depende de um provedor externo. */
+  async redefinirSenha(usuarioId: string, senhaNova: string): Promise<void> {
+    await apiClient.post(`/usuarios/${usuarioId}/redefinir-senha`, { senha_nova: senhaNova });
+  },
+
   async vincularPerfil(usuarioId: string, perfilId: string): Promise<void> {
     await apiClient.post(`/usuarios/${usuarioId}/perfis/${perfilId}`);
   },

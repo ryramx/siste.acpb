@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Plus, KeyRound, Power, Search } from 'lucide-react';
+import { Plus, KeyRound, Power, Search, LockKeyhole } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Select } from '../../components/ui/Select';
@@ -28,6 +28,9 @@ export const UsersManagement: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
 
   const [createModalOpen, setCreateModalOpen] = useState(false);
+  const [resetUser, setResetUser] = useState<SystemUser | null>(null);
+  const [novaSenhaReset, setNovaSenhaReset] = useState('');
+  const [redefinindo, setRedefinindo] = useState(false);
   const [pessoasDisponiveis, setPessoasDisponiveis] = useState<PessoaSemUsuario[]>([]);
   const [novoPessoaId, setNovoPessoaId] = useState('');
   const [novoEmail, setNovoEmail] = useState('');
@@ -111,6 +114,30 @@ export const UsersManagement: React.FC = () => {
       });
     } finally {
       setCriando(false);
+    }
+  };
+
+  const abrirReset = (user: SystemUser) => {
+    setNovaSenhaReset('');
+    setResetUser(user);
+  };
+
+  const confirmarReset = async () => {
+    if (!resetUser) return;
+    setRedefinindo(true);
+    try {
+      await userManagementService.redefinirSenha(resetUser.id, novaSenhaReset);
+      addToast({
+        type: 'success',
+        title: 'Senha redefinida',
+        message: `Informe a senha provisória a ${resetUser.name} por um canal seguro.`
+      });
+      setResetUser(null);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Tente novamente em instantes.';
+      addToast({ type: 'error', title: 'Não foi possível redefinir', message });
+    } finally {
+      setRedefinindo(false);
     }
   };
 
@@ -267,6 +294,14 @@ export const UsersManagement: React.FC = () => {
                           <Button
                             variant="ghost"
                             size="sm"
+                            onClick={() => abrirReset(u)}
+                            leftIcon={<LockKeyhole className="w-3.5 h-3.5" />}
+                          >
+                            Redefinir senha
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
                             isLoading={togglingUserId === u.id}
                             onClick={() => handleToggleAtivo(u)}
                             leftIcon={<Power className="w-3.5 h-3.5" />}
@@ -285,6 +320,53 @@ export const UsersManagement: React.FC = () => {
       </div>
 
       {/* Modal: Novo Usuário */}
+      <Modal
+        isOpen={resetUser !== null}
+        onClose={() => setResetUser(null)}
+        title={resetUser ? `Redefinir a senha de ${resetUser.name}` : 'Redefinir senha'}
+        footer={
+          <>
+            <Button variant="ghost" onClick={() => setResetUser(null)} disabled={redefinindo}>
+              Cancelar
+            </Button>
+            <Button
+              variant="primary"
+              type="submit"
+              form="form-redefinir-senha"
+              isLoading={redefinindo}
+              disabled={novaSenhaReset.length < 8}
+            >
+              Redefinir
+            </Button>
+          </>
+        }
+      >
+        <form
+          id="form-redefinir-senha"
+          className="space-y-4"
+          onSubmit={(e) => {
+            e.preventDefault();
+            confirmarReset();
+          }}
+        >
+          <p className="text-xs text-[#727A74]">
+            Define uma senha provisória sem precisar da senha antiga. Use quando a pessoa
+            esquecer a senha e não conseguir receber o e-mail de recuperação. A ação fica
+            registrada na auditoria.
+          </p>
+          <Input
+            label="Senha provisória"
+            name="senha-provisoria"
+            type="text"
+            required
+            minLength={8}
+            helperText="Mínimo de 8 caracteres. Combine com a pessoa a troca no primeiro acesso."
+            value={novaSenhaReset}
+            onChange={(e) => setNovaSenhaReset(e.target.value)}
+          />
+        </form>
+      </Modal>
+
       <Modal
         isOpen={createModalOpen}
         onClose={() => setCreateModalOpen(false)}

@@ -14,7 +14,12 @@ from app.models.perfil import Perfil
 from app.models.pessoa import Pessoa
 from app.models.usuario import Usuario
 from app.models.usuario_perfil import UsuarioPerfil
-from app.schemas.usuario import UsuarioCreate, UsuarioResponse, UsuarioUpdate
+from app.schemas.usuario import (
+    UsuarioCreate,
+    UsuarioRedefinirSenha,
+    UsuarioResponse,
+    UsuarioUpdate,
+)
 from app.schemas.usuario_perfil import UsuarioPerfilResponse
 
 router = APIRouter()
@@ -127,6 +132,48 @@ def atualizar_usuario(
     except IntegrityError as e:
         db.rollback()
         raise tratar_integrity_error(e)
+    return usuario
+
+
+@router.post(
+    "/{id}/redefinir-senha",
+    response_model=UsuarioResponse,
+    dependencies=[Depends(require_permission("usuarios.editar"))],
+)
+def redefinir_senha_de_usuario(
+    id: int,
+    obj_in: UsuarioRedefinirSenha,
+    request: Request,
+    db: Session = Depends(get_db),
+    usuario_atual: Usuario = Depends(get_current_user),
+):
+    """Define uma senha provisória para outro usuário, sem exigir a senha antiga.
+
+    É o caminho de volta quando alguém esquece a senha e a recuperação por e-mail não está
+    disponível. Exige usuarios.editar, ou seja, na prática um administrador.
+    """
+    usuario = db.query(Usuario).filter(Usuario.id == id).first()
+    if not usuario:
+        raise HTTPException(status_code=404, detail="Usuário não encontrado")
+
+    dados_antes = model_to_dict(usuario)
+    usuario.senha_hash = hash_password(obj_in.senha_nova)
+    usuario.updated_at = datetime.utcnow()
+
+    registrar_auditoria(
+        db,
+        usuario_id=usuario_atual.id,
+        acao="editar",
+        tabela="usuarios",
+        registro_id=usuario.id,
+        # model_to_dict nao inclui senha_hash (ver o proprio helper), entao a auditoria
+        # registra que houve redefinicao sem guardar hash nenhum.
+        dados_anteriores=dados_antes,
+        dados_novos={**model_to_dict(usuario), "senha_redefinida_por_administrador": True},
+        ip=obter_ip_cliente(request),
+    )
+    db.commit()
+    db.refresh(usuario)
     return usuario
 
 

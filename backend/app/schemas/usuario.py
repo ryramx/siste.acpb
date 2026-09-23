@@ -41,6 +41,17 @@ class UsuarioAlterarSenha(BaseModel):
     senha_nova: str = Field(min_length=8)
 
 
+class UsuarioRedefinirSenha(BaseModel):
+    """Redefinição feita por um administrador, sem a senha atual.
+
+    Existe porque não havia nenhum caminho de volta para quem esquece a senha: a troca comum
+    exige a senha antiga e a recuperação por e-mail depende de um provedor externo. Quando o
+    envio falhava, só o acesso direto ao banco resolvia.
+    """
+
+    senha_nova: str = Field(min_length=8)
+
+
 class UsuarioResponse(BaseModel):
     id: int
     pessoa_id: int

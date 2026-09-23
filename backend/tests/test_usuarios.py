@@ -112,3 +112,87 @@ def test_voluntario_nao_administra_usuarios(token_voluntario):
         "/usuarios/", headers={"Authorization": f"Bearer {token_voluntario}"}
     )
     assert response.status_code == 403
+
+
+def test_admin_redefine_senha_de_outro_usuario(token_admin):
+    """Caminho de volta para quem esquece a senha.
+
+    A troca comum exige a senha antiga e a recuperacao por e-mail depende de provedor
+    externo -- quando ela falha, sem isto so o acesso direto ao banco resolve.
+    """
+    db = SessionLocal()
+    alvo = _criar_usuario_com_perfil(db, "usuarios.alvo.reset@example.com", "Voluntário")
+    alvo_id, alvo_pessoa_id = alvo.id, alvo.pessoa_id
+    db.close()
+
+    try:
+        resposta = client.post(
+            f"/usuarios/{alvo_id}/redefinir-senha",
+            headers={"Authorization": f"Bearer {token_admin}"},
+            json={"senha_nova": "senhaProvisoria123"},
+        )
+        assert resposta.status_code == 200
+        assert "senha_hash" not in resposta.json()
+
+        # A senha nova vale de verdade: o login passa a funcionar com ela.
+        login = client.post(
+            "/auth/login",
+            json={"email": "usuarios.alvo.reset@example.com", "senha": "senhaProvisoria123"},
+        )
+        assert login.status_code == 200
+
+        db = SessionLocal()
+        registros = (
+            db.query(Auditoria)
+            .filter(Auditoria.tabela == "usuarios", Auditoria.registro_id == alvo_id)
+            .all()
+        )
+        assert registros, "a redefinicao precisa ficar registrada na auditoria"
+        assert any(
+            (r.dados_novos or {}).get("senha_redefinida_por_administrador") for r in registros
+        )
+        # A auditoria nunca guarda hash de senha.
+        assert all("senha_hash" not in (r.dados_novos or {}) for r in registros)
+        db.close()
+    finally:
+        db = SessionLocal()
+        _limpar(db, alvo_id, alvo_pessoa_id)
+        db.close()
+
+
+def test_senha_curta_e_recusada_na_redefinicao(token_admin):
+    db = SessionLocal()
+    alvo = _criar_usuario_com_perfil(db, "usuarios.alvo.curta@example.com", "Voluntário")
+    alvo_id, alvo_pessoa_id = alvo.id, alvo.pessoa_id
+    db.close()
+
+    try:
+        resposta = client.post(
+            f"/usuarios/{alvo_id}/redefinir-senha",
+            headers={"Authorization": f"Bearer {token_admin}"},
+            json={"senha_nova": "curta"},
+        )
+        assert resposta.status_code == 422
+    finally:
+        db = SessionLocal()
+        _limpar(db, alvo_id, alvo_pessoa_id)
+        db.close()
+
+
+def test_perfil_sem_permissao_nao_redefine_senha(token_voluntario, token_admin):
+    db = SessionLocal()
+    alvo = _criar_usuario_com_perfil(db, "usuarios.alvo.proibido@example.com", "Voluntário")
+    alvo_id, alvo_pessoa_id = alvo.id, alvo.pessoa_id
+    db.close()
+
+    try:
+        resposta = client.post(
+            f"/usuarios/{alvo_id}/redefinir-senha",
+            headers={"Authorization": f"Bearer {token_voluntario}"},
+            json={"senha_nova": "senhaProvisoria123"},
+        )
+        assert resposta.status_code == 403
+    finally:
+        db = SessionLocal()
+        _limpar(db, alvo_id, alvo_pessoa_id)
+        db.close()
