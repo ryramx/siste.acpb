@@ -20,13 +20,32 @@ const API_BASE_URL: string = (() => {
   return 'http://127.0.0.1:8001';
 })();
 
+/** Por que a chamada falhou. As telas tratam cada caso de um jeito.
+ *
+ * - `offline`: o aparelho diz não ter rede. Vale avisar na hora.
+ * - `inalcancavel`: a conexão nem chegou a ser estabelecida (DNS, recusada, sinal caiu no
+ *    meio). Falha rápido, e também vale avisar.
+ * - `demorou`: a conexão foi estabelecida e o servidor não respondeu a tempo. No plano
+ *    gratuito do Render o serviço hiberna quando fica ocioso, e o primeiro acesso espera ele
+ *    subir -- e isso não é problema de internet do usuário.
+ * - `http`: o servidor respondeu, com um código de erro. */
+export type TipoDeFalha = 'offline' | 'inalcancavel' | 'demorou' | 'http';
+
 export class ApiError extends Error {
   status: number;
+  tipo: TipoDeFalha;
 
-  constructor(status: number, message: string) {
+  constructor(status: number, message: string, tipo: TipoDeFalha = 'http') {
     super(message);
     this.name = 'ApiError';
     this.status = status;
+    this.tipo = tipo;
+  }
+
+  /** Falha de rede do lado do usuário, que faz sentido mostrar na tela. Um servidor
+   * hibernando não entra aqui: quem esperar um pouco mais é atendido. */
+  get ehProblemaDeConexao(): boolean {
+    return this.tipo === 'offline' || this.tipo === 'inalcancavel';
   }
 }
 
@@ -68,18 +87,41 @@ async function extrairMensagemDeErro(response: Response): Promise<string> {
   return `Erro HTTP ${response.status}`;
 }
 
-/** Tempo-limite das chamadas. Sem ele, no celular uma requisição feita ao perder o sinal não
- * falha: fica pendurada indefinidamente, e a tela some no "Carregando..." para sempre. No
- * computador o navegador costuma cortar sozinho, e por isso o problema só aparecia no celular.
- * Uploads levam mais tempo por natureza, então têm folga maior. */
-const TIMEOUT_PADRAO_MS = 15000;
-const TIMEOUT_UPLOAD_MS = 60000;
+/** Tempo-limite das chamadas.
+ *
+ * Existe porque, no celular, uma requisição feita ao perder o sinal não falha sozinha: fica
+ * pendurada, e a tela some no "Carregando..." para sempre.
+ *
+ * O valor é generoso de propósito. A API roda no plano gratuito do Render, que hiberna o
+ * serviço quando fica ocioso; o primeiro acesso depois disso espera o servidor subir, o que
+ * passa folgadamente de meio minuto. Com um limite curto, quem abria o sistema de manhã via
+ * um aviso de falha de conexão quando a conexão estava perfeita -- só o servidor é que
+ * estava acordando.
+ *
+ * Cortar cedo não ajudaria ninguém nesse caso: a espera é a mesma, e o aviso só mente sobre
+ * a causa. Quem está mesmo sem rede não depende deste limite para descobrir -- cai nos dois
+ * casos rápidos tratados abaixo. */
+const TIMEOUT_PADRAO_MS = 75000;
+const TIMEOUT_UPLOAD_MS = 120000;
+
+function estaOffline(): boolean {
+  // `navigator.onLine` e conservador: falso so quando o aparelho sabe que nao tem rede.
+  return typeof navigator !== 'undefined' && navigator.onLine === false;
+}
 
 async function fetchComTimeout(
   url: string,
   init: RequestInit,
   timeoutMs: number
 ): Promise<Response> {
+  if (estaOffline()) {
+    throw new ApiError(
+      0,
+      'Sem conexão com a internet. Verifique sua rede e tente de novo.',
+      'offline'
+    );
+  }
+
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
@@ -88,10 +130,19 @@ async function fetchComTimeout(
     if (erro instanceof DOMException && erro.name === 'AbortError') {
       throw new ApiError(
         0,
-        'O servidor demorou demais para responder. Verifique sua conexão e tente de novo.'
+        'O servidor demorou demais para responder. Tente de novo em instantes.',
+        'demorou'
       );
     }
-    throw new ApiError(0, 'Não foi possível falar com o servidor. Verifique sua conexão.');
+    // fetch so rejeita assim quando a conexao nem foi estabelecida (DNS, recusada, sinal
+    // caiu). E rapido, e e de fato um problema de rede -- diferente do servidor lento.
+    throw new ApiError(
+      0,
+      estaOffline()
+        ? 'Sem conexão com a internet. Verifique sua rede e tente de novo.'
+        : 'Não foi possível falar com o servidor. Verifique sua conexão.',
+      estaOffline() ? 'offline' : 'inalcancavel'
+    );
   } finally {
     clearTimeout(timer);
   }

@@ -108,6 +108,49 @@ describe('apiClient', () => {
     expect(handler).not.toHaveBeenCalled();
   });
 
+  it('distingue aparelho sem rede de servidor que não respondeu', async () => {
+    // O motivo importa para a tela: sem rede é problema do usuário e vale avisar; servidor
+    // lento é o Render acordando o serviço hibernado, e avisar ali mente sobre a causa.
+    // onLine vem do prototipo no jsdom, entao nao ha descritor proprio para restaurar: a
+    // sobrescrita e removida com delete no final. Sem isso ela vaza para os testes seguintes.
+    Object.defineProperty(navigator, 'onLine', { value: false, configurable: true });
+    const chamada = vi.fn();
+    vi.stubGlobal('fetch', chamada);
+
+    try {
+      const erro = (await apiClient.get('/qualquer').catch((e) => e)) as ApiError;
+      expect(erro.tipo).toBe('offline');
+      expect(erro.ehProblemaDeConexao).toBe(true);
+      // Nem tenta sair: sem rede, a chamada só gastaria tempo.
+      expect(chamada).not.toHaveBeenCalled();
+    } finally {
+      delete (navigator as unknown as Record<string, unknown>).onLine;
+    }
+  });
+
+  it('trata conexão que nem se estabelece como problema de rede', async () => {
+    // fetch só rejeita assim quando a conexão não chegou a existir (DNS, recusada, sinal
+    // caiu) — e isso falha rápido, diferente de esperar um servidor subir.
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new TypeError('Failed to fetch')));
+
+    const erro = (await apiClient.get('/qualquer').catch((e) => e)) as ApiError;
+    expect(erro.tipo).toBe('inalcancavel');
+    expect(erro.ehProblemaDeConexao).toBe(true);
+  });
+
+  it('servidor que demora não é classificado como problema de conexão', async () => {
+    // O caso do servidor hibernando: a tela deve continuar carregando, não acusar falha de
+    // internet.
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockRejectedValue(new DOMException('abortado', 'AbortError'))
+    );
+
+    const erro = (await apiClient.get('/lento').catch((e) => e)) as ApiError;
+    expect(erro.tipo).toBe('demorou');
+    expect(erro.ehProblemaDeConexao).toBe(false);
+  });
+
   it('converte demora sem resposta em erro de conexão, em vez de ficar pendurado', async () => {
     // No celular, uma requisição feita ao perder o sinal não falha sozinha: fica pendurada e a
     // tela some no "Carregando..." para sempre.
