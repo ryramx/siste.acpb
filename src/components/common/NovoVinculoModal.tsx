@@ -64,6 +64,11 @@ export const NovoVinculoModal: React.FC<NovoVinculoModalProps> = ({
   const [extra, setExtra] = useState('');
   const [salvando, setSalvando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
+  // So aparecem no cadastro de voluntario: beneficiario nao tem area de atuacao nem
+  // escala. `volunteerService.create` ja aceitava os dois, mas o formulario nunca perguntou,
+  // entao todo voluntario nascia com a disponibilidade em branco.
+  const [habilidades, setHabilidades] = useState('');
+  const [disponibilidade, setDisponibilidade] = useState('');
 
   useEffect(() => {
     if (!isOpen) return;
@@ -75,6 +80,8 @@ export const NovoVinculoModal: React.FC<NovoVinculoModalProps> = ({
     setEmail('');
     setData(hoje);
     setExtra('');
+    setHabilidades('');
+    setDisponibilidade('');
     setErro(null);
     projectService
       .getPessoasParaResponsavel()
@@ -96,7 +103,13 @@ export const NovoVinculoModal: React.FC<NovoVinculoModalProps> = ({
     };
     try {
       if (papel === 'voluntario') {
-        await volunteerService.create({ ...comum, startDate: data, area: extra });
+        await volunteerService.create({
+          ...comum,
+          startDate: data,
+          area: extra,
+          skills: habilidades,
+          availability: disponibilidade
+        });
       } else {
         await beneficiaryService.create({ ...comum, registrationDate: data, needs: extra });
       }
@@ -178,6 +191,25 @@ export const NovoVinculoModal: React.FC<NovoVinculoModalProps> = ({
             placeholder={textos.extraPlaceholder}
           />
         </div>
+
+        {papel === 'voluntario' && (
+          <>
+            <Input
+              label="Habilidades & competências"
+              value={habilidades}
+              onChange={(e) => setHabilidades(e.target.value)}
+              placeholder="Ex.: Psicologia, Libras, Violão"
+              helperText="Separe por vírgula."
+            />
+            <Input
+              label="Disponibilidade"
+              value={disponibilidade}
+              onChange={(e) => setDisponibilidade(e.target.value)}
+              placeholder="Ex.: Sábados à tarde"
+              helperText="Texto livre. Pode ficar em branco e ser preenchida depois."
+            />
+          </>
+        )}
 
         {erro && <p className="text-xs text-red-500">{erro}</p>}
 

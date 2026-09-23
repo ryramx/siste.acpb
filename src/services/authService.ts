@@ -29,6 +29,9 @@ const REGRAS_DE_PERMISSAO: Record<PermissionKey, string[] | null> = {
   delete_members: ['membros.editar'],
   view_volunteers: ['voluntarios.visualizar'],
   edit_volunteers: ['voluntarios.criar', 'voluntarios.editar'],
+  // Separada de edit_volunteers porque o PUT do backend exige `voluntarios.editar`: quem so
+  // tem `voluntarios.criar` veria o botao de editar e tomaria 403 ao salvar.
+  update_volunteers: ['voluntarios.editar'],
   view_beneficiaries: ['beneficiarios.visualizar'],
   edit_beneficiaries: ['beneficiarios.criar', 'beneficiarios.editar'],
   view_projects: ['projetos.visualizar'],

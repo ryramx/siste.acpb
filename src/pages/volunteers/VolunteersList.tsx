@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Users, Search, Clock, Award, Calendar, CheckCircle, Plus } from 'lucide-react';
+import { Users, Search, Clock, Plus, Pencil } from 'lucide-react';
 import { Input } from '../../components/ui/Input';
 import { Select } from '../../components/ui/Select';
 import { Badge } from '../../components/ui/Badge';
@@ -10,6 +10,7 @@ import { Avatar } from '../../components/ui/Avatar';
 import { volunteerService } from '../../services/domainServices';
 import { Volunteer } from '../../types/domain';
 import { NovoVinculoModal } from '../../components/common/NovoVinculoModal';
+import { EditarVoluntarioModal } from '../../components/common/EditarVoluntarioModal';
 import { useAuth } from '../../contexts/AuthContext';
 
 export const VolunteersList: React.FC = () => {
@@ -17,6 +18,7 @@ export const VolunteersList: React.FC = () => {
   const [volunteers, setVolunteers] = useState<Volunteer[]>([]);
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
+  const [emEdicao, setEmEdicao] = useState<Volunteer | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [areaFilter, setAreaFilter] = useState('TODAS');
 
@@ -32,9 +34,13 @@ export const VolunteersList: React.FC = () => {
   useEffect(carregar, []);
 
   const filteredVolunteers = volunteers.filter((v) => {
+    // O subtitulo da tela promete busca por "dias disponiveis", entao a disponibilidade
+    // tambem entra no termo -- antes so nome e habilidades eram considerados.
+    const termo = searchTerm.toLowerCase();
     const matchesSearch =
-      v.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      v.skills.some((s) => s.toLowerCase().includes(searchTerm.toLowerCase()));
+      v.name.toLowerCase().includes(termo) ||
+      v.skills.some((s) => s.toLowerCase().includes(termo)) ||
+      v.availability.toLowerCase().includes(termo);
 
     const matchesArea = areaFilter === 'TODAS' || v.area === areaFilter;
 
@@ -68,6 +74,12 @@ export const VolunteersList: React.FC = () => {
         papel="voluntario"
         isOpen={modalOpen}
         onClose={() => setModalOpen(false)}
+        onSaved={carregar}
+      />
+
+      <EditarVoluntarioModal
+        voluntario={emEdicao}
+        onClose={() => setEmEdicao(null)}
         onSaved={carregar}
       />
 
@@ -139,27 +151,46 @@ export const VolunteersList: React.FC = () => {
                     Habilidades & Competências:
                   </span>
                   <div className="flex flex-wrap gap-1">
-                    {v.skills.map((s, idx) => (
-                      <span
-                        key={idx}
-                        className="bg-[#0F1210] border border-[#222824] text-xs text-[#AEB5B0] px-2 py-0.5 rounded-md"
-                      >
-                        {s}
-                      </span>
-                    ))}
+                    {v.skills.length > 0 ? (
+                      v.skills.map((s, idx) => (
+                        <span
+                          key={idx}
+                          className="bg-[#0F1210] border border-[#222824] text-xs text-[#AEB5B0] px-2 py-0.5 rounded-md"
+                        >
+                          {s}
+                        </span>
+                      ))
+                    ) : (
+                      // Sem isto o rotulo "Habilidades" ficava sozinho, colado na caixa de
+                      // disponibilidade logo abaixo, e parecia que o relogio era dali.
+                      <span className="text-xs text-[#727A74] italic">Nenhuma informada</span>
+                    )}
                   </div>
                 </div>
 
                 {/* Disponibilidade */}
                 <div className="space-y-1.5 text-xs text-[#AEB5B0] bg-[#0F1210] p-3 rounded-xl border border-[#222824] mb-4">
                   <div className="flex items-center gap-1.5">
-                    <Clock className="w-3.5 h-3.5 text-[#F8D800]" />
-                    <span>{v.availability}</span>
+                    <Clock className="w-3.5 h-3.5 text-[#F8D800] shrink-0" />
+                    <span>
+                      <span className="text-[#727A74]">Disponibilidade: </span>
+                      {v.availability}
+                    </span>
                   </div>
                 </div>
               </div>
 
-              <div className="flex items-center justify-end pt-3 border-t border-[#222824]">
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-[#222824]">
+                {hasPermission('update_volunteers') && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setEmEdicao(v)}
+                    leftIcon={<Pencil className="w-3.5 h-3.5" />}
+                  >
+                    Editar
+                  </Button>
+                )}
                 <Button variant="outline" size="sm">
                   Contatar
                 </Button>

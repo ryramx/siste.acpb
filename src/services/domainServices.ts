@@ -252,6 +252,13 @@ interface ApiVoluntario {
   observacoes: string | null;
 }
 
+/** Texto mostrado quando o campo esta vazio no banco (o backend guarda null).
+ *
+ * Exportada porque quem edita precisa converte-la de volta para vazio: preencher o
+ * formulario com "Nao informada" e salvar gravaria essa frase como se fosse a
+ * disponibilidade real do voluntario. */
+export const NAO_INFORMADA = 'Não informada';
+
 const toVolunteer = (
   voluntario: ApiVoluntario,
   pessoa: ApiPessoa,
@@ -262,9 +269,9 @@ const toVolunteer = (
   name: pessoa.nome_completo,
   email: pessoa.email ?? '',
   phone: telefone?.numero ?? '',
-  area: voluntario.area ?? 'Não informada',
+  area: voluntario.area ?? NAO_INFORMADA,
   skills: voluntario.habilidades ? voluntario.habilidades.split(',').map((s) => s.trim()).filter(Boolean) : [],
-  availability: voluntario.disponibilidade ?? 'Não informada',
+  availability: voluntario.disponibilidade ?? NAO_INFORMADA,
   status: voluntario.data_fim ? 'INATIVO' : 'ATIVO',
   temFoto: pessoa.tem_foto
 });
@@ -294,6 +301,22 @@ export const volunteerService = {
    * Usa /cadastros/pessoa-vinculo (o mesmo caminho do cadastro de membro) porque Pessoa e o
    * vínculo precisam nascer na mesma transação: criar a Pessoa e falhar no vínculo deixaria
    * um cadastro solto, sem papel nenhum. */
+  /** Atualiza os dados do vinculo de voluntario -- area, habilidades e disponibilidade.
+   *
+   * Campo em branco vira null, e nao string vazia: e assim que o backend representa "nao
+   * informado", e e o que `toVolunteer` espera ao ler de volta. Gravar "" faria a lista
+   * exibir um campo vazio em vez de "Nao informada". */
+  async update(
+    id: string,
+    data: { area?: string; skills?: string; availability?: string }
+  ): Promise<void> {
+    await apiClient.put(`/voluntarios/${id}`, {
+      area: data.area?.trim() || null,
+      habilidades: data.skills?.trim() || null,
+      disponibilidade: data.availability?.trim() || null
+    });
+  },
+
   async create(data: {
     pessoaId?: string;
     nomeCompleto?: string;

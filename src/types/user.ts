@@ -22,6 +22,7 @@ export type PermissionKey =
   | 'delete_members'
   | 'view_volunteers'
   | 'edit_volunteers'
+  | 'update_volunteers'
   | 'view_beneficiaries'
   | 'edit_beneficiaries'
   | 'view_projects'
