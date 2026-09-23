@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Users,
@@ -18,6 +18,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { apiClient } from '../../services/apiClient';
 import { eventService } from '../../services/domainServices';
 import { EventItem } from '../../types/domain';
+import { fraseDoMomento, saudacao } from '../../utils/saudacao';
 
 interface DashboardResumo {
   quantidade_pessoas: number;
@@ -39,6 +40,9 @@ export const Dashboard: React.FC = () => {
   const [proximosEventos, setProximosEventos] = useState<EventItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Sorteada uma vez por visita: trocar de frase a cada re-render seria distração pura.
+  const frase = useMemo(() => fraseDoMomento(), []);
 
   const fetchData = async () => {
     setLoading(true);
@@ -101,10 +105,10 @@ export const Dashboard: React.FC = () => {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-[#181D1A] border border-[#222824] p-6 rounded-2xl relative overflow-hidden">
         <div className="z-10">
           <h1 className="text-2xl md:text-3xl font-bold text-white font-heading">
-            Bom dia, {user?.name.split(' ')[0]}!
+            {saudacao()}, {user?.name.split(' ')[0]}!
           </h1>
           <p className="text-sm text-[#AEB5B0] mt-1">
-            Aqui está o resumo atualizado da Associação Cristã Pau-Brasil.
+            {frase}
           </p>
         </div>
         <div className="z-10 flex gap-2">
