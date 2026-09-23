@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Plus, KeyRound, Power, Search, LockKeyhole } from 'lucide-react';
+import { Plus, Power, Search, Pencil } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Select } from '../../components/ui/Select';
@@ -18,7 +18,7 @@ function mensagemDeErro(err: unknown, fallback: string): string {
 }
 
 export const UsersManagement: React.FC = () => {
-  const { hasPermission } = useAuth();
+  const { hasPermission, user, refreshUser } = useAuth();
   const { addToast } = useToast();
   const podeGerenciar = hasPermission('manage_users');
 
@@ -28,7 +28,14 @@ export const UsersManagement: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
 
   const [createModalOpen, setCreateModalOpen] = useState(false);
-  const [resetUser, setResetUser] = useState<SystemUser | null>(null);
+
+  // Uma tela só para editar o usuário. Antes eram três botões por linha (perfis, senha,
+  // desativar), que no celular empurravam a tabela para fora da largura da tela.
+  const [editUser, setEditUser] = useState<SystemUser | null>(null);
+  const [formNome, setFormNome] = useState('');
+  const [formEmail, setFormEmail] = useState('');
+  const [salvandoDados, setSalvandoDados] = useState(false);
+  const [papeisDaPessoa, setPapeisDaPessoa] = useState<string[]>([]);
   const [novaSenhaReset, setNovaSenhaReset] = useState('');
   const [redefinindo, setRedefinindo] = useState(false);
   const [pessoasDisponiveis, setPessoasDisponiveis] = useState<PessoaSemUsuario[]>([]);
@@ -37,7 +44,6 @@ export const UsersManagement: React.FC = () => {
   const [novaSenha, setNovaSenha] = useState('');
   const [criando, setCriando] = useState(false);
 
-  const [profilesModalUser, setProfilesModalUser] = useState<SystemUser | null>(null);
   const [allProfiles, setAllProfiles] = useState<SystemProfile[]>([]);
   const [togglingProfileId, setTogglingProfileId] = useState<string | null>(null);
 
@@ -117,22 +123,75 @@ export const UsersManagement: React.FC = () => {
     }
   };
 
-  const abrirReset = (user: SystemUser) => {
+  const abrirEdicao = async (user: SystemUser) => {
+    setEditUser(user);
+    setFormNome(user.name);
+    setFormEmail(user.email);
     setNovaSenhaReset('');
-    setResetUser(user);
+    setPapeisDaPessoa([]);
+    try {
+      const [perfis, papeis] = await Promise.all([
+        profileService.getAll(),
+        userManagementService.obterPapeis(user.pessoaId)
+      ]);
+      setAllProfiles(perfis);
+      setPapeisDaPessoa(
+        [
+          papeis.temMembro && 'membro',
+          papeis.temVoluntario && 'voluntário',
+          papeis.temBeneficiario && 'beneficiário'
+        ].filter(Boolean) as string[]
+      );
+    } catch (err) {
+      addToast({
+        type: 'error',
+        title: 'Erro ao carregar os dados do usuário',
+        message: mensagemDeErro(err, 'Não foi possível carregar perfis e vínculos')
+      });
+    }
+  };
+
+  const salvarDados = async () => {
+    if (!editUser) return;
+    const nome = formNome.trim();
+    const email = formEmail.trim();
+    if (!nome || !email) return;
+
+    setSalvandoDados(true);
+    try {
+      await userManagementService.atualizarDados(editUser.id, editUser.pessoaId, {
+        ...(nome !== editUser.name ? { name: nome } : {}),
+        ...(email !== editUser.email ? { email } : {})
+      });
+      addToast({ type: 'success', title: 'Dados atualizados', message: nome });
+      // Renomear a si mesmo deixaria o nome antigo no topo e no menu: o usuário exibido vem
+      // do cache gravado no login.
+      if (user?.id === editUser.id) await refreshUser();
+      const atualizados = await userManagementService.getAll();
+      setUsers(atualizados);
+      setEditUser(atualizados.find((u) => u.id === editUser.id) ?? null);
+    } catch (err) {
+      addToast({
+        type: 'error',
+        title: 'Não foi possível salvar',
+        message: mensagemDeErro(err, 'Tente novamente em instantes.')
+      });
+    } finally {
+      setSalvandoDados(false);
+    }
   };
 
   const confirmarReset = async () => {
-    if (!resetUser) return;
+    if (!editUser) return;
     setRedefinindo(true);
     try {
-      await userManagementService.redefinirSenha(resetUser.id, novaSenhaReset);
+      await userManagementService.redefinirSenha(editUser.id, novaSenhaReset);
       addToast({
         type: 'success',
         title: 'Senha redefinida',
-        message: `Informe a senha provisória a ${resetUser.name} por um canal seguro.`
+        message: `Informe a senha provisória a ${editUser.name} por um canal seguro.`
       });
-      setResetUser(null);
+      setNovaSenhaReset('');
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Tente novamente em instantes.';
       addToast({ type: 'error', title: 'Não foi possível redefinir', message });
@@ -162,33 +221,19 @@ export const UsersManagement: React.FC = () => {
     }
   };
 
-  const openProfilesModal = async (user: SystemUser) => {
-    setProfilesModalUser(user);
-    try {
-      const perfis = await profileService.getAll();
-      setAllProfiles(perfis);
-    } catch (err) {
-      addToast({
-        type: 'error',
-        title: 'Erro ao carregar perfis',
-        message: mensagemDeErro(err, 'Não foi possível carregar a lista de perfis')
-      });
-    }
-  };
-
   const handleToggleProfile = async (perfil: SystemProfile, vinculado: boolean) => {
-    if (!profilesModalUser) return;
+    if (!editUser) return;
     setTogglingProfileId(perfil.id);
     try {
       if (vinculado) {
-        await userManagementService.desvincularPerfil(profilesModalUser.id, perfil.id);
+        await userManagementService.desvincularPerfil(editUser.id, perfil.id);
       } else {
-        await userManagementService.vincularPerfil(profilesModalUser.id, perfil.id);
+        await userManagementService.vincularPerfil(editUser.id, perfil.id);
       }
       const usuariosAtualizados = await userManagementService.getAll();
       setUsers(usuariosAtualizados);
-      const usuarioAtualizado = usuariosAtualizados.find((u) => u.id === profilesModalUser.id);
-      if (usuarioAtualizado) setProfilesModalUser(usuarioAtualizado);
+      const usuarioAtualizado = usuariosAtualizados.find((u) => u.id === editUser.id);
+      if (usuarioAtualizado) setEditUser(usuarioAtualizado);
     } catch (err) {
       const status = err instanceof ApiError ? err.status : undefined;
       addToast({
@@ -247,8 +292,8 @@ export const UsersManagement: React.FC = () => {
               <thead className="bg-[#0F1210] border-b border-[#222824] text-[#AEB5B0] font-medium">
                 <tr>
                   <th className="py-3.5 px-4">Nome / E-mail</th>
-                  <th className="py-3.5 px-4">Perfil(is)</th>
-                  <th className="py-3.5 px-4">Status</th>
+                  <th className="py-3.5 px-4 hidden sm:table-cell">Perfil(is)</th>
+                  <th className="py-3.5 px-4 hidden sm:table-cell">Status</th>
                   <th className="py-3.5 px-4 text-right">Ações</th>
                 </tr>
               </thead>
@@ -258,8 +303,24 @@ export const UsersManagement: React.FC = () => {
                     <td className="py-3.5 px-4">
                       <div className="font-semibold text-white">{u.name}</div>
                       <div className="text-xs text-[#727A74]">{u.email}</div>
+                      {/* Em tela estreita as colunas de perfil e status saem da tabela para
+                          não empurrar as ações para fora da largura do celular; a mesma
+                          informação reaparece aqui embaixo do nome. */}
+                      <div className="flex flex-wrap items-center gap-1 mt-1.5 sm:hidden">
+                        <Badge variant={u.ativo ? 'success' : 'danger'}>
+                          {u.ativo ? 'ATIVO' : 'INATIVO'}
+                        </Badge>
+                        {u.perfis.map((p) => (
+                          <span
+                            key={p.perfilId}
+                            className="text-[10px] font-bold text-[#F8D800] bg-[#0F1210] px-1.5 py-0.5 rounded border border-[#222824]"
+                          >
+                            {p.nome}
+                          </span>
+                        ))}
+                      </div>
                     </td>
-                    <td className="py-3.5 px-4">
+                    <td className="py-3.5 px-4 hidden sm:table-cell">
                       <div className="flex flex-wrap gap-1">
                         {u.perfis.length === 0 ? (
                           <span className="text-xs text-[#727A74]">Sem perfil</span>
@@ -275,40 +336,21 @@ export const UsersManagement: React.FC = () => {
                         )}
                       </div>
                     </td>
-                    <td className="py-3.5 px-4">
+                    <td className="py-3.5 px-4 hidden sm:table-cell">
                       <Badge variant={u.ativo ? 'success' : 'danger'}>
                         {u.ativo ? 'ATIVO' : 'INATIVO'}
                       </Badge>
                     </td>
                     <td className="py-3.5 px-4 text-right">
                       {podeGerenciar && (
-                        <div className="flex items-center justify-end gap-1">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => openProfilesModal(u)}
-                            leftIcon={<KeyRound className="w-3.5 h-3.5" />}
-                          >
-                            Gerenciar Perfis
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => abrirReset(u)}
-                            leftIcon={<LockKeyhole className="w-3.5 h-3.5" />}
-                          >
-                            Redefinir senha
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            isLoading={togglingUserId === u.id}
-                            onClick={() => handleToggleAtivo(u)}
-                            leftIcon={<Power className="w-3.5 h-3.5" />}
-                          >
-                            {u.ativo ? 'Desativar' : 'Reativar'}
-                          </Button>
-                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => abrirEdicao(u)}
+                          leftIcon={<Pencil className="w-3.5 h-3.5" />}
+                        >
+                          Editar
+                        </Button>
                       )}
                     </td>
                   </tr>
@@ -320,53 +362,6 @@ export const UsersManagement: React.FC = () => {
       </div>
 
       {/* Modal: Novo Usuário */}
-      <Modal
-        isOpen={resetUser !== null}
-        onClose={() => setResetUser(null)}
-        title={resetUser ? `Redefinir a senha de ${resetUser.name}` : 'Redefinir senha'}
-        footer={
-          <>
-            <Button variant="ghost" onClick={() => setResetUser(null)} disabled={redefinindo}>
-              Cancelar
-            </Button>
-            <Button
-              variant="primary"
-              type="submit"
-              form="form-redefinir-senha"
-              isLoading={redefinindo}
-              disabled={novaSenhaReset.length < 8}
-            >
-              Redefinir
-            </Button>
-          </>
-        }
-      >
-        <form
-          id="form-redefinir-senha"
-          className="space-y-4"
-          onSubmit={(e) => {
-            e.preventDefault();
-            confirmarReset();
-          }}
-        >
-          <p className="text-xs text-[#727A74]">
-            Define uma senha provisória sem precisar da senha antiga. Use quando a pessoa
-            esquecer a senha e não conseguir receber o e-mail de recuperação. A ação fica
-            registrada na auditoria.
-          </p>
-          <Input
-            label="Senha provisória"
-            name="senha-provisoria"
-            type="text"
-            required
-            minLength={8}
-            helperText="Mínimo de 8 caracteres. Combine com a pessoa a troca no primeiro acesso."
-            value={novaSenhaReset}
-            onChange={(e) => setNovaSenhaReset(e.target.value)}
-          />
-        </form>
-      </Modal>
-
       <Modal
         isOpen={createModalOpen}
         onClose={() => setCreateModalOpen(false)}
@@ -433,38 +428,144 @@ export const UsersManagement: React.FC = () => {
         </form>
       </Modal>
 
-      {/* Modal: Gerenciar Perfis do Usuário */}
+      {/* Modal único de edição: dados, perfis e acesso na mesma tela */}
       <Modal
-        isOpen={profilesModalUser !== null}
-        onClose={() => setProfilesModalUser(null)}
-        title={`Perfis de ${profilesModalUser?.name ?? ''}`}
+        isOpen={editUser !== null}
+        onClose={() => setEditUser(null)}
+        title={editUser ? `Editar ${editUser.name}` : 'Editar usuário'}
       >
-        <p className="text-xs text-[#727A74]">
-          Marque os perfis que este usuário deve ter. Alterações são aplicadas imediatamente.
-        </p>
-        <div className="space-y-2">
-          {allProfiles.map((perfil) => {
-            const vinculado = profilesModalUser?.perfis.some((p) => p.perfilId === perfil.id) ?? false;
-            return (
-              <label
-                key={perfil.id}
-                className="flex items-center justify-between gap-3 p-3 bg-[#0F1210] border border-[#222824] rounded-lg cursor-pointer"
+        {editUser && (
+          <div className="space-y-6">
+            {/* ---------- Dados ---------- */}
+            <section className="space-y-3">
+              <h4 className="text-xs font-semibold text-[#F8D800] uppercase tracking-wider">
+                Dados
+              </h4>
+              <form
+                className="space-y-3"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  salvarDados();
+                }}
               >
-                <div className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    checked={vinculado}
-                    disabled={togglingProfileId === perfil.id || !perfil.ativo}
-                    onChange={() => handleToggleProfile(perfil, vinculado)}
-                    className="w-4 h-4 accent-[#004922]"
-                  />
-                  <span className="text-sm text-white">{perfil.nome}</span>
+                <Input
+                  label="Nome"
+                  name="nome-usuario"
+                  required
+                  value={formNome}
+                  onChange={(e) => setFormNome(e.target.value)}
+                />
+                <Input
+                  label="E-mail de acesso"
+                  name="email-usuario"
+                  type="email"
+                  required
+                  value={formEmail}
+                  onChange={(e) => setFormEmail(e.target.value)}
+                />
+                {papeisDaPessoa.length > 0 && (
+                  <p className="text-xs text-[#F8D800]">
+                    Esta pessoa também está cadastrada como {papeisDaPessoa.join(', ')}. O nome
+                    é o mesmo nos dois lugares, então alterá-lo aqui muda também esse cadastro.
+                  </p>
+                )}
+                <div className="flex justify-end">
+                  <Button
+                    type="submit"
+                    size="sm"
+                    isLoading={salvandoDados}
+                    disabled={
+                      formNome.trim() === '' ||
+                      formEmail.trim() === '' ||
+                      (formNome.trim() === editUser.name && formEmail.trim() === editUser.email)
+                    }
+                  >
+                    Salvar dados
+                  </Button>
                 </div>
-                {!perfil.ativo && <Badge variant="neutral">Inativo</Badge>}
-              </label>
-            );
-          })}
-        </div>
+              </form>
+            </section>
+
+            {/* ---------- Perfis ---------- */}
+            <section className="space-y-3 border-t border-[#222824] pt-5">
+              <h4 className="text-xs font-semibold text-[#F8D800] uppercase tracking-wider">
+                Perfis de acesso
+              </h4>
+              <p className="text-xs text-[#727A74]">
+                Marque os perfis que este usuário deve ter. Alterações são aplicadas
+                imediatamente.
+              </p>
+              <div className="space-y-2">
+                {allProfiles.map((perfil) => {
+                  const vinculado = editUser.perfis.some((pp) => pp.perfilId === perfil.id);
+                  return (
+                    <label
+                      key={perfil.id}
+                      className="flex items-center justify-between gap-3 p-3 bg-[#0F1210] border border-[#222824] rounded-lg cursor-pointer"
+                    >
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          checked={vinculado}
+                          disabled={togglingProfileId === perfil.id || !perfil.ativo}
+                          onChange={() => handleToggleProfile(perfil, vinculado)}
+                          className="w-4 h-4 accent-[#004922]"
+                        />
+                        <span className="text-sm text-white">{perfil.nome}</span>
+                      </div>
+                      {!perfil.ativo && <Badge variant="neutral">Inativo</Badge>}
+                    </label>
+                  );
+                })}
+              </div>
+            </section>
+
+            {/* ---------- Acesso ---------- */}
+            <section className="space-y-3 border-t border-[#222824] pt-5">
+              <h4 className="text-xs font-semibold text-[#F8D800] uppercase tracking-wider">
+                Acesso
+              </h4>
+              <form
+                className="space-y-3"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  confirmarReset();
+                }}
+              >
+                <Input
+                  label="Nova senha provisória"
+                  name="senha-provisoria"
+                  type="text"
+                  minLength={8}
+                  helperText="Mínimo de 8 caracteres. Deixe em branco para não alterar a senha."
+                  value={novaSenhaReset}
+                  onChange={(e) => setNovaSenhaReset(e.target.value)}
+                />
+                <div className="flex flex-wrap justify-end gap-2">
+                  <Button
+                    type="submit"
+                    variant="outline"
+                    size="sm"
+                    isLoading={redefinindo}
+                    disabled={novaSenhaReset.length < 8}
+                  >
+                    Redefinir senha
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={editUser.ativo ? 'danger' : 'primary'}
+                    size="sm"
+                    isLoading={togglingUserId === editUser.id}
+                    onClick={() => handleToggleAtivo(editUser)}
+                    leftIcon={<Power className="w-3.5 h-3.5" />}
+                  >
+                    {editUser.ativo ? 'Desativar usuário' : 'Reativar usuário'}
+                  </Button>
+                </div>
+              </form>
+            </section>
+          </div>
+        )}
       </Modal>
     </div>
   );

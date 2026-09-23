@@ -156,6 +156,42 @@ export const userManagementService = {
     }
   },
 
+  /** Ajusta os dados do usuário. O nome mora na Pessoa, não no Usuario — por isso as duas
+   * chamadas. Só é enviado o que mudou.
+   *
+   * Cuidado que a tela precisa comunicar: a mesma Pessoa pode ser membro, voluntário ou
+   * beneficiário, e o nome é um só. Renomear aqui renomeia lá também (ver `obterPapeis`). */
+  async atualizarDados(
+    usuarioId: string,
+    pessoaId: string,
+    dados: { name?: string; email?: string }
+  ): Promise<void> {
+    if (dados.name !== undefined) {
+      await apiClient.put(`/pessoas/${pessoaId}`, { nome_completo: dados.name });
+    }
+    if (dados.email !== undefined) {
+      await apiClient.put(`/usuarios/${usuarioId}`, { email: dados.email });
+    }
+  },
+
+  /** Papéis da Pessoa por trás do usuário, para avisar que o nome é compartilhado. */
+  async obterPapeis(pessoaId: string): Promise<{
+    temMembro: boolean;
+    temVoluntario: boolean;
+    temBeneficiario: boolean;
+  }> {
+    const papeis = await apiClient.get<{
+      tem_membro: boolean;
+      tem_voluntario: boolean;
+      tem_beneficiario: boolean;
+    }>(`/cadastros/pessoa/${pessoaId}/papeis`);
+    return {
+      temMembro: papeis.tem_membro,
+      temVoluntario: papeis.tem_voluntario,
+      temBeneficiario: papeis.tem_beneficiario
+    };
+  },
+
   /** Define uma senha provisória sem exigir a senha antiga — o caminho de volta para quem
    * esquece a senha, já que a recuperação por e-mail depende de um provedor externo. */
   async redefinirSenha(usuarioId: string, senhaNova: string): Promise<void> {

@@ -41,14 +41,17 @@ export const Modal: React.FC<ModalProps> = ({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-xs animate-fade-in"
+      // overflow-y-auto no fundo: um modal alto ficava centralizado com o topo fora da tela,
+      // e o cabeçalho (com o botão de fechar) era cortado — pior no celular, onde sobra
+      // menos altura. Com o fundo rolável, o topo sempre é alcançável.
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto bg-black/70 backdrop-blur-xs animate-fade-in"
       onClick={onClose}
     >
       <div
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
-        className={`bg-[#181D1A] border border-[#222824] rounded-xl w-full ${widthClasses[maxWidth]} shadow-2xl flex flex-col max-h-[90vh] overflow-hidden`}
+        className={`bg-[#181D1A] border border-[#222824] rounded-xl w-full ${widthClasses[maxWidth]} shadow-2xl flex flex-col max-h-[90vh] my-auto overflow-hidden`}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}

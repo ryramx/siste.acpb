@@ -11,6 +11,9 @@ interface AuthContextType {
   logout: () => Promise<void>;
   hasPermission: (permission: PermissionKey) => boolean;
   updateUserPhotoStatus: (temFoto: boolean) => void;
+  /** Rebusca o usuário logado. Necessário depois de alterar os próprios dados: o nome
+   * exibido vem do cache em localStorage e continuaria o antigo até um novo login. */
+  refreshUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -76,9 +79,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
   };
 
+  const refreshUser = async () => {
+    setUser(await authService.refreshCurrentUser());
+  };
+
   return (
     <AuthContext.Provider
-      value={{ user, isLoading, login, logout, hasPermission, updateUserPhotoStatus }}
+      value={{
+        user,
+        isLoading,
+        login,
+        logout,
+        hasPermission,
+        updateUserPhotoStatus,
+        refreshUser
+      }}
     >
       {children}
     </AuthContext.Provider>
