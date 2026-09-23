@@ -81,7 +81,7 @@ export const FinancialDashboard: React.FC = () => {
   // Modal Novo Lançamento
   const [modalOpen, setModalOpen] = useState(false);
   const [txType, setTxType] = useState<'RECEITA' | 'DESPESA'>('DESPESA');
-  const [newTx, setNewTx] = useState({
+  const lancamentoVazio = () => ({
     categoryId: '',
     accountId: '',
     amount: 0,
@@ -90,16 +90,42 @@ export const FinancialDashboard: React.FC = () => {
     paymentMethod: 'Pix',
     status: 'CONFIRMADA'
   });
+  const [newTx, setNewTx] = useState(lancamentoVazio);
+
+  /** Abre o formulário zerado. O mesmo modal serve a receita e despesa, e antes reaproveitava
+   * o estado anterior: depois de lançar uma receita, clicar em "Nova Despesa" trazia de volta
+   * a descrição e o valor da receita, como se fosse outra tela. */
+  const abrirLancamento = (tipo: 'RECEITA' | 'DESPESA') => {
+    setTxType(tipo);
+    // A conta precisa ser semeada aqui, e não só ao carregar a lista: zerar o formulário na
+    // abertura apagaria o valor inicial, e o select passaria a *mostrar* a primeira conta
+    // enquanto enviava vazio — o usuário via o campo preenchido e o servidor respondia
+    // "Conta financeira não encontrada".
+    setNewTx({ ...lancamentoVazio(), accountId: contas[0]?.id ?? '' });
+    setModalOpen(true);
+  };
 
   const fetchTransactions = async () => {
-    const data = await financialService.getAll();
-    setTransactions(data);
-    setLoading(false);
+    try {
+      const data = await financialService.getAll();
+      setTransactions(data);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Tente novamente em instantes.';
+      addToast({ type: 'error', title: 'Erro ao carregar o financeiro', message });
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
     fetchTransactions();
-    financialService.listarContas().then(setContas);
+    financialService.listarContas().then((lista) => {
+      setContas(lista);
+      // Sem isto a Conta ficava vazia até ser escolhida à mão, e quem não percebia o campo
+      // enviava o lançamento sem conta -- o servidor recusava, e a tela só dizia "erro ao
+      // lançar transação". A categoria já vinha preenchida assim.
+      setNewTx((prev) => (prev.accountId ? prev : { ...prev, accountId: lista[0]?.id ?? '' }));
+    });
   }, []);
 
   useEffect(() => {
@@ -136,7 +162,10 @@ export const FinancialDashboard: React.FC = () => {
       setModalOpen(false);
       fetchTransactions();
     } catch (err) {
-      addToast({ type: 'error', title: 'Erro ao lançar transação' });
+      // Antes só aparecia o título: o motivo real vindo do servidor (conta ausente, valor
+      // inválido) era descartado, e não havia como saber o que corrigir.
+      const message = err instanceof Error ? err.message : 'Tente novamente em instantes.';
+      addToast({ type: 'error', title: 'Erro ao lançar transação', message });
     }
   };
 
@@ -162,8 +191,7 @@ export const FinancialDashboard: React.FC = () => {
             <Button
               variant="outline"
               onClick={() => {
-                setTxType('RECEITA');
-                setModalOpen(true);
+                abrirLancamento('RECEITA');
               }}
               leftIcon={<Plus className="w-4 h-4 text-[#40C075]" />}
             >
@@ -172,8 +200,7 @@ export const FinancialDashboard: React.FC = () => {
             <Button
               variant="primary"
               onClick={() => {
-                setTxType('DESPESA');
-                setModalOpen(true);
+                abrirLancamento('DESPESA');
               }}
               leftIcon={<Plus className="w-4 h-4" />}
             >

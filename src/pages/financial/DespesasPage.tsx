@@ -46,7 +46,12 @@ export const DespesasPage: React.FC = () => {
 
   useEffect(() => {
     fetchData();
-    financialService.listarContas().then(setContas);
+    financialService.listarContas().then((lista) => {
+      setContas(lista);
+      // Mesma correcao do painel: sem valor inicial, a Conta ia vazia ao servidor e o
+      // lancamento era recusado sem que a tela explicasse o motivo.
+      setNewDespesa((prev) => (prev.accountId ? prev : { ...prev, accountId: lista[0]?.id ?? '' }));
+    });
     financialService.listarCategorias('DESPESA').then((lista) => {
       setCategorias(lista);
       setNewDespesa((prev) => (prev.categoryId ? prev : { ...prev, categoryId: lista[0]?.id ?? '' }));
