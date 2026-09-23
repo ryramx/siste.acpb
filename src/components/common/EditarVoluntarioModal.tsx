@@ -4,11 +4,15 @@ import { Input } from '../ui/Input';
 import { Button } from '../ui/Button';
 import { NAO_INFORMADA, volunteerService } from '../../services/domainServices';
 import { Volunteer } from '../../types/domain';
+import { SeletorDisponibilidade } from './SeletorDisponibilidade';
+import { juntarDisponibilidade, separarDisponibilidade } from '../../utils/disponibilidade';
 
 interface EditarVoluntarioModalProps {
   voluntario: Volunteer | null;
   onClose: () => void;
   onSaved: () => void;
+  /** Disponibilidades ja usadas por outros voluntarios, que viram opcoes marcaveis. */
+  opcoesDisponibilidade?: string[];
 }
 
 /** Edição da atuação do voluntário: área, habilidades e disponibilidade.
@@ -24,11 +28,12 @@ interface EditarVoluntarioModalProps {
 export const EditarVoluntarioModal: React.FC<EditarVoluntarioModalProps> = ({
   voluntario,
   onClose,
-  onSaved
+  onSaved,
+  opcoesDisponibilidade = []
 }) => {
   const [area, setArea] = useState('');
   const [habilidades, setHabilidades] = useState('');
-  const [disponibilidade, setDisponibilidade] = useState('');
+  const [disponibilidade, setDisponibilidade] = useState<string[]>([]);
   const [salvando, setSalvando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
 
@@ -37,7 +42,11 @@ export const EditarVoluntarioModal: React.FC<EditarVoluntarioModalProps> = ({
     // "Não informada" é texto de exibição, não valor: entra no formulário como vazio, senão
     // bastaria abrir e salvar para gravar essa frase como se fosse a resposta real.
     setArea(voluntario.area === NAO_INFORMADA ? '' : voluntario.area);
-    setDisponibilidade(voluntario.availability === NAO_INFORMADA ? '' : voluntario.availability);
+    setDisponibilidade(
+      separarDisponibilidade(
+        voluntario.availability === NAO_INFORMADA ? '' : voluntario.availability
+      )
+    );
     setHabilidades(voluntario.skills.join(', '));
     setErro(null);
   }, [voluntario]);
@@ -51,7 +60,7 @@ export const EditarVoluntarioModal: React.FC<EditarVoluntarioModalProps> = ({
       await volunteerService.update(voluntario.id, {
         area,
         skills: habilidades,
-        availability: disponibilidade
+        availability: juntarDisponibilidade(disponibilidade)
       });
       onSaved();
       onClose();
@@ -106,12 +115,11 @@ export const EditarVoluntarioModal: React.FC<EditarVoluntarioModalProps> = ({
           helperText="Separe por vírgula. Cada uma vira uma etiqueta no cartão e entra na busca."
         />
 
-        <Input
-          label="Disponibilidade"
-          value={disponibilidade}
-          onChange={(e) => setDisponibilidade(e.target.value)}
-          placeholder="Ex.: Sábados à tarde, Segundas e quartas à noite"
-          helperText="Texto livre: escreva como a pessoa costuma dizer."
+        <SeletorDisponibilidade
+          selecionadas={disponibilidade}
+          onChange={setDisponibilidade}
+          opcoesConhecidas={opcoesDisponibilidade}
+          disabled={salvando}
         />
 
         {/* O submit do formulário existe para o Enter funcionar; os botões estão no rodapé

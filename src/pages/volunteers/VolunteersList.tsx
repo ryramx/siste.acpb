@@ -7,10 +7,11 @@ import { Button } from '../../components/ui/Button';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { Skeleton } from '../../components/ui/Skeleton';
 import { Avatar } from '../../components/ui/Avatar';
-import { volunteerService } from '../../services/domainServices';
+import { NAO_INFORMADA, volunteerService } from '../../services/domainServices';
 import { Volunteer } from '../../types/domain';
 import { NovoVinculoModal } from '../../components/common/NovoVinculoModal';
 import { EditarVoluntarioModal } from '../../components/common/EditarVoluntarioModal';
+import { separarDisponibilidade } from '../../utils/disponibilidade';
 import { useAuth } from '../../contexts/AuthContext';
 
 export const VolunteersList: React.FC = () => {
@@ -32,6 +33,13 @@ export const VolunteersList: React.FC = () => {
   };
 
   useEffect(carregar, []);
+
+  // E daqui que sai o crescimento da lista de opcoes: tudo que ja foi gravado em algum
+  // voluntario vira caixa marcavel nos dois modais. NAO_INFORMADA nao entra porque e texto
+  // de exibicao, nao uma disponibilidade real.
+  const opcoesEmUso = volunteers.flatMap((v) =>
+    v.availability === NAO_INFORMADA ? [] : separarDisponibilidade(v.availability)
+  );
 
   const filteredVolunteers = volunteers.filter((v) => {
     // O subtitulo da tela promete busca por "dias disponiveis", entao a disponibilidade
@@ -75,12 +83,14 @@ export const VolunteersList: React.FC = () => {
         isOpen={modalOpen}
         onClose={() => setModalOpen(false)}
         onSaved={carregar}
+        opcoesDisponibilidade={opcoesEmUso}
       />
 
       <EditarVoluntarioModal
         voluntario={emEdicao}
         onClose={() => setEmEdicao(null)}
         onSaved={carregar}
+        opcoesDisponibilidade={opcoesEmUso}
       />
 
       {/* Filtros e Busca */}

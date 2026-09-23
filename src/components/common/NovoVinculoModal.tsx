@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Modal } from '../ui/Modal';
+import { SeletorDisponibilidade } from './SeletorDisponibilidade';
+import { juntarDisponibilidade } from '../../utils/disponibilidade';
 import { Input } from '../ui/Input';
 import { Select } from '../ui/Select';
 import { Button } from '../ui/Button';
@@ -17,6 +19,8 @@ interface NovoVinculoModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSaved: () => void;
+  /** So usado quando papel e 'voluntario': opcoes ja usadas por outros. */
+  opcoesDisponibilidade?: string[];
 }
 
 const TEXTOS = {
@@ -49,7 +53,8 @@ export const NovoVinculoModal: React.FC<NovoVinculoModalProps> = ({
   papel,
   isOpen,
   onClose,
-  onSaved
+  onSaved,
+  opcoesDisponibilidade = []
 }) => {
   const textos = TEXTOS[papel];
   const hoje = new Date().toISOString().split('T')[0];
@@ -68,7 +73,7 @@ export const NovoVinculoModal: React.FC<NovoVinculoModalProps> = ({
   // escala. `volunteerService.create` ja aceitava os dois, mas o formulario nunca perguntou,
   // entao todo voluntario nascia com a disponibilidade em branco.
   const [habilidades, setHabilidades] = useState('');
-  const [disponibilidade, setDisponibilidade] = useState('');
+  const [disponibilidade, setDisponibilidade] = useState<string[]>([]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -81,7 +86,7 @@ export const NovoVinculoModal: React.FC<NovoVinculoModalProps> = ({
     setData(hoje);
     setExtra('');
     setHabilidades('');
-    setDisponibilidade('');
+    setDisponibilidade([]);
     setErro(null);
     projectService
       .getPessoasParaResponsavel()
@@ -108,7 +113,7 @@ export const NovoVinculoModal: React.FC<NovoVinculoModalProps> = ({
           startDate: data,
           area: extra,
           skills: habilidades,
-          availability: disponibilidade
+          availability: juntarDisponibilidade(disponibilidade)
         });
       } else {
         await beneficiaryService.create({ ...comum, registrationDate: data, needs: extra });
@@ -201,12 +206,11 @@ export const NovoVinculoModal: React.FC<NovoVinculoModalProps> = ({
               placeholder="Ex.: Psicologia, Libras, Violão"
               helperText="Separe por vírgula."
             />
-            <Input
-              label="Disponibilidade"
-              value={disponibilidade}
-              onChange={(e) => setDisponibilidade(e.target.value)}
-              placeholder="Ex.: Sábados à tarde"
-              helperText="Texto livre. Pode ficar em branco e ser preenchida depois."
+            <SeletorDisponibilidade
+              selecionadas={disponibilidade}
+              onChange={setDisponibilidade}
+              opcoesConhecidas={opcoesDisponibilidade}
+              disabled={salvando}
             />
           </>
         )}
