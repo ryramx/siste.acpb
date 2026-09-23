@@ -44,7 +44,7 @@ navegador — recorte de imagem em canvas, arrasto, posição do cursor em campo
 não são cobertos por teste automatizado e só se confirmam abrindo a tela.
 
 O andamento detalhado, tarefa a tarefa, está em
-[`tarefas_pendentes/progresso.md`](tarefas_pendentes/progresso.md).
+[`docs/historico/progresso-das-tarefas.md`](docs/historico/progresso-das-tarefas.md).
 
 **Versão atual da documentação:** `0.3`
 
@@ -471,11 +471,16 @@ Detalhes adicionais (migrations, backups, banco de testes) estão em
 │   │   └── schemas/      # Schemas Pydantic
 │   ├── alembic/          # Migrations
 │   └── tests/            # Suíte pytest
+├── docs/                 # Documentação (índice em docs/README.md)
+│   ├── produto/          # PRD, descrição da UI e diagrama do banco
+│   ├── historico/        # Registro do que foi entregue e por quê
+│   └── futuro/           # Módulos previstos e não implementados
 ├── .github/workflows/    # CI (suítes, typecheck e build de produção) e backup
-├── render.yaml           # Blueprint dos dois serviços em produção
-├── tarefas_pendentes/    # Plano de tarefas e registro de progresso
-└── sist.acpb.arq/        # PRD e documentação de produto/UI
+└── render.yaml           # Blueprint dos dois serviços em produção
 ```
+
+Os documentos técnicos do back-end ficam em [`backend/`](backend/), ao lado do código que
+os referencia.
 
 ---
 
@@ -483,11 +488,18 @@ Detalhes adicionais (migrations, backups, banco de testes) estão em
 
 A documentação do projeto é mantida separadamente do código-fonte para facilitar a evolução dos requisitos.
 
+Tudo começa por [`docs/README.md`](docs/README.md), que indexa os documentos abaixo.
+
 ### Produto
 
-* **PRD** e **Descrição da UI** — em [`sist.acpb.arq/`](sist.acpb.arq/);
-* [`tarefas_pendentes/progresso.md`](tarefas_pendentes/progresso.md) — registro do que já foi entregue, tarefa a tarefa;
-* [`AUDIT.md`](AUDIT.md) — resumo executivo das mudanças, achados e decisões.
+* [`docs/produto/prd.md`](docs/produto/prd.md) — requisitos, escopo e perfis de acesso;
+* [`docs/produto/descricao-da-ui.md`](docs/produto/descricao-da-ui.md) — identidade visual e padrões de tela;
+* [`docs/produto/diagrama-der.png`](docs/produto/diagrama-der.png) — diagrama do banco.
+
+### Histórico
+
+* [`docs/historico/progresso-das-tarefas.md`](docs/historico/progresso-das-tarefas.md) — o que cada tarefa entregou;
+* [`docs/historico/auditoria-das-sessoes-de-ia.md`](docs/historico/auditoria-das-sessoes-de-ia.md) — resumo executivo das mudanças, achados e decisões.
 
 ### Técnica (back-end)
 
@@ -568,7 +580,7 @@ para quem opera o sistema vira a próxima tarefa.
 | Suíte     | Comando                | Situação     |
 | --------- | ---------------------- | ------------ |
 | Back-end  | `cd backend && pytest` | 153 testes ✅ |
-| Front-end | `npm test`             | 164 testes ✅ |
+| Front-end | `npm test`             | 169 testes ✅ |
 
 Além das duas suítes, `npx tsc --noEmit` e `npm run build` rodam no CI — o build de
 produção falha de propósito se `VITE_API_URL` não estiver definida, para não gerar um

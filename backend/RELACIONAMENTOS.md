@@ -1,6 +1,6 @@
 # Inventário de relacionamentos do banco — ACPB
 
-Documento de referência para as tarefas 01–04 de `tarefas_pendentes/`. Lista cada coluna `*_id`
+Documento de referência para as tarefas 01–04 do plano original (ver `docs/historico/`). Lista cada coluna `*_id`
 existente nos models, sua tabela de destino, cardinalidade, nulidade, regra de exclusão (`ON DELETE`)
 e unicidade.
 

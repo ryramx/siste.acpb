@@ -25,7 +25,7 @@ def upgrade() -> None:
     # Baseline completo: cria todo o schema em um banco limpo (dev/CI/produção nova).
     # No banco de desenvolvimento existente (com dados reais), esta revisão é aplicada
     # via `alembic stamp` em vez de `upgrade`, pois as tabelas já existem fisicamente
-    # (ver backend/RELACIONAMENTOS.md e tarefas_pendentes/progresso.md, tarefa 05).
+    # (ver backend/RELACIONAMENTOS.md e docs/historico/progresso-das-tarefas.md, tarefa 05).
     op.create_table('cargos',
     sa.Column('id', sa.BigInteger(), nullable=False),
     sa.Column('nome', sa.String(length=100), nullable=False),

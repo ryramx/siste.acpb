@@ -5,13 +5,13 @@ neste repositório: escopo pedido, o que foi implementado, bugs reais encontrado
 decisões de segurança/autorização tomadas, e o que ficou pendente ou fora do escopo.
 
 O registro tarefa-a-tarefa (com detalhes técnicos de arquivos/migrations) está em
-`tarefas_pendentes/progresso.md`. Este arquivo é o resumo executivo.
+[`progresso-das-tarefas.md`](progresso-das-tarefas.md). Este arquivo é o resumo executivo.
 
 ---
 
 ## 1. Escopo do trabalho
 
-Pedido inicial do usuário: revisar os 42 arquivos de tarefas em `tarefas_pendentes/` (plano de
+Pedido inicial do usuário: revisar os 42 arquivos de tarefas do plano original (plano de
 integração backend/frontend do "Sistema ACPB" em 6 fases), entender o fluxo, e então executar as
 Fases 1 a 5 sequencialmente, documentando o progresso, deixando a Fase 6 (itens marcados como
 FUTURO) para decisão posterior. Depois da entrega das 5 fases, houve uma rodada adicional de
