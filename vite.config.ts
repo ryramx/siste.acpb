@@ -39,6 +39,8 @@ export default defineConfig(({ command, mode }) => {
     test: {
       environment: 'jsdom',
       globals: true,
+      // Registra os matchers do jest-dom e limpa o DOM entre testes.
+      setupFiles: ['./src/test/setup.ts'],
       // .claude/worktrees guarda copias completas do repositorio; sem excluir,
       // o vitest roda a suite duplicada (uma vez no projeto, outra em cada worktree).
       exclude: [...configDefaults.exclude, '**/.claude/**'],
