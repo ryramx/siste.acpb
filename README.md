@@ -8,11 +8,11 @@ O projeto tem como objetivo reduzir a dependência de controles manuais e inform
 
 ## 📌 Status do projeto
 
-**Em desenvolvimento — primeira versão funcional integrada**
+**Em produção — validação de uso real e ajustes contínuos**
 
-> O back-end está implementado e o front-end já consome a API real (nenhuma tela
-> usa dados fictícios). Estoque e Doações permanecem previstos, mas ainda não foram
-> modelados.
+> O sistema está implantado no Render e sendo exercitado com dados reais. O back-end está
+> implementado, o front-end consome a API real (nenhuma tela usa dados fictícios) e cada
+> `push` na `main` publica após o CI. Estoque e Doações permanecem previstos, mas ainda não foram modelados.
 
 | Módulo                                 | Back-end | Front-end |
 | -------------------------------------- | -------- | --------- |
@@ -31,19 +31,22 @@ O projeto tem como objetivo reduzir a dependência de controles manuais e inform
 | Relatórios (CSV / Excel / PDF)         | ✅        | ✅         |
 | Auditoria                              | ✅        | ✅         |
 | Patrimônio                             | ✅        | ✅         |
-| Cadastros de apoio (contas, categorias financeiras, cargos) | ✅ | ⏳ somente leitura na interface |
+| Contas e categorias financeiras        | ✅        | ✅ criar, desativar e reativar pela tela |
+| Cargos (de membro)                     | ✅        | ⏳ somente leitura na interface |
 | Estoque                                | ⬜        | ⬜         |
 | Doações                                | ⬜        | ⬜         |
 
-**Ressalva de validação:** as telas passaram a ser exercitadas em navegador, e há testes
+**Ressalva de validação:** as telas são exercitadas em navegador e no celular, e há testes
 automatizados de tela cobrindo os fluxos que já quebraram (sessão ao recarregar, tela de
-evento, busca de membros). A cobertura de tela ainda é parcial: a maior parte da suite do
-front-end testa serviços, não componentes.
+evento, busca de membros). A cobertura de tela continua parcial: a maior parte da suíte do
+front-end testa serviços e regras puras, não componentes. Comportamentos que dependem do
+navegador — recorte de imagem em canvas, arrasto, posição do cursor em campo mascarado —
+não são cobertos por teste automatizado e só se confirmam abrindo a tela.
 
 O andamento detalhado, tarefa a tarefa, está em
 [`tarefas_pendentes/progresso.md`](tarefas_pendentes/progresso.md).
 
-**Versão atual da documentação:** `0.2`
+**Versão atual da documentação:** `0.3`
 
 ---
 
@@ -96,9 +99,11 @@ Principais cadastros:
 
 * Pessoas;
 * Membros;
-* Voluntários;
+* Voluntários (área, habilidades e disponibilidade, esta última por opções marcáveis que
+  crescem com o uso);
 * Beneficiários;
-* Telefones.
+* Telefones;
+* Foto de perfil, recortada e redimensionada no navegador antes do envio.
 
 ### 📁 Projetos
 
@@ -124,15 +129,20 @@ Gerenciamento de projetos sociais da associação, incluindo:
 
 ### 💰 Financeiro
 
-* Categorias financeiras;
+* Contas e categorias financeiras, cadastradas pela própria tela;
 * Receitas;
 * Despesas;
-* Doações;
 * Movimentações;
+* Correção e exclusão de lançamento a partir da linha, em qualquer das quatro telas;
 * Relação de despesas com projetos;
-* Comprovantes e anexos;
+* Comprovantes e anexos (contagem na tela; envio e download ainda só pela API);
 * Dashboard financeiro;
 * Relatórios financeiros.
+
+Doações estão previstas como módulo próprio e ainda não foram modeladas.
+
+O campo de valor usa máscara preenchida da direita para a esquerda, como nos aplicativos
+de banco: cada dígito empurra os anteriores e a vírgula nunca é digitada.
 
 ### 📦 Estoque
 
@@ -253,7 +263,7 @@ A arquitetura tecnológica inicial está organizada da seguinte forma:
 
 ### Back-end
 
-* Python 3.10+
+* Python 3.12 (versão fixada no CI e em produção)
 * FastAPI + Uvicorn
 * Pydantic (schemas e validação)
 * pytest (testes)
@@ -273,7 +283,21 @@ A arquitetura tecnológica inicial está organizada da seguinte forma:
 ### Relatórios e arquivos
 
 * `openpyxl` (Excel) e `reportlab` (PDF)
-* Armazenamento local de anexos e fotos, com nome de arquivo sempre gerado por `uuid4`
+* Armazenamento de anexos e fotos com nome sempre gerado por `uuid4`. Em produção vai para
+  object storage S3-compatível (Supabase Storage), porque o disco do plano gratuito do
+  Render é efêmero e perderia os comprovantes a cada redeploy; em desenvolvimento, disco local
+
+### Envio de e-mail
+
+* API HTTPS da Brevo, usada na recuperação de senha. Não é SMTP de propósito: o Render
+  bloqueia as portas 25, 465 e 587 no plano gratuito, e o envio falhava por timeout enquanto
+  a tela dizia "instruções enviadas"
+
+### Hospedagem e CI
+
+* Render — dois serviços (API Python e site estático), descritos em [`render.yaml`](render.yaml)
+* Banco PostgreSQL no Neon (o Postgres gratuito do Render expira)
+* GitHub Actions roda as duas suítes a cada `push` e `pull request`
 
 ---
 
@@ -291,7 +315,8 @@ Pessoas
 └── Usuários ── Perfis ── Permissões
 
 Projetos
-└── Projeto_Voluntários
+├── Projeto_Voluntários
+└── Projeto_Beneficiários
 
 Eventos
 └── Inscrições
@@ -301,6 +326,8 @@ Financeiro
 ├── Categorias financeiras
 └── Movimentações financeiras ── Anexos financeiros
 
+Patrimônio
+
 Auditoria
 Tokens de redefinição de senha
 ```
@@ -308,7 +335,7 @@ Tokens de redefinição de senha
 O inventário completo de tabelas, chaves estrangeiras e regras de `ondelete`
 está em [`backend/RELACIONAMENTOS.md`](backend/RELACIONAMENTOS.md).
 
-Ainda a modelar: **Patrimônio**, **Estoque** e **Doações**.
+Ainda a modelar: **Estoque** e **Doações**. Patrimônio foi modelado e implementado.
 
 ---
 
@@ -399,12 +426,17 @@ pip install -r requirements.txt
 
 cp .env.example .env            # preencher DATABASE_PASSWORD e JWT_SECRET_KEY
 alembic upgrade head            # aplica as migrations
-uvicorn app.main:app --reload
+uvicorn app.main:app --reload --port 8001
 ```
 
-* API: `http://localhost:8000`
-* Documentação interativa (Swagger): `http://localhost:8000/docs`
+* API: `http://localhost:8001`
+* Documentação interativa (Swagger): `http://localhost:8001/docs`
 * Health checks: `GET /health` e `GET /health/db`
+
+> A porta é **8001**, e não a 8000 padrão do uvicorn, para conviver com outro projeto na
+> mesma máquina. O front-end procura a API nesse endereço quando `VITE_API_URL` não está
+> definida, então subir na 8000 faz a interface abrir sem conseguir falar com a API.
+> Ver [`backend/DEPLOY.md`](backend/DEPLOY.md).
 
 ### Front-end
 
@@ -412,6 +444,8 @@ uvicorn app.main:app --reload
 npm install
 npm run dev
 ```
+
+* Interface: `http://localhost:5174` (porta fixa, própria deste projeto)
 
 Detalhes adicionais (migrations, backups, banco de testes) estão em
 [`backend/README.md`](backend/README.md).
@@ -427,7 +461,8 @@ Detalhes adicionais (migrations, backups, banco de testes) estão em
 │   ├── contexts/         # AuthContext, ToastContext
 │   ├── pages/            # Telas por módulo
 │   ├── services/         # Cliente de API e serviços de domínio
-│   └── types/            # Tipos compartilhados
+│   ├── types/            # Tipos compartilhados
+│   └── utils/            # Máscaras, rótulos e regras puras (testadas isoladamente)
 ├── backend/              # API FastAPI
 │   ├── app/
 │   │   ├── api/routes/   # Endpoints por módulo
@@ -436,6 +471,8 @@ Detalhes adicionais (migrations, backups, banco de testes) estão em
 │   │   └── schemas/      # Schemas Pydantic
 │   ├── alembic/          # Migrations
 │   └── tests/            # Suíte pytest
+├── .github/workflows/    # CI (suítes, typecheck e build de produção) e backup
+├── render.yaml           # Blueprint dos dois serviços em produção
 ├── tarefas_pendentes/    # Plano de tarefas e registro de progresso
 └── sist.acpb.arq/        # PRD e documentação de produto/UI
 ```
@@ -501,6 +538,7 @@ Já implementado:
 * Upload de arquivos com tipo e tamanho validados e nome sempre gerado por `uuid4`;
 * Download de anexos e fotos apenas por rota autenticada — nada exposto como arquivo estático;
 * Recuperação de senha com token de uso único, expiração de 30 min e apenas o hash persistido;
+* Redefinição de senha por administrador, para quem perdeu acesso ao e-mail cadastrado;
 * Recusa de iniciar em produção sem `JWT_SECRET_KEY`, sem `DATABASE_PASSWORD` ou com CORS aberto;
 * Política de backup e de retenção de dados documentada.
 
@@ -513,21 +551,28 @@ O projeto é desenvolvido de maneira incremental. Situação das etapas:
 ```text
 Levantamento de requisitos     ✅ concluído
 Documentação do produto        ✅ concluído
-Modelagem do banco             ✅ concluído (exceto patrimônio/estoque/doações)
+Modelagem do banco             ✅ concluído (exceto estoque/doações)
 Arquitetura técnica            ✅ concluído
 Back-end / API                 ✅ concluído para o escopo da 1ª versão
 Front-end                      ✅ concluído para o escopo da 1ª versão
 Integração front ↔ back        ✅ concluída (nenhuma tela usa dados fictícios)
-Testes                         ✅ automatizados; falta validação visual em navegador
-Implantação                    ⏳ documentada, ainda não executada
+Testes                         ✅ automatizados; cobertura de tela ainda parcial
+Implantação                    ✅ em produção no Render, publicando a cada push na main
 ```
+
+Daqui em diante a evolução é guiada pelo uso real: o que aparece como confuso ou faltante
+para quem opera o sistema vira a próxima tarefa.
 
 ### Testes automatizados
 
-| Suíte     | Comando                | Situação    |
-| --------- | ---------------------- | ----------- |
-| Back-end  | `cd backend && pytest` | 88 testes ✅ |
-| Front-end | `npm test`             | 27 testes ✅ |
+| Suíte     | Comando                | Situação     |
+| --------- | ---------------------- | ------------ |
+| Back-end  | `cd backend && pytest` | 153 testes ✅ |
+| Front-end | `npm test`             | 164 testes ✅ |
+
+Além das duas suítes, `npx tsc --noEmit` e `npm run build` rodam no CI — o build de
+produção falha de propósito se `VITE_API_URL` não estiver definida, para não gerar um
+pacote apontando para a máquina de quem compilou.
 
 Os testes de back-end rodam contra um banco **isolado** (`acpb_db_test`) — a
 suíte se recusa a iniciar caso aponte para o banco de desenvolvimento. As
@@ -554,10 +599,16 @@ A primeira versão será considerada funcional quando a associação conseguir:
 * [x] Visualizar informações financeiras;
 * [x] Controlar permissões;
 * [x] Consultar informações através dos dashboards;
-* [x] Gerar os relatórios previstos para a primeira versão *(disponíveis via API; tela dedicada pendente)*.
+* [x] Gerar os relatórios previstos para a primeira versão;
+* [x] Corrigir e excluir lançamentos financeiros errados, com registro em auditoria;
+* [x] Usar o sistema em produção, pelo computador e pelo celular.
 
-Para a entrega efetiva à associação, faltam **validação visual em navegador** e
-**implantação em ambiente de produção**.
+A primeira versão foi entregue e está em uso. O que segue em aberto:
+
+* **Estoque** e **Doações** — previstos, ainda não modelados;
+* **Anexos financeiros** — a API envia e devolve comprovantes; a tela apenas os conta;
+* **Cargos de membro** — cadastrados apenas pela API;
+* **Cobertura de tela** — a suíte do front-end testa sobretudo serviços e regras puras.
 
 ---
 
