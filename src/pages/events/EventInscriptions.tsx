@@ -269,12 +269,26 @@ export const EventInscriptions: React.FC = () => {
             <Button variant="outline" onClick={() => setModalOpen(false)}>
               Cancelar
             </Button>
-            <Button onClick={handleInscrever} isLoading={saving} disabled={!podeSalvar}>
+            {/* O botão vive no rodapé do modal, fora do <form>. O atributo `form` é o que os
+                liga: sem isso o Enter dentro dos campos não fazia nada. */}
+            <Button
+              type="submit"
+              form="form-inscricao"
+              isLoading={saving}
+              disabled={!podeSalvar}
+            >
               Inscrever
             </Button>
           </>
         }
       >
+        <form
+          id="form-inscricao"
+          onSubmit={(e) => {
+            e.preventDefault();
+            handleInscrever();
+          }}
+        >
         <div className="flex gap-2 p-1 bg-[#0F1210] border border-[#222824] rounded-lg">
           {(
             [
@@ -360,6 +374,7 @@ export const EventInscriptions: React.FC = () => {
         )}
 
         {formError && <p className="text-xs text-red-500">{formError}</p>}
+        </form>
       </Modal>
     </div>
   );

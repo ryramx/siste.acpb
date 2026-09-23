@@ -1,4 +1,4 @@
-import React, { SelectHTMLAttributes } from 'react';
+import React, { SelectHTMLAttributes, useId } from 'react';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
@@ -10,7 +10,11 @@ interface SelectProps extends SelectHTMLAttributes<HTMLSelectElement> {
 
 export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
   ({ label, error, options, className, id, ...props }, ref) => {
-    const selectId = id || props.name;
+    // Mesmo problema que o Input tinha: sem `id` nem `name`, o htmlFor saía vazio e o rótulo
+    // não apontava para campo nenhum — leitor de tela não o anunciava e clicar no texto não
+    // focava o select.
+    const idGerado = useId();
+    const selectId = id || props.name || idGerado;
 
     return (
       <div className="w-full flex flex-col gap-1.5">

@@ -105,7 +105,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </NavLink>
         )}
 
-        {/* Pessoas (Submenu Collapsible) */}
+        {/* Pessoas (Submenu Collapsible)
+            O grupo só aparece se o perfil alcançar ao menos um dos submenus. Sem esta
+            verificação ele aparecia para todo mundo e, para quem não tinha nenhuma das três
+            permissões, abria vazio — um menu que só serve para frustrar quem clica. */}
+        {(hasPermission('view_members') ||
+          hasPermission('view_volunteers') ||
+          hasPermission('view_beneficiaries')) && (
         <div>
           <button
             onClick={() => setPeopleOpen(!peopleOpen)}
@@ -175,6 +181,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </div>
           )}
         </div>
+        )}
 
         {/* Projetos */}
         {hasPermission('view_projects') && (

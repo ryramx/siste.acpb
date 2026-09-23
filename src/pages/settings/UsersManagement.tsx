@@ -294,12 +294,22 @@ export const UsersManagement: React.FC = () => {
             <Button variant="ghost" onClick={() => setCreateModalOpen(false)}>
               Cancelar
             </Button>
-            <Button variant="primary" isLoading={criando} onClick={handleCreateUser}>
+            {/* `form` liga o botão do rodapé ao <form> do corpo, para o Enter criar o
+                usuário sem precisar do clique. */}
+            <Button variant="primary" type="submit" form="form-novo-usuario" isLoading={criando}>
               Criar usuário
             </Button>
           </>
         }
       >
+        <form
+          id="form-novo-usuario"
+          className="space-y-4"
+          onSubmit={(e) => {
+            e.preventDefault();
+            handleCreateUser();
+          }}
+        >
         <p className="text-xs text-[#727A74]">
           Um usuário (login) só pode ser criado para uma Pessoa já cadastrada que ainda não tenha
           um usuário vinculado.
@@ -338,6 +348,7 @@ export const UsersManagement: React.FC = () => {
           value={novaSenha}
           onChange={(e) => setNovaSenha(e.target.value)}
         />
+        </form>
       </Modal>
 
       {/* Modal: Gerenciar Perfis do Usuário */}

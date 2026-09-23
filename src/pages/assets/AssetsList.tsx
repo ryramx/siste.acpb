@@ -316,7 +316,15 @@ export const AssetsList: React.FC = () => {
         onClose={() => setModalAberto(false)}
         title={editando ? `Editar ${editando.nome}` : 'Novo bem'}
       >
-        <div className="space-y-4">
+        {/* <form> de verdade para o Enter salvar: com os campos soltos num <div>, teclar Enter
+            não fazia nada, e só o clique no botão funcionava. */}
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            salvar();
+          }}
+          className="space-y-4"
+        >
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <Input
               id="asset-codigo"
@@ -395,14 +403,14 @@ export const AssetsList: React.FC = () => {
           />
 
           <div className="flex justify-end gap-2 pt-2">
-            <Button variant="outline" onClick={() => setModalAberto(false)}>
+            <Button type="button" variant="outline" onClick={() => setModalAberto(false)}>
               Cancelar
             </Button>
-            <Button onClick={salvar} isLoading={salvando}>
+            <Button type="submit" isLoading={salvando}>
               {editando ? 'Salvar alterações' : 'Cadastrar'}
             </Button>
           </div>
-        </div>
+        </form>
       </Modal>
 
       <Modal
