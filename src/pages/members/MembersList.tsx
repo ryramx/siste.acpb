@@ -50,10 +50,16 @@ export const MembersList: React.FC = () => {
   }, []);
 
   const filteredMembers = members.filter((m) => {
+    const termo = searchTerm.trim().toLowerCase();
+    const digitosBuscados = apenasDigitos(searchTerm);
+    // A busca por CPF só entra quando há dígitos no termo. Antes ela era sempre avaliada, e
+    // como `'qualquer'.includes('')` é verdadeiro, buscar por letras dava match em todo mundo
+    // pelo lado do CPF — a lista nunca filtrava nada.
     const matchesSearch =
-      m.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      apenasDigitos(m.cpf).includes(apenasDigitos(searchTerm)) ||
-      m.email.toLowerCase().includes(searchTerm.toLowerCase());
+      termo === '' ||
+      m.name.toLowerCase().includes(termo) ||
+      (digitosBuscados !== '' && apenasDigitos(m.cpf).includes(digitosBuscados)) ||
+      m.email.toLowerCase().includes(termo);
 
     const matchesStatus = statusFilter === 'TODOS' || m.status === statusFilter;
 

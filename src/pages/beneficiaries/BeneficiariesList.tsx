@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { HeartHandshake, Search, Eye, Shield, Lock } from 'lucide-react';
+import { HeartHandshake, Search, Eye, Shield, Lock, Plus } from 'lucide-react';
 import { Input } from '../../components/ui/Input';
 import { Select } from '../../components/ui/Select';
 import { Badge } from '../../components/ui/Badge';
@@ -8,21 +8,30 @@ import { EmptyState } from '../../components/ui/EmptyState';
 import { TableSkeleton } from '../../components/ui/Skeleton';
 import { beneficiaryService } from '../../services/domainServices';
 import { Beneficiary } from '../../types/domain';
+import { Button } from '../../components/ui/Button';
+import { NovoVinculoModal } from '../../components/common/NovoVinculoModal';
+import { useAuth } from '../../contexts/AuthContext';
 
 export const BeneficiariesList: React.FC = () => {
   const navigate = useNavigate();
+  const { hasPermission } = useAuth();
+  const [modalOpen, setModalOpen] = useState(false);
 
   const [beneficiaries, setBeneficiaries] = useState<Beneficiary[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [ageFilter, setAgeFilter] = useState('TODAS');
 
-  useEffect(() => {
-    beneficiaryService.getAll().then((data) => {
-      setBeneficiaries(data);
-      setLoading(false);
-    });
-  }, []);
+  const carregar = () => {
+    setLoading(true);
+    beneficiaryService
+      .getAll()
+      .then(setBeneficiaries)
+      .catch(() => setBeneficiaries([]))
+      .finally(() => setLoading(false));
+  };
+
+  useEffect(carregar, []);
 
   const filteredBeneficiaries = beneficiaries.filter((b) => {
     const matchesSearch = b.name.toLowerCase().includes(searchTerm.toLowerCase());
@@ -42,7 +51,23 @@ export const BeneficiariesList: React.FC = () => {
             Módulo social com acesso restrito e histórico protegido de atendimentos comunitários.
           </p>
         </div>
+        {hasPermission('edit_beneficiaries') && (
+          <Button
+            variant="primary"
+            onClick={() => setModalOpen(true)}
+            leftIcon={<Plus className="w-4 h-4" />}
+          >
+            Novo beneficiário
+          </Button>
+        )}
       </div>
+
+      <NovoVinculoModal
+        papel="beneficiario"
+        isOpen={modalOpen}
+        onClose={() => setModalOpen(false)}
+        onSaved={carregar}
+      />
 
       {/* Aviso de Dados Restritos/LGPD */}
       <div className="p-3 bg-[#0F1210] border border-[#222824] rounded-xl flex items-center gap-3 text-xs text-[#AEB5B0]">

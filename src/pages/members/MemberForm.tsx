@@ -325,6 +325,26 @@ export const MemberForm: React.FC = () => {
               required
             />
           </div>
+
+          {/* A tela de detalhes já exibia "Observações Institucionais", mas não havia onde
+              escrevê-las: o campo existia no banco e na API, e só faltava aqui. */}
+          <div className="mt-4 w-full flex flex-col gap-1.5">
+            <label
+              htmlFor="notes"
+              className="text-xs font-medium text-[#AEB5B0]"
+            >
+              Observações Institucionais
+            </label>
+            <textarea
+              id="notes"
+              name="notes"
+              rows={3}
+              value={formData.notes}
+              onChange={handleChange}
+              placeholder="Anotações internas sobre o membro (opcional)"
+              className="w-full bg-[#151917] border border-[#222824] rounded-lg px-3 py-2 text-sm text-white placeholder-[#727A74] focus:outline-none focus:border-[#004922] focus:ring-1 focus:ring-[#004922] transition-colors"
+            />
+          </div>
         </div>
 
         {/* Botões de Ação */}

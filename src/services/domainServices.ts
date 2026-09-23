@@ -287,6 +287,41 @@ export const volunteerService = {
       buscarTelefonePrincipal(voluntario.pessoa_id)
     ]);
     return toVolunteer(voluntario, pessoa, telefone);
+  },
+
+  /** Cadastra um voluntário, reaproveitando uma Pessoa existente ou criando uma nova.
+   *
+   * Usa /cadastros/pessoa-vinculo (o mesmo caminho do cadastro de membro) porque Pessoa e o
+   * vínculo precisam nascer na mesma transação: criar a Pessoa e falhar no vínculo deixaria
+   * um cadastro solto, sem papel nenhum. */
+  async create(data: {
+    pessoaId?: string;
+    nomeCompleto?: string;
+    cpf?: string;
+    email?: string;
+    startDate: string;
+    area?: string;
+    skills?: string;
+    availability?: string;
+  }): Promise<void> {
+    await apiClient.post('/cadastros/pessoa-vinculo', {
+      ...(data.pessoaId
+        ? { pessoa_id: Number(data.pessoaId) }
+        : {
+            pessoa: {
+              nome_completo: data.nomeCompleto,
+              cpf: data.cpf ? data.cpf.replace(/\D/g, '') || null : null,
+              email: data.email || null
+            }
+          }),
+      papel: 'voluntario',
+      voluntario: {
+        data_inicio: data.startDate,
+        area: data.area || null,
+        habilidades: data.skills || null,
+        disponibilidade: data.availability || null
+      }
+    });
   }
 };
 
@@ -369,6 +404,37 @@ export const beneficiaryService = {
     ]);
     return toBeneficiary(beneficiario, pessoa, telefone);
   },
+
+  /** Cadastra um beneficiario, reaproveitando uma Pessoa existente ou criando uma nova.
+   * Ver volunteerService.create: mesmo endpoint, mesma razao transacional. */
+  async create(data: {
+    pessoaId?: string;
+    nomeCompleto?: string;
+    cpf?: string;
+    email?: string;
+    registrationDate: string;
+    needs?: string;
+    socioeconomic?: string;
+  }): Promise<void> {
+    await apiClient.post('/cadastros/pessoa-vinculo', {
+      ...(data.pessoaId
+        ? { pessoa_id: Number(data.pessoaId) }
+        : {
+            pessoa: {
+              nome_completo: data.nomeCompleto,
+              cpf: data.cpf ? data.cpf.replace(/\D/g, '') || null : null,
+              email: data.email || null
+            }
+          }),
+      papel: 'beneficiario',
+      beneficiario: {
+        data_cadastro: data.registrationDate,
+        necessidades: data.needs || null,
+        situacao_socioeconomica: data.socioeconomic || null
+      }
+    });
+  },
+
   async addAttendance(
     beneficiaryId: string,
     attendance: Omit<AttendanceRecord, 'id' | 'responsibleName'> & { responsavelPessoaId: string }

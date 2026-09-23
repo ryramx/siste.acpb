@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Users, Search, Clock, Award, Calendar, CheckCircle } from 'lucide-react';
+import { Users, Search, Clock, Award, Calendar, CheckCircle, Plus } from 'lucide-react';
 import { Input } from '../../components/ui/Input';
 import { Select } from '../../components/ui/Select';
 import { Badge } from '../../components/ui/Badge';
@@ -9,19 +9,27 @@ import { Skeleton } from '../../components/ui/Skeleton';
 import { Avatar } from '../../components/ui/Avatar';
 import { volunteerService } from '../../services/domainServices';
 import { Volunteer } from '../../types/domain';
+import { NovoVinculoModal } from '../../components/common/NovoVinculoModal';
+import { useAuth } from '../../contexts/AuthContext';
 
 export const VolunteersList: React.FC = () => {
+  const { hasPermission } = useAuth();
   const [volunteers, setVolunteers] = useState<Volunteer[]>([]);
   const [loading, setLoading] = useState(true);
+  const [modalOpen, setModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [areaFilter, setAreaFilter] = useState('TODAS');
 
-  useEffect(() => {
-    volunteerService.getAll().then((data) => {
-      setVolunteers(data);
-      setLoading(false);
-    });
-  }, []);
+  const carregar = () => {
+    setLoading(true);
+    volunteerService
+      .getAll()
+      .then(setVolunteers)
+      .catch(() => setVolunteers([]))
+      .finally(() => setLoading(false));
+  };
+
+  useEffect(carregar, []);
 
   const filteredVolunteers = volunteers.filter((v) => {
     const matchesSearch =
@@ -45,7 +53,23 @@ export const VolunteersList: React.FC = () => {
             Encontre voluntários por habilidades, área de atuação e dias disponíveis.
           </p>
         </div>
+        {hasPermission('edit_volunteers') && (
+          <Button
+            variant="primary"
+            onClick={() => setModalOpen(true)}
+            leftIcon={<Plus className="w-4 h-4" />}
+          >
+            Novo voluntário
+          </Button>
+        )}
       </div>
+
+      <NovoVinculoModal
+        papel="voluntario"
+        isOpen={modalOpen}
+        onClose={() => setModalOpen(false)}
+        onSaved={carregar}
+      />
 
       {/* Filtros e Busca */}
       <div className="bg-[#181D1A] border border-[#222824] p-4 rounded-xl flex flex-col md:flex-row gap-4 items-center justify-between">
