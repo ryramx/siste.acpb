@@ -950,17 +950,32 @@ interface ApiMovimentacao {
 interface ApiContaFinanceira {
   id: number;
   nome: string;
+  ativo: boolean;
 }
 
 interface ApiCategoriaFinanceira {
   id: number;
   nome: string;
   tipo: string;
+  ativo: boolean;
 }
 
 export interface OpcaoFinanceira {
   id: string;
   nome: string;
+}
+
+export interface CategoriaFinanceira {
+  id: string;
+  nome: string;
+  tipo: 'RECEITA' | 'DESPESA';
+  ativo: boolean;
+}
+
+export interface ContaFinanceira {
+  id: string;
+  nome: string;
+  ativo: boolean;
 }
 
 async function carregarContas(): Promise<ApiContaFinanceira[]> {
@@ -974,7 +989,56 @@ async function carregarCategorias(): Promise<ApiCategoriaFinanceira[]> {
 export const financialService = {
   async listarContas(): Promise<OpcaoFinanceira[]> {
     const contas = await carregarContas();
-    return contas.map((c) => ({ id: String(c.id), nome: c.nome }));
+    return contas.filter((c) => c.ativo).map((c) => ({ id: String(c.id), nome: c.nome }));
+  },
+
+  /** Categorias e contas para a tela de gestao -- inclui as inativas, que a de lancamento
+   * nao deve oferecer mas esta precisa listar para poder reativar. */
+  async listarCategoriasCompleto(): Promise<CategoriaFinanceira[]> {
+    const categorias = await carregarCategorias();
+    return categorias.map((c) => ({
+      id: String(c.id),
+      nome: c.nome,
+      tipo: c.tipo.toUpperCase() === 'ENTRADA' ? 'RECEITA' : 'DESPESA',
+      ativo: c.ativo
+    }));
+  },
+
+  async criarCategoria(data: { nome: string; tipo: 'RECEITA' | 'DESPESA' }): Promise<void> {
+    await apiClient.post('/categorias-financeiras/', {
+      nome: data.nome.trim(),
+      tipo: data.tipo === 'RECEITA' ? 'ENTRADA' : 'SAIDA',
+      descricao: null,
+      ativo: true
+    });
+  },
+
+  /** Nao ha exclusao: uma categoria ja usada em lancamentos nao pode sumir sem levar junto o
+   * historico. Desativar a tira das listas de lancamento e preserva o que ja foi registrado. */
+  async definirCategoriaAtiva(id: string, ativo: boolean): Promise<void> {
+    await apiClient.put(`/categorias-financeiras/${id}`, { ativo });
+  },
+
+  async listarContasCompleto(): Promise<ContaFinanceira[]> {
+    const contas = await carregarContas();
+    return contas.map((c) => ({ id: String(c.id), nome: c.nome, ativo: c.ativo }));
+  },
+
+  async criarConta(data: { nome: string; tipo: string; saldoInicial: number }): Promise<void> {
+    await apiClient.post('/contas-financeiras/', {
+      nome: data.nome.trim(),
+      tipo: data.tipo,
+      banco: null,
+      agencia: null,
+      numero_conta: null,
+      saldo_inicial: data.saldoInicial,
+      ativo: true,
+      observacoes: null
+    });
+  },
+
+  async definirContaAtiva(id: string, ativo: boolean): Promise<void> {
+    await apiClient.put(`/contas-financeiras/${id}`, { ativo });
   },
 
   /** tipo: 'RECEITA' | 'DESPESA' — filtra as categorias cadastradas para o tipo correspondente
@@ -983,7 +1047,8 @@ export const financialService = {
     const tipoBackend = tipo === 'RECEITA' ? 'ENTRADA' : 'SAIDA';
     const categorias = await carregarCategorias();
     return categorias
-      .filter((c) => c.tipo.toUpperCase() === tipoBackend)
+      // Inativa nao e oferecida em lancamento novo, mas continua valendo no que ja existe.
+      .filter((c) => c.ativo && c.tipo.toUpperCase() === tipoBackend)
       .map((c) => ({ id: String(c.id), nome: c.nome }));
   },
 

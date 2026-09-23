@@ -7,6 +7,7 @@ const financialTabs = [
   { to: '/financeiro/receitas', label: '↑ Receitas' },
   { to: '/financeiro/despesas', label: '↓ Despesas' },
   { to: '/financeiro/movimentacoes', label: '↕ Movimentações' },
+  { to: '/financeiro/cadastros', label: '⚙ Categorias e contas' },
 ];
 
 export const FinancialTabs: React.FC = () => {

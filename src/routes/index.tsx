@@ -23,6 +23,7 @@ import { FinancialDashboard } from '../pages/financial/FinancialDashboard';
 import { ReceitasPage } from '../pages/financial/ReceitasPage';
 import { DespesasPage } from '../pages/financial/DespesasPage';
 import { MovimentacoesPage } from '../pages/financial/MovimentacoesPage';
+import { CadastrosFinanceiros } from '../pages/financial/CadastrosFinanceiros';
 import { ReportsPage } from '../pages/reports/ReportsPage';
 import { AssetsList } from '../pages/assets/AssetsList';
 import { AuditPage } from '../pages/audit/AuditPage';
@@ -192,6 +193,14 @@ export const AppRoutes: React.FC = () => {
                 element={
                   <ProtectedRoute permission="view_financial">
                     <MovimentacoesPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="financeiro/cadastros"
+                element={
+                  <ProtectedRoute permission="view_financial">
+                    <CadastrosFinanceiros />
                   </ProtectedRoute>
                 }
               />

@@ -11,6 +11,7 @@ import { Select } from '../../components/ui/Select';
 import { financialService, OpcaoFinanceira } from '../../services/domainServices';
 import { FinancialTransaction } from '../../types/domain';
 import { useAuth } from '../../contexts/AuthContext';
+import { opcoesStatus, placeholderDescricao, rotuloData } from '../../utils/lancamento';
 import { useToast } from '../../contexts/ToastContext';
 
 interface CategoriaBreakdownProps {
@@ -317,7 +318,7 @@ export const FinancialDashboard: React.FC = () => {
             label="Descrição do Lançamento"
             value={newTx.description}
             onChange={(e) => setNewTx({ ...newTx, description: e.target.value })}
-            placeholder="Ex: Fatura de energia da sede"
+            placeholder={placeholderDescricao(txType)}
             required
           />
           <div className="grid grid-cols-2 gap-3">
@@ -330,13 +331,22 @@ export const FinancialDashboard: React.FC = () => {
               required
             />
             <Input
-              label="Data de Vencimento/Pagamento"
+              label={rotuloData(txType, newTx.status as 'CONFIRMADA' | 'PENDENTE')}
               type="date"
               value={newTx.date}
               onChange={(e) => setNewTx({ ...newTx, date: e.target.value })}
               required
             />
           </div>
+          {(contas.length === 0 || categorias.length === 0) && (
+            <p className="text-xs text-[#F8D800] bg-[#0F1210] border border-[#222824] rounded-lg p-3">
+              {contas.length === 0
+                ? 'Nenhuma conta cadastrada — sem uma conta ativa o lançamento não pode ser salvo. '
+                : 'Nenhuma categoria cadastrada para este tipo. '}
+              Cadastre em <strong>Financeiro &rarr; Categorias e contas</strong>.
+            </p>
+          )}
+
           <div className="grid grid-cols-2 gap-3">
             <Select
               label="Conta"
@@ -367,10 +377,7 @@ export const FinancialDashboard: React.FC = () => {
               label="Status"
               value={newTx.status}
               onChange={(e) => setNewTx({ ...newTx, status: e.target.value })}
-              options={[
-                { value: 'CONFIRMADA', label: 'Pago / Confirmado' },
-                { value: 'PENDENTE', label: 'Pendente' }
-              ]}
+              options={opcoesStatus(txType)}
             />
           </div>
           <p className="text-xs text-[#AEB5B0]">
