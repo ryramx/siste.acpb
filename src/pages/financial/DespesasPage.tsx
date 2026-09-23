@@ -26,10 +26,12 @@ export const DespesasPage: React.FC = () => {
   const [categoryFilter, setCategoryFilter] = useState('TODAS');
   const [modalOpen, setModalOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [projetos, setProjetos] = useState<OpcaoFinanceira[]>([]);
   const [contas, setContas] = useState<OpcaoFinanceira[]>([]);
   const [categorias, setCategorias] = useState<OpcaoFinanceira[]>([]);
 
   const [newDespesa, setNewDespesa] = useState({
+    projectId: '',
     categoryId: '',
     accountId: '',
     amount: 0,
@@ -48,6 +50,7 @@ export const DespesasPage: React.FC = () => {
 
   useEffect(() => {
     fetchData();
+    financialService.listarProjetos().then(setProjetos).catch(() => setProjetos([]));
     financialService.listarContas().then((lista) => {
       setContas(lista);
       // Mesma correcao do painel: sem valor inicial, a Conta ia vazia ao servidor e o
@@ -217,6 +220,14 @@ export const DespesasPage: React.FC = () => {
           <Select label="Categoria" value={newDespesa.categoryId}
             onChange={(e) => setNewDespesa({ ...newDespesa, categoryId: e.target.value })}
             options={categorias.map((c) => ({ value: c.id, label: c.nome }))} required />
+          {/* Vincular ao projeto e o que permite responder quanto um projeto custou.
+              Fica opcional: a maioria dos lancamentos e da associacao como um todo. */}
+          <Select label="Projeto (opcional)" value={newDespesa.projectId}
+            onChange={(e) => setNewDespesa({ ...newDespesa, projectId: e.target.value })}
+            options={[
+              { value: '', label: 'Nenhum — lançamento geral da associação' },
+              ...projetos.map((pr) => ({ value: pr.id, label: pr.nome }))
+            ]} />
           <Select label="Forma de Pagamento" value={newDespesa.paymentMethod}
             onChange={(e) => setNewDespesa({ ...newDespesa, paymentMethod: e.target.value })}
             options={[

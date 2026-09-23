@@ -62,6 +62,32 @@ describe('financialService.update', () => {
     expect(put).toHaveBeenCalledWith('/movimentacoes-financeiras/42', { valor: 0 });
   });
 
+  it('vincula o lancamento a um projeto', async () => {
+    const put = vi.spyOn(apiClient, 'put').mockResolvedValue({} as never);
+
+    await financialService.update('42', { projectId: '5' });
+
+    expect(put).toHaveBeenCalledWith('/movimentacoes-financeiras/42', { projeto_id: 5 });
+  });
+
+  it('projeto vazio desvincula, em vez de ser ignorado', async () => {
+    // E o unico jeito de corrigir um lancamento atribuido ao projeto errado. Com a mesma
+    // regra de categoria (`data.x ? {...} : {}`), desvincular seria impossivel pela tela.
+    const put = vi.spyOn(apiClient, 'put').mockResolvedValue({} as never);
+
+    await financialService.update('42', { projectId: '' });
+
+    expect(put).toHaveBeenCalledWith('/movimentacoes-financeiras/42', { projeto_id: null });
+  });
+
+  it('nao encosta no projeto quando ele nao foi informado', async () => {
+    const put = vi.spyOn(apiClient, 'put').mockResolvedValue({} as never);
+
+    await financialService.update('42', { description: 'Conta de luz' });
+
+    expect(put.mock.calls[0][1]).not.toHaveProperty('projeto_id');
+  });
+
   it('propaga o erro da API para a tela mostrar o motivo', async () => {
     vi.spyOn(apiClient, 'put').mockRejectedValue(new Error('Categoria não encontrada'));
 

@@ -80,6 +80,7 @@ export const FinancialDashboard: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [contas, setContas] = useState<OpcaoFinanceira[]>([]);
   const [categorias, setCategorias] = useState<OpcaoFinanceira[]>([]);
+  const [projetos, setProjetos] = useState<OpcaoFinanceira[]>([]);
 
   // Modal Novo Lançamento
   const [modalOpen, setModalOpen] = useState(false);
@@ -87,6 +88,9 @@ export const FinancialDashboard: React.FC = () => {
   const lancamentoVazio = () => ({
     categoryId: '',
     accountId: '',
+    // Sem projeto por padrão: a maioria dos lançamentos é da associação como um todo, e
+    // atribuir um projeto por descuido distorceria o custo dele.
+    projectId: '',
     amount: 0,
     date: new Date().toISOString().split('T')[0],
     description: '',
@@ -122,6 +126,10 @@ export const FinancialDashboard: React.FC = () => {
 
   useEffect(() => {
     fetchTransactions();
+    financialService
+      .listarProjetos()
+      .then(setProjetos)
+      .catch(() => setProjetos([]));
     financialService.listarContas().then((lista) => {
       setContas(lista);
       // Sem isto a Conta ficava vazia até ser escolhida à mão, e quem não percebia o campo
@@ -366,6 +374,17 @@ export const FinancialDashboard: React.FC = () => {
               options={categorias.map((c) => ({ value: c.id, label: c.nome }))}
             />
           </div>
+          {/* Largura cheia: os nomes de projeto sao longos e ficariam cortados em meia coluna. */}
+          <Select
+            label="Projeto (opcional)"
+            value={newTx.projectId}
+            onChange={(e) => setNewTx({ ...newTx, projectId: e.target.value })}
+            options={[
+              { value: '', label: 'Nenhum — lançamento geral da associação' },
+              ...projetos.map((p) => ({ value: p.id, label: p.nome }))
+            ]}
+          />
+
           <div className="grid grid-cols-2 gap-3">
             <Select
               label="Forma de Pagamento"

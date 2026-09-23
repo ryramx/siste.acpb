@@ -19,7 +19,14 @@ interface ApiPessoa {
   id: number;
   nome_completo: string;
   cpf: string | null;
+  rg: string | null;
   data_nascimento: string | null;
+  sexo: string | null;
+  estado_civil: string | null;
+  profissao: string | null;
+  escolaridade: string | null;
+  nome_mae: string | null;
+  nome_pai: string | null;
   email: string | null;
   endereco: string | null;
   bairro: string | null;
@@ -65,7 +72,14 @@ const toMember = (
   pessoaId: String(pessoa.id),
   name: pessoa.nome_completo,
   cpf: pessoa.cpf ?? '',
+  rg: pessoa.rg ?? '',
   birthDate: pessoa.data_nascimento ?? '',
+  gender: pessoa.sexo ?? '',
+  maritalStatus: pessoa.estado_civil ?? '',
+  occupation: pessoa.profissao ?? '',
+  education: pessoa.escolaridade ?? '',
+  motherName: pessoa.nome_mae ?? '',
+  fatherName: pessoa.nome_pai ?? '',
   temFoto: pessoa.tem_foto,
   phone: telefone?.numero ?? '',
   whatsapp: telefone?.whatsapp ? telefone.numero : '',
@@ -86,7 +100,14 @@ const toMember = (
 export interface NovoMembroInput {
   name: string;
   cpf: string;
+  rg: string;
   birthDate: string;
+  gender: string;
+  maritalStatus: string;
+  occupation: string;
+  education: string;
+  motherName: string;
+  fatherName: string;
   phone: string;
   whatsapp: string;
   email: string;
@@ -151,7 +172,14 @@ export const memberService = {
       pessoa: {
         nome_completo: data.name,
         cpf: data.cpf || null,
+        rg: data.rg || null,
         data_nascimento: data.birthDate || null,
+        sexo: data.gender || null,
+        estado_civil: data.maritalStatus || null,
+        profissao: data.occupation || null,
+        escolaridade: data.education || null,
+        nome_mae: data.motherName || null,
+        nome_pai: data.fatherName || null,
         email: data.email || null,
         endereco: data.address || null,
         bairro: data.neighborhood || null,
@@ -190,7 +218,14 @@ export const memberService = {
     const pessoaPatch: Record<string, unknown> = {};
     if (data.name !== undefined) pessoaPatch.nome_completo = data.name;
     if (data.cpf !== undefined) pessoaPatch.cpf = data.cpf || null;
+    if (data.rg !== undefined) pessoaPatch.rg = data.rg || null;
     if (data.birthDate !== undefined) pessoaPatch.data_nascimento = data.birthDate || null;
+    if (data.gender !== undefined) pessoaPatch.sexo = data.gender || null;
+    if (data.maritalStatus !== undefined) pessoaPatch.estado_civil = data.maritalStatus || null;
+    if (data.occupation !== undefined) pessoaPatch.profissao = data.occupation || null;
+    if (data.education !== undefined) pessoaPatch.escolaridade = data.education || null;
+    if (data.motherName !== undefined) pessoaPatch.nome_mae = data.motherName || null;
+    if (data.fatherName !== undefined) pessoaPatch.nome_pai = data.fatherName || null;
     if (data.email !== undefined) pessoaPatch.email = data.email || null;
     if (data.address !== undefined) pessoaPatch.endereco = data.address || null;
     if (data.neighborhood !== undefined) pessoaPatch.bairro = data.neighborhood || null;
@@ -987,6 +1022,13 @@ async function carregarCategorias(): Promise<ApiCategoriaFinanceira[]> {
 }
 
 export const financialService = {
+  /** Projetos para o select de lançamento. Difere de `projectService.getAll()`, que também
+   * busca eventos e despesas de cada projeto -- caro demais para preencher um campo. */
+  async listarProjetos(): Promise<OpcaoFinanceira[]> {
+    const projetos = await apiClient.get<ApiProjeto[]>('/projetos/');
+    return projetos.map((p) => ({ id: String(p.id), nome: p.nome }));
+  },
+
   async listarContas(): Promise<OpcaoFinanceira[]> {
     const contas = await carregarContas();
     return contas.filter((c) => c.ativo).map((c) => ({ id: String(c.id), nome: c.nome }));
@@ -1162,6 +1204,8 @@ export const financialService = {
       paymentMethod?: string | null;
       categoryId?: string;
       accountId?: string;
+      /** String vazia desvincula o lançamento do projeto; `undefined` deixa como está. */
+      projectId?: string;
     }
   ): Promise<void> {
     const corpo: Record<string, unknown> = {};
@@ -1172,6 +1216,9 @@ export const financialService = {
     if (data.paymentMethod !== undefined) corpo.forma_pagamento = data.paymentMethod;
     if (data.categoryId !== undefined) corpo.categoria_id = Number(data.categoryId);
     if (data.accountId !== undefined) corpo.conta_financeira_id = Number(data.accountId);
+    if (data.projectId !== undefined) {
+      corpo.projeto_id = data.projectId ? Number(data.projectId) : null;
+    }
     await apiClient.put(`/movimentacoes-financeiras/${id}`, corpo);
   },
 

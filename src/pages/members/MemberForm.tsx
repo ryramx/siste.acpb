@@ -15,6 +15,22 @@ import {
   formatarTelefone
 } from '../../utils/mascaras';
 
+/** Opções fechadas para os dois campos que só fazem sentido comparados entre si: com texto
+ * livre, "Ensino médio", "ensino medio" e "2º grau" virariam três valores diferentes e
+ * nenhum relatório conseguiria agrupar. Profissão fica livre de propósito -- a variedade
+ * real não cabe numa lista. */
+const ESTADOS_CIVIS = ['Solteiro(a)', 'Casado(a)', 'União estável', 'Divorciado(a)', 'Viúvo(a)'];
+
+const ESCOLARIDADES = [
+  'Fundamental incompleto',
+  'Fundamental completo',
+  'Médio incompleto',
+  'Médio completo',
+  'Superior incompleto',
+  'Superior completo',
+  'Pós-graduação'
+];
+
 export const MemberForm: React.FC = () => {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
@@ -30,7 +46,14 @@ export const MemberForm: React.FC = () => {
   const [formData, setFormData] = useState({
     name: '',
     cpf: '',
+    rg: '',
     birthDate: '',
+    gender: '',
+    maritalStatus: '',
+    occupation: '',
+    education: '',
+    motherName: '',
+    fatherName: '',
     phone: '',
     whatsapp: '',
     email: '',
@@ -59,7 +82,14 @@ export const MemberForm: React.FC = () => {
         setFormData({
           name: membro.name,
           cpf: formatarCPF(membro.cpf),
+          rg: membro.rg,
           birthDate: membro.birthDate,
+          gender: membro.gender,
+          maritalStatus: membro.maritalStatus,
+          occupation: membro.occupation,
+          education: membro.education,
+          motherName: membro.motherName,
+          fatherName: membro.fatherName,
           phone: formatarTelefone(membro.phone),
           whatsapp: formatarTelefone(membro.whatsapp),
           email: membro.email,
@@ -211,10 +241,73 @@ export const MemberForm: React.FC = () => {
               helperText={avisoCpf ?? 'Opcional — deixe em branco se ainda não tiver o documento'}
             />
             <Input
+              label="RG"
+              name="rg"
+              value={formData.rg}
+              onChange={handleChange}
+              placeholder="Somente se a pessoa tiver o documento"
+            />
+            <Input
               label="Data de Nascimento"
               name="birthDate"
               type="date"
               value={formData.birthDate}
+              onChange={handleChange}
+            />
+            <Select
+              label="Sexo"
+              name="gender"
+              value={formData.gender}
+              onChange={handleChange}
+              options={[
+                { value: '', label: 'Não informado' },
+                { value: 'F', label: 'Feminino' },
+                { value: 'M', label: 'Masculino' },
+                { value: 'OUTRO', label: 'Outro' }
+              ]}
+            />
+            <Select
+              label="Estado civil"
+              name="maritalStatus"
+              value={formData.maritalStatus}
+              onChange={handleChange}
+              options={[
+                { value: '', label: 'Não informado' },
+                ...ESTADOS_CIVIS.map((e) => ({ value: e, label: e }))
+              ]}
+            />
+            <Select
+              label="Escolaridade"
+              name="education"
+              value={formData.education}
+              onChange={handleChange}
+              options={[
+                { value: '', label: 'Não informado' },
+                ...ESCOLARIDADES.map((e) => ({ value: e, label: e }))
+              ]}
+            />
+            <Input
+              label="Profissão"
+              name="occupation"
+              value={formData.occupation}
+              onChange={handleChange}
+              placeholder="Ex.: Professora, Autônomo"
+            />
+          </div>
+
+          {/* Filiação separada: são os campos mais longos da seção e, numa coluna só,
+              acompanham melhor o nome completo que já está acima. */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Input
+              label="Nome da mãe"
+              name="motherName"
+              value={formData.motherName}
+              onChange={handleChange}
+            />
+            <Input
+              label="Nome do pai"
+              name="fatherName"
+              value={formData.fatherName}
               onChange={handleChange}
             />
           </div>

@@ -25,6 +25,7 @@ interface Edicao {
   categoryId: string;
   accountId: string;
   paymentMethod: string;
+  projectId: string;
 }
 
 const FORMAS_PAGAMENTO = ['Pix', 'Transferência', 'Boleto', 'Dinheiro'];
@@ -49,6 +50,7 @@ export const AcoesLancamento: React.FC<AcoesLancamentoProps> = ({ transacao, onA
   const [salvando, setSalvando] = useState(false);
   const [categorias, setCategorias] = useState<OpcaoFinanceira[]>([]);
   const [contas, setContas] = useState<OpcaoFinanceira[]>([]);
+  const [projetos, setProjetos] = useState<OpcaoFinanceira[]>([]);
 
   const modalAberto = edicao !== null;
 
@@ -58,6 +60,7 @@ export const AcoesLancamento: React.FC<AcoesLancamentoProps> = ({ transacao, onA
     if (!modalAberto) return;
     financialService.listarCategorias(transacao.type).then(setCategorias).catch(() => setCategorias([]));
     financialService.listarContas().then(setContas).catch(() => setContas([]));
+    financialService.listarProjetos().then(setProjetos).catch(() => setProjetos([]));
   }, [modalAberto, transacao.type]);
 
   if (!hasPermission('edit_financial')) return null;
@@ -70,7 +73,8 @@ export const AcoesLancamento: React.FC<AcoesLancamentoProps> = ({ transacao, onA
       status: transacao.status,
       categoryId: transacao.categoryId ?? '',
       accountId: transacao.accountId ?? '',
-      paymentMethod: transacao.paymentMethod ?? 'Pix'
+      paymentMethod: transacao.paymentMethod ?? 'Pix',
+      projectId: transacao.projectId ?? ''
     });
 
   const salvar = async () => {
@@ -83,6 +87,10 @@ export const AcoesLancamento: React.FC<AcoesLancamentoProps> = ({ transacao, onA
         date: edicao.date,
         status: edicao.status,
         paymentMethod: edicao.paymentMethod,
+        // Vai sempre, inclusive vazio: e assim que se desvincula um lancamento atribuido
+        // ao projeto errado. Categoria e conta seguem outra regra porque nao podem ficar
+        // nulas.
+        projectId: edicao.projectId,
         // Só vão se houver escolha: mandar string vazia viraria `Number('')`, ou seja 0, e o
         // servidor recusaria por categoria inexistente.
         ...(edicao.categoryId ? { categoryId: edicao.categoryId } : {}),
@@ -192,6 +200,16 @@ export const AcoesLancamento: React.FC<AcoesLancamentoProps> = ({ transacao, onA
                 ]}
               />
             </div>
+
+            <Select
+              label="Projeto"
+              value={edicao.projectId}
+              onChange={(e) => setEdicao({ ...edicao, projectId: e.target.value })}
+              options={[
+                { value: '', label: 'Nenhum — lançamento geral da associação' },
+                ...projetos.map((p) => ({ value: p.id, label: p.nome }))
+              ]}
+            />
 
             <div className="grid grid-cols-2 gap-3">
               <Select

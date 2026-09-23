@@ -10,6 +10,22 @@ import { AvatarUpload } from '../../components/ui/AvatarUpload';
 import { Avatar } from '../../components/ui/Avatar';
 import { exibirCEP, exibirCPF, exibirTelefone } from '../../utils/mascaras';
 
+const SEXOS: Record<string, string> = { F: 'Feminino', M: 'Masculino', OUTRO: 'Outro' };
+
+/** O banco guarda a sigla; a tela mostra por extenso. Valor desconhecido (vindo de um
+ * cadastro feito antes destas opções) é exibido como está, em vez de sumir. */
+function exibirSexo(valor: string): string {
+  return SEXOS[valor] ?? valor;
+}
+
+const LinhaOpcional: React.FC<{ rotulo: string; valor: string }> = ({ rotulo, valor }) =>
+  valor ? (
+    <div className="flex justify-between py-1 border-b border-[#222824]/50 gap-4">
+      <span className="text-[#AEB5B0] shrink-0">{rotulo}</span>
+      <span className="text-white font-medium text-right">{valor}</span>
+    </div>
+  ) : null;
+
 export const MemberDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -112,6 +128,15 @@ export const MemberDetails: React.FC = () => {
               <span className="text-[#AEB5B0]">Data de Nascimento</span>
               <span className="text-white font-medium">{member.birthDate}</span>
             </div>
+            {/* Só aparecem quando preenchidos: a maioria dos cadastros antigos não os tem,
+                e uma coluna de "—" repetido não informa nada. */}
+            <LinhaOpcional rotulo="RG" valor={member.rg} />
+            <LinhaOpcional rotulo="Sexo" valor={exibirSexo(member.gender)} />
+            <LinhaOpcional rotulo="Estado civil" valor={member.maritalStatus} />
+            <LinhaOpcional rotulo="Profissão" valor={member.occupation} />
+            <LinhaOpcional rotulo="Escolaridade" valor={member.education} />
+            <LinhaOpcional rotulo="Nome da mãe" valor={member.motherName} />
+            <LinhaOpcional rotulo="Nome do pai" valor={member.fatherName} />
             <div className="flex justify-between py-1 border-b border-[#222824]/50">
               <span className="text-[#AEB5B0]">Telefone Principal</span>
               <span className="text-white font-medium flex items-center gap-1.5">

@@ -3,7 +3,16 @@ export interface Member {
   pessoaId: string;
   name: string;
   cpf: string;
+  rg: string;
   birthDate: string;
+  // Campos marcados pela associacao no questionario do DER: as colunas sempre existiram em
+  // `pessoas` e a API sempre os aceitou, mas nenhuma tela os preenchia.
+  gender: string;
+  maritalStatus: string;
+  occupation: string;
+  education: string;
+  motherName: string;
+  fatherName: string;
   temFoto: boolean;
   phone: string;
   whatsapp: string;
