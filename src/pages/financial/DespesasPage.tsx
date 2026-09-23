@@ -13,6 +13,7 @@ import { FinancialTransaction } from '../../types/domain';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
 import { FinancialTabs } from '../../components/common/FinancialTabs';
+import { AcoesLancamento } from '../../components/common/AcoesLancamento';
 
 export const DespesasPage: React.FC = () => {
   const { hasPermission, user } = useAuth();
@@ -165,6 +166,7 @@ export const DespesasPage: React.FC = () => {
                   <th className="py-3 px-4">Comprovantes</th>
                   <th className="py-3 px-4">Valor</th>
                   <th className="py-3 px-4">Status</th>
+                  <th className="py-3 px-4 text-right">Ações</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#222824]">
@@ -184,6 +186,11 @@ export const DespesasPage: React.FC = () => {
                     <td className="py-3 px-4 font-bold text-red-400">- R$ {t.amount.toFixed(2)}</td>
                     <td className="py-3 px-4">
                       <Badge variant={t.status === 'CONFIRMADA' ? 'success' : 'warning'}>{t.status}</Badge>
+                    </td>
+                    <td className="py-3 px-4">
+                      <div className="flex justify-end">
+                        <AcoesLancamento transacao={t} onAlterado={fetchData} />
+                      </div>
                     </td>
                   </tr>
                 ))}

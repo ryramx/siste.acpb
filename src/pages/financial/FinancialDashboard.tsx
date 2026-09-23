@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { DollarSign, ArrowUpRight, ArrowDownRight, Plus, PieChart, TrendingUp } from 'lucide-react';
 import { FinancialTabs } from '../../components/common/FinancialTabs';
+import { AcoesLancamento } from '../../components/common/AcoesLancamento';
 import { Button } from '../../components/ui/Button';
 import { StatCard } from '../../components/ui/StatCard';
 import { Badge } from '../../components/ui/Badge';
@@ -273,6 +274,7 @@ export const FinancialDashboard: React.FC = () => {
               <th className="py-3.5 px-4">Anexo / Comprovante</th>
               <th className="py-3.5 px-4">Valor</th>
               <th className="py-3.5 px-4">Status</th>
+              <th className="py-3.5 px-4 text-right">Ações</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-[#222824]">
@@ -300,6 +302,11 @@ export const FinancialDashboard: React.FC = () => {
                   <Badge variant={t.status === 'CONFIRMADA' ? 'success' : 'warning'}>
                     {t.status}
                   </Badge>
+                </td>
+                <td className="py-3.5 px-4">
+                  <div className="flex justify-end">
+                    <AcoesLancamento transacao={t} onAlterado={fetchTransactions} />
+                  </div>
                 </td>
               </tr>
             ))}

@@ -50,13 +50,15 @@ export const AcoesLancamento: React.FC<AcoesLancamentoProps> = ({ transacao, onA
   const [categorias, setCategorias] = useState<OpcaoFinanceira[]>([]);
   const [contas, setContas] = useState<OpcaoFinanceira[]>([]);
 
+  const modalAberto = edicao !== null;
+
   // As listas só são buscadas quando o modal abre: carregá-las por linha, na montagem,
   // dispararia duas requisições por lançamento da tabela.
   useEffect(() => {
-    if (!edicao) return;
+    if (!modalAberto) return;
     financialService.listarCategorias(transacao.type).then(setCategorias).catch(() => setCategorias([]));
     financialService.listarContas().then(setContas).catch(() => setContas([]));
-  }, [edicao !== null, transacao.type]);
+  }, [modalAberto, transacao.type]);
 
   if (!hasPermission('edit_financial')) return null;
 
@@ -136,7 +138,7 @@ export const AcoesLancamento: React.FC<AcoesLancamentoProps> = ({ transacao, onA
       </div>
 
       <Modal
-        isOpen={edicao !== null}
+        isOpen={modalAberto}
         onClose={() => (salvando ? undefined : setEdicao(null))}
         title={`Corrigir ${ehReceita ? 'receita' : 'despesa'}`}
       >

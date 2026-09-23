@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { ArrowUpRight, ArrowDownRight, Search, SlidersHorizontal, Pencil, Trash2 } from 'lucide-react';
+import { ArrowUpRight, ArrowDownRight, Search, SlidersHorizontal } from 'lucide-react';
 import { Input } from '../../components/ui/Input';
-import { InputValor } from '../../components/ui/InputValor';
 import { Select } from '../../components/ui/Select';
 import { Badge } from '../../components/ui/Badge';
 import { TableSkeleton } from '../../components/ui/Skeleton';
@@ -9,27 +8,15 @@ import { EmptyState } from '../../components/ui/EmptyState';
 import { financialService } from '../../services/domainServices';
 import { FinancialTransaction } from '../../types/domain';
 import { FinancialTabs } from '../../components/common/FinancialTabs';
-import { Button } from '../../components/ui/Button';
-import { Modal } from '../../components/ui/Modal';
+import { AcoesLancamento } from '../../components/common/AcoesLancamento';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
-
-interface EdicaoLancamento {
-  id: string;
-  description: string;
-  amount: number;
-  date: string;
-  status: string;
-}
 
 export const MovimentacoesPage: React.FC = () => {
   const { hasPermission } = useAuth();
   const { addToast } = useToast();
   const [transactions, setTransactions] = useState<FinancialTransaction[]>([]);
   const [loading, setLoading] = useState(true);
-  const [edicao, setEdicao] = useState<EdicaoLancamento | null>(null);
-  const [paraExcluir, setParaExcluir] = useState<FinancialTransaction | null>(null);
-  const [salvando, setSalvando] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState('TODOS');
   const [statusFilter, setStatusFilter] = useState('TODOS');
@@ -49,43 +36,6 @@ export const MovimentacoesPage: React.FC = () => {
   };
 
   useEffect(carregar, []);
-
-  const salvarEdicao = async () => {
-    if (!edicao) return;
-    setSalvando(true);
-    try {
-      await financialService.update(edicao.id, {
-        description: edicao.description,
-        amount: edicao.amount,
-        date: edicao.date,
-        status: edicao.status
-      });
-      addToast({ type: 'success', title: 'Lançamento corrigido', message: edicao.description });
-      setEdicao(null);
-      carregar();
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Tente novamente em instantes.';
-      addToast({ type: 'error', title: 'Não foi possível salvar', message });
-    } finally {
-      setSalvando(false);
-    }
-  };
-
-  const confirmarExclusao = async () => {
-    if (!paraExcluir) return;
-    setSalvando(true);
-    try {
-      await financialService.remove(paraExcluir.id);
-      addToast({ type: 'success', title: 'Lançamento excluído', message: paraExcluir.description });
-      setParaExcluir(null);
-      carregar();
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Tente novamente em instantes.';
-      addToast({ type: 'error', title: 'Não foi possível excluir', message });
-    } finally {
-      setSalvando(false);
-    }
-  };
 
   const podeEditar = hasPermission('edit_financial');
 
@@ -206,29 +156,10 @@ export const MovimentacoesPage: React.FC = () => {
                         <Badge variant={t.status === 'CONFIRMADA' ? 'success' : 'warning'}>{t.status}</Badge>
                       </td>
                       {podeEditar && (
-                        <td className="py-3 px-4 text-right whitespace-nowrap">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            aria-label={`Corrigir ${t.description}`}
-                            onClick={() =>
-                              setEdicao({
-                                id: t.id,
-                                description: t.description,
-                                amount: t.amount,
-                                date: t.date,
-                                status: t.status
-                              })
-                            }
-                            leftIcon={<Pencil className="w-4 h-4" />}
-                          />
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            aria-label={`Excluir ${t.description}`}
-                            onClick={() => setParaExcluir(t)}
-                            leftIcon={<Trash2 className="w-4 h-4 text-red-400" />}
-                          />
+                        <td className="py-3 px-4 whitespace-nowrap">
+                          <div className="flex justify-end">
+                            <AcoesLancamento transacao={t} onAlterado={carregar} />
+                          </div>
                         </td>
                       )}
                     </tr>
@@ -238,90 +169,6 @@ export const MovimentacoesPage: React.FC = () => {
           </div>
         </div>
       )}
-
-      <Modal isOpen={edicao !== null} onClose={() => setEdicao(null)} title="Corrigir lançamento">
-        {edicao && (
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              salvarEdicao();
-            }}
-            className="space-y-4"
-          >
-            <Input
-              label="Descrição"
-              value={edicao.description}
-              onChange={(e) => setEdicao({ ...edicao, description: e.target.value })}
-              required
-            />
-            <div className="grid grid-cols-2 gap-3">
-              <InputValor
-                value={edicao.amount}
-                onChange={(amount) => setEdicao({ ...edicao, amount: amount ?? 0 })}
-                required
-              />
-              <Input
-                label="Data"
-                type="date"
-                value={edicao.date}
-                onChange={(e) => setEdicao({ ...edicao, date: e.target.value })}
-                required
-              />
-            </div>
-            <Select
-              label="Status"
-              value={edicao.status}
-              onChange={(e) => setEdicao({ ...edicao, status: e.target.value })}
-              options={[
-                { value: 'CONFIRMADA', label: 'Confirmada' },
-                { value: 'PENDENTE', label: 'Pendente' }
-              ]}
-            />
-            <p className="text-xs text-[#727A74]">
-              Tipo, categoria e conta não são alterados aqui: mudá-los remaneja o lançamento entre
-              relatórios já fechados. Para isso, exclua e lance de novo.
-            </p>
-            <div className="flex justify-end gap-2 pt-2">
-              <Button type="button" variant="ghost" onClick={() => setEdicao(null)} disabled={salvando}>
-                Cancelar
-              </Button>
-              <Button type="submit" variant="primary" disabled={salvando}>
-                {salvando ? 'Salvando...' : 'Salvar correção'}
-              </Button>
-            </div>
-          </form>
-        )}
-      </Modal>
-
-      <Modal
-        isOpen={paraExcluir !== null}
-        onClose={() => setParaExcluir(null)}
-        title="Excluir lançamento"
-      >
-        <div className="space-y-4">
-          <p className="text-sm text-[#AEB5B0]">
-            Excluir <strong className="text-white">{paraExcluir?.description}</strong> de R$
-            {' '}{paraExcluir?.amount.toFixed(2)}? Esta ação não pode ser desfeita.
-          </p>
-          {(paraExcluir?.attachmentsCount ?? 0) > 0 && (
-            <p className="text-xs text-red-400">
-              Este lançamento tem {paraExcluir?.attachmentsCount} comprovante(s) anexado(s).
-            </p>
-          )}
-          <p className="text-xs text-[#727A74]">
-            Se o lançamento apenas não se confirmou, prefira mudar o status para "Pendente" — o
-            histórico da prestação de contas fica preservado.
-          </p>
-          <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={() => setParaExcluir(null)} disabled={salvando}>
-              Cancelar
-            </Button>
-            <Button variant="danger" onClick={confirmarExclusao} disabled={salvando}>
-              {salvando ? 'Excluindo...' : 'Excluir'}
-            </Button>
-          </div>
-        </div>
-      </Modal>
     </div>
   );
 };
