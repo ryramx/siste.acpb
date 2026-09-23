@@ -95,9 +95,10 @@ export const patrimonioService = {
     await apiClient.delete(`/patrimonios/${id}`);
   },
 
-  /** Opções de responsável para o formulário — reaproveita o cadastro real de Pessoas. */
+  /** Opções de responsável para o formulário — reaproveita o cadastro real de Pessoas.
+   * Contas técnicas ficam de fora: não respondem por um bem da associação. */
   async listarPessoas(): Promise<{ id: string; nome: string }[]> {
-    const pessoas = await apiClient.get<ApiPessoaResumo[]>('/pessoas/');
+    const pessoas = await apiClient.get<ApiPessoaResumo[]>('/pessoas/?excluir_tecnicas=true');
     return pessoas.map((p) => ({ id: String(p.id), nome: p.nome_completo }));
   }
 };

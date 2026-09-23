@@ -164,31 +164,40 @@ export const userManagementService = {
   async atualizarDados(
     usuarioId: string,
     pessoaId: string,
-    dados: { name?: string; email?: string }
+    dados: { name?: string; email?: string; contaTecnica?: boolean }
   ): Promise<void> {
-    if (dados.name !== undefined) {
-      await apiClient.put(`/pessoas/${pessoaId}`, { nome_completo: dados.name });
+    const pessoaPatch: Record<string, unknown> = {};
+    if (dados.name !== undefined) pessoaPatch.nome_completo = dados.name;
+    if (dados.contaTecnica !== undefined) pessoaPatch.conta_tecnica = dados.contaTecnica;
+    if (Object.keys(pessoaPatch).length > 0) {
+      await apiClient.put(`/pessoas/${pessoaId}`, pessoaPatch);
     }
     if (dados.email !== undefined) {
       await apiClient.put(`/usuarios/${usuarioId}`, { email: dados.email });
     }
   },
 
-  /** Papéis da Pessoa por trás do usuário, para avisar que o nome é compartilhado. */
-  async obterPapeis(pessoaId: string): Promise<{
+  /** Contexto da Pessoa por trás do usuário: os papéis (para avisar que o nome é
+   * compartilhado) e se ela é uma conta de operação do sistema. */
+  async obterContextoDaPessoa(pessoaId: string): Promise<{
     temMembro: boolean;
     temVoluntario: boolean;
     temBeneficiario: boolean;
+    contaTecnica: boolean;
   }> {
-    const papeis = await apiClient.get<{
-      tem_membro: boolean;
-      tem_voluntario: boolean;
-      tem_beneficiario: boolean;
-    }>(`/cadastros/pessoa/${pessoaId}/papeis`);
+    const [papeis, pessoa] = await Promise.all([
+      apiClient.get<{
+        tem_membro: boolean;
+        tem_voluntario: boolean;
+        tem_beneficiario: boolean;
+      }>(`/cadastros/pessoa/${pessoaId}/papeis`),
+      apiClient.get<{ conta_tecnica?: boolean }>(`/pessoas/${pessoaId}`)
+    ]);
     return {
       temMembro: papeis.tem_membro,
       temVoluntario: papeis.tem_voluntario,
-      temBeneficiario: papeis.tem_beneficiario
+      temBeneficiario: papeis.tem_beneficiario,
+      contaTecnica: pessoa.conta_tecnica ?? false
     };
   },
 

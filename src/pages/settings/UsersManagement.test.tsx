@@ -55,10 +55,11 @@ describe('UsersManagement', () => {
     vi.spyOn(authService, 'refreshCurrentUser').mockResolvedValue(admin);
     vi.spyOn(userManagementService, 'getAll').mockResolvedValue([USUARIO]);
     vi.spyOn(profileService, 'getAll').mockResolvedValue(PERFIS);
-    vi.spyOn(userManagementService, 'obterPapeis').mockResolvedValue({
+    vi.spyOn(userManagementService, 'obterContextoDaPessoa').mockResolvedValue({
       temMembro: true,
       temVoluntario: false,
-      temBeneficiario: false
+      temBeneficiario: false,
+      contaTecnica: false
     });
   });
 

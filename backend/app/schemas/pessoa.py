@@ -23,6 +23,7 @@ class PessoaCreate(PessoaBase):
     pass
 
 class PessoaUpdate(BaseModel):
+    conta_tecnica: bool | None = None
     nome_completo: str | None = None
     cpf: str | None = None
     rg: str | None = None
@@ -43,6 +44,9 @@ class PessoaUpdate(BaseModel):
 class PessoaResponse(PessoaBase):
     id: int
     tem_foto: bool = False
+    # Ver Pessoa.conta_tecnica: contas de operacao do sistema, fora das listas de escolher
+    # pessoa para atividades da associacao.
+    conta_tecnica: bool = False
     created_at: datetime
     updated_at: datetime
     model_config = ConfigDict(from_attributes=True)

@@ -753,7 +753,9 @@ export const projectService = {
 
   /** Pessoas cadastradas, para escolher o responsável do projeto. */
   async getPessoasParaResponsavel(): Promise<{ id: string; name: string }[]> {
-    const pessoas = await apiClient.get<ApiPessoa[]>('/pessoas/');
+    // excluir_tecnicas: contas que existem para operar o sistema não são gente da associação
+    // e não devem poder ser escolhidas para uma atividade por engano.
+    const pessoas = await apiClient.get<ApiPessoa[]>('/pessoas/?excluir_tecnicas=true');
     return pessoas
       .map((p) => ({ id: String(p.id), name: p.nome_completo }))
       .sort((a, b) => a.name.localeCompare(b.name));
@@ -920,7 +922,7 @@ export const inscricaoService = {
   /** Pessoas ainda não inscritas no evento, para o seletor do modal. */
   async listarPessoasDisponiveis(eventoId: string): Promise<{ id: string; name: string }[]> {
     const [pessoas, inscritas] = await Promise.all([
-      apiClient.get<ApiPessoa[]>('/pessoas/'),
+      apiClient.get<ApiPessoa[]>('/pessoas/?excluir_tecnicas=true'),
       apiClient.get<ApiInscricao[]>(`/eventos/${eventoId}/inscricoes`)
     ]);
     const jaInscritas = new Set(inscritas.map((i) => i.pessoa_id));

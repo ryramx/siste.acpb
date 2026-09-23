@@ -36,6 +36,8 @@ export const UsersManagement: React.FC = () => {
   const [formEmail, setFormEmail] = useState('');
   const [salvandoDados, setSalvandoDados] = useState(false);
   const [papeisDaPessoa, setPapeisDaPessoa] = useState<string[]>([]);
+  const [contaTecnica, setContaTecnica] = useState(false);
+  const [contaTecnicaOriginal, setContaTecnicaOriginal] = useState(false);
   const [novaSenhaReset, setNovaSenhaReset] = useState('');
   const [redefinindo, setRedefinindo] = useState(false);
   const [pessoasDisponiveis, setPessoasDisponiveis] = useState<PessoaSemUsuario[]>([]);
@@ -129,19 +131,23 @@ export const UsersManagement: React.FC = () => {
     setFormEmail(user.email);
     setNovaSenhaReset('');
     setPapeisDaPessoa([]);
+    setContaTecnica(false);
+    setContaTecnicaOriginal(false);
     try {
-      const [perfis, papeis] = await Promise.all([
+      const [perfis, contexto] = await Promise.all([
         profileService.getAll(),
-        userManagementService.obterPapeis(user.pessoaId)
+        userManagementService.obterContextoDaPessoa(user.pessoaId)
       ]);
       setAllProfiles(perfis);
       setPapeisDaPessoa(
         [
-          papeis.temMembro && 'membro',
-          papeis.temVoluntario && 'voluntário',
-          papeis.temBeneficiario && 'beneficiário'
+          contexto.temMembro && 'membro',
+          contexto.temVoluntario && 'voluntário',
+          contexto.temBeneficiario && 'beneficiário'
         ].filter(Boolean) as string[]
       );
+      setContaTecnica(contexto.contaTecnica);
+      setContaTecnicaOriginal(contexto.contaTecnica);
     } catch (err) {
       addToast({
         type: 'error',
@@ -161,8 +167,10 @@ export const UsersManagement: React.FC = () => {
     try {
       await userManagementService.atualizarDados(editUser.id, editUser.pessoaId, {
         ...(nome !== editUser.name ? { name: nome } : {}),
-        ...(email !== editUser.email ? { email } : {})
+        ...(email !== editUser.email ? { email } : {}),
+        ...(contaTecnica !== contaTecnicaOriginal ? { contaTecnica } : {})
       });
+      setContaTecnicaOriginal(contaTecnica);
       addToast({ type: 'success', title: 'Dados atualizados', message: nome });
       // Renomear a si mesmo deixaria o nome antigo no topo e no menu: o usuário exibido vem
       // do cache gravado no login.
@@ -463,6 +471,20 @@ export const UsersManagement: React.FC = () => {
                   value={formEmail}
                   onChange={(e) => setFormEmail(e.target.value)}
                 />
+                <label className="flex items-start gap-2 p-3 bg-[#0F1210] border border-[#222824] rounded-lg cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={contaTecnica}
+                    onChange={(e) => setContaTecnica(e.target.checked)}
+                    className="w-4 h-4 mt-0.5 accent-[#004922]"
+                  />
+                  <span className="text-xs text-[#AEB5B0]">
+                    <span className="text-white font-medium">Conta técnica</span> — existe para
+                    operar o sistema, não é alguém da associação. Fica fora das listas de escolher
+                    pessoa (inscrever em evento, vincular a projeto, responsável por bem), para
+                    não ser envolvida numa atividade por engano.
+                  </span>
+                </label>
                 {papeisDaPessoa.length > 0 && (
                   <p className="text-xs text-[#F8D800]">
                     Esta pessoa também está cadastrada como {papeisDaPessoa.join(', ')}. O nome
@@ -477,7 +499,9 @@ export const UsersManagement: React.FC = () => {
                     disabled={
                       formNome.trim() === '' ||
                       formEmail.trim() === '' ||
-                      (formNome.trim() === editUser.name && formEmail.trim() === editUser.email)
+                      (formNome.trim() === editUser.name &&
+                        formEmail.trim() === editUser.email &&
+                        contaTecnica === contaTecnicaOriginal)
                     }
                   >
                     Salvar dados

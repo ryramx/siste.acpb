@@ -40,10 +40,20 @@ def _autorizar_acesso_foto(id: int, permissao: str, usuario_atual: Usuario, db: 
 
 @router.get("/", response_model=list[PessoaResponse], dependencies=[Depends(require_permission("pessoas.visualizar"))])
 def listar_pessoas(
+    excluir_tecnicas: bool = False,
     db: Session = Depends(get_db)
 ):
-    pessoas = db.query(Pessoa).all()
-    return pessoas
+    """`excluir_tecnicas=true` omite as contas que existem para operar o sistema.
+
+    O padrao inclui todas de proposito: este mesmo endpoint resolve o nome de quem fez o que
+    (auditoria, responsavel por lancamento) e alimenta o cadastro de usuarios, onde a conta
+    tecnica precisa aparecer. Quem filtra sao as listas de *escolher uma pessoa* para uma
+    atividade da associacao.
+    """
+    consulta = db.query(Pessoa)
+    if excluir_tecnicas:
+        consulta = consulta.filter(Pessoa.conta_tecnica.is_(False))
+    return consulta.all()
 
 @router.get("/{id}", response_model=PessoaResponse, dependencies=[Depends(require_permission("pessoas.visualizar"))])
 def obter_pessoa(

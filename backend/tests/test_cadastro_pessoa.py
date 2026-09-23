@@ -220,3 +220,73 @@ def test_varias_pessoas_sem_cpf_nao_colidem(token_admin):
             db.query(Pessoa).filter(Pessoa.id == pessoa_id).delete()
         db.commit()
         db.close()
+
+
+def test_listagem_pode_omitir_contas_tecnicas(token_admin):
+    """Contas que existem para operar o sistema saem das listas de escolher pessoa.
+
+    Antes elas apareciam misturadas com as pessoas reais em toda selecao (inscrever num
+    evento, vincular a projeto, responsavel por bem) e podiam ser envolvidas por engano numa
+    atividade da associacao.
+    """
+    db = SessionLocal()
+    agora = datetime.utcnow()
+    real = Pessoa(nome_completo="Pessoa Real Teste", created_at=agora, updated_at=agora)
+    tecnica = Pessoa(
+        nome_completo="Conta Tecnica Teste",
+        conta_tecnica=True,
+        created_at=agora,
+        updated_at=agora,
+    )
+    db.add_all([real, tecnica])
+    db.commit()
+    real_id, tecnica_id = real.id, tecnica.id
+    db.close()
+
+    headers = {"Authorization": f"Bearer {token_admin}"}
+    try:
+        # Sem o filtro, as duas aparecem: este mesmo endpoint resolve nomes e alimenta o
+        # cadastro de usuarios, onde a conta tecnica precisa estar visivel.
+        todas = client.get("/pessoas/", headers=headers)
+        assert todas.status_code == 200
+        ids_todas = {p["id"] for p in todas.json()}
+        assert {real_id, tecnica_id} <= ids_todas
+
+        filtradas = client.get("/pessoas/?excluir_tecnicas=true", headers=headers)
+        assert filtradas.status_code == 200
+        ids_filtradas = {p["id"] for p in filtradas.json()}
+        assert real_id in ids_filtradas
+        assert tecnica_id not in ids_filtradas
+    finally:
+        db = SessionLocal()
+        db.query(Pessoa).filter(Pessoa.id.in_([real_id, tecnica_id])).delete(
+            synchronize_session=False
+        )
+        db.commit()
+        db.close()
+
+
+def test_pessoa_nasce_sem_a_marca_tecnica(token_admin):
+    """O padrao e ser gente da associacao; a marca e a excecao, definida a mao."""
+    resposta = client.post(
+        "/cadastros/pessoa-vinculo",
+        headers={"Authorization": f"Bearer {token_admin}"},
+        json={
+            "pessoa": {"nome_completo": "Pessoa Padrao Teste"},
+            "papel": "voluntario",
+            "voluntario": {"data_inicio": "2026-01-01"},
+        },
+    )
+    assert resposta.status_code == 201
+    pessoa_id = resposta.json()["pessoa"]["id"]
+
+    try:
+        assert resposta.json()["pessoa"]["conta_tecnica"] is False
+    finally:
+        db = SessionLocal()
+        from app.models.voluntario import Voluntario
+
+        db.query(Voluntario).filter(Voluntario.pessoa_id == pessoa_id).delete()
+        db.query(Pessoa).filter(Pessoa.id == pessoa_id).delete()
+        db.commit()
+        db.close()

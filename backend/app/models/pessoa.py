@@ -1,7 +1,7 @@
 from datetime import date
 from typing import TYPE_CHECKING
 
-from sqlalchemy import BigInteger, Date, String
+from sqlalchemy import BigInteger, Boolean, Date, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
@@ -113,6 +113,18 @@ class Pessoa(Base, TimestampMixin):
         String(255),
         unique=True,
         nullable=True
+    )
+
+    # Marca contas que existem para operar o sistema (desenvolvimento, integracao, suporte) e
+    # nao representam alguem da associacao. Elas somem das listas de escolher pessoa -- inscrever
+    # em evento, vincular a projeto, responsavel por bem --, para nao serem envolvidas por
+    # engano numa atividade real. Continuam visiveis onde sao legitimas: cadastro de usuarios,
+    # auditoria e a resolucao de nomes de quem fez o que.
+    conta_tecnica: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        default=False,
+        server_default="false"
     )
 
     @property
