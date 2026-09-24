@@ -63,7 +63,9 @@ export const MemberForm: React.FC = () => {
     cep: '',
     address: '',
     neighborhood: '',
-    city: 'Recife',
+    // Sede da associação: a maioria dos cadastros é do próprio município. Quem for de fora
+    // troca, e a busca por CEP sobrescreve isto quando o endereço é de outra cidade.
+    city: 'São Lourenço da Mata',
     state: 'PE',
     entryDate: new Date().toISOString().split('T')[0],
     status: 'ATIVO' as 'ATIVO' | 'INATIVO',
