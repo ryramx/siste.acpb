@@ -39,6 +39,12 @@ export default defineConfig(({ command, mode }) => {
     test: {
       environment: 'jsdom',
       globals: true,
+      // O padrao do vitest e 5s. Os testes de tela levam entre 1s e 4s cada -- eles montam a
+      // arvore React no jsdom e simulam digitacao tecla a tecla --, entao encostavam no
+      // limite quando a maquina estava ocupada e falhavam por lentidao, nao por defeito. As
+      // falhas mudavam de arquivo a cada execucao, que e a assinatura desse problema. Com
+      // 20s um teste realmente travado ainda falha, so que sem arrastar os saudaveis junto.
+      testTimeout: 20000,
       // Registra os matchers do jest-dom e limpa o DOM entre testes.
       setupFiles: ['./src/test/setup.ts'],
       // .claude/worktrees guarda copias completas do repositorio; sem excluir,

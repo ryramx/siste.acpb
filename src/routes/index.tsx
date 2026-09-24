@@ -7,6 +7,7 @@ import { ProtectedRoute } from '../components/common/ProtectedRoute';
 
 // Pages
 import { Login } from '../pages/auth/Login';
+import { RedefinirSenha } from '../pages/auth/RedefinirSenha';
 import { Dashboard } from '../pages/dashboard/Dashboard';
 import { MembersList } from '../pages/members/MembersList';
 import { MemberForm } from '../pages/members/MemberForm';
@@ -41,6 +42,11 @@ export const AppRoutes: React.FC = () => {
           <Routes>
             {/* Rota de Login */}
             <Route path="/login" element={<Login />} />
+
+            {/* Pública como o login: quem abre o link de recuperação não tem sessão -- é por
+                não conseguir entrar que pediu a recuperação. Dentro do ProtectedRoute, o
+                link do e-mail cairia de volta no login. */}
+            <Route path="/redefinir-senha" element={<RedefinirSenha />} />
 
             {/* Rotas Protegidas no MainLayout */}
             <Route

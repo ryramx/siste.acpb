@@ -77,6 +77,15 @@ export const authService = {
     }
   },
 
+  /** Confirma a recuperação com o token do e-mail e grava a nova senha.
+   *
+   * Não faz login em seguida de propósito: o token prova acesso à caixa de e-mail, não a
+   * intenção de entrar agora. Quem trocou a senha volta ao login e usa a senha nova, o que
+   * também confirma que ela foi de fato registrada. */
+  async redefinirSenhaComToken(token: string, senhaNova: string): Promise<void> {
+    await apiClient.post('/auth/redefinir-senha', { token, senha_nova: senhaNova });
+  },
+
   async logout(): Promise<void> {
     try {
       await apiClient.post('/auth/logout');
