@@ -75,6 +75,18 @@ remetente e confirme com o código que chega nele — esse endereço vira `EMAIL
 preciso ter domínio próprio; um endereço comum serve. Contas novas passam por uma aprovação
 manual da Brevo antes do primeiro envio.
 
+**IPs autorizados na Brevo:** a Brevo verifica de qual IP a chave de API é usada e, diante
+de um IP novo, envia ao dono da conta um e-mail "Verificar um novo IP" e passa a recusar os
+envios até a autorização. O IP em questão é sempre o de **saída do serviço no Render**, nunca
+o de quem pediu a redefinição — quem pede nunca fala com a Brevo. O Render não usa um IP
+único: cada serviço tem um conjunto pequeno de IPs de saída estáticos, listados no painel em
+**serviço → Connect → Outbound IP Addresses**. Todos eles precisam estar cadastrados na Brevo
+em **Settings → Security → Authorized IPs**, senão o aviso reaparece num próximo deploy e os
+envios falham no intervalo. Autorizar um IP de cada vez, conforme o aviso chega, deixa a
+recuperação de senha quebrada até alguém ler o e-mail. Cadastrar a lista inteira de uma vez é
+preferível a desligar a verificação ("Interromper a revisão dos endereços de IP"), que faria a
+chave funcionar de qualquer lugar do mundo caso vazasse.
+
 **Por que não SMTP (nem o do Gmail):** o Render **bloqueia as portas 25, 465 e 587 nos
 serviços do plano gratuito** desde setembro de 2025, para conter spam. Lá, qualquer SMTP
 falha por timeout por mais correta que esteja a configuração — e foi o que aconteceu: o
