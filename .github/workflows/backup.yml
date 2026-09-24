@@ -65,13 +65,20 @@ jobs:
       - name: Gerar o dump
         # pg_dump roda dentro da imagem oficial do Postgres em vez do cliente do runner: o
         # cliente do ubuntu costuma estar em versao anterior a do servidor, e pg_dump se recusa
-        # a dumpar um servidor mais novo que ele. Um cliente mais novo que o servidor funciona.
+        # a dumpar um servidor mais novo que ele.
+        #
+        # `latest` e proposital, no lugar de uma versao fixa. A regra do pg_dump e so uma: o
+        # cliente precisa ser igual ou mais novo que o servidor, e um cliente novo exporta
+        # qualquer servidor anterior. Fixar a versao quebra o backup no dia em que o provedor
+        # atualiza o banco -- foi o que aconteceu na primeira execucao: o cliente estava no 17
+        # e o Neon ja rodava 18.6. Num backup diario que ninguem fica olhando, "para de
+        # funcionar quando o provedor atualiza" e um modo de falha caro demais.
         # -F c = formato custom, comprimido, restauravel com pg_restore seletivamente.
         run: |
           set -o pipefail
           docker run --rm -i \
             -e PGCONNECT_TIMEOUT=30 \
-            postgres:17 \
+            postgres:latest \
             pg_dump --format=custom --no-owner --no-privileges "$BACKUP_DATABASE_URL" \
             > acpb.dump
         env:
