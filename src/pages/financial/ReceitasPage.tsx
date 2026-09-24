@@ -14,6 +14,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
 import { FinancialTabs } from '../../components/common/FinancialTabs';
 import { AcoesLancamento } from '../../components/common/AcoesLancamento';
+import { AnexosLancamento } from '../../components/common/AnexosLancamento';
 
 export const ReceitasPage: React.FC = () => {
   const { hasPermission, user } = useAuth();
@@ -154,6 +155,7 @@ export const ReceitasPage: React.FC = () => {
                   <th className="py-3 px-4">Categoria</th>
                   <th className="py-3 px-4">Conta</th>
                   <th className="py-3 px-4">Forma</th>
+                  <th className="py-3 px-4">Comprovantes</th>
                   <th className="py-3 px-4">Valor</th>
                   <th className="py-3 px-4">Status</th>
                   <th className="py-3 px-4 text-right">Ações</th>
@@ -167,6 +169,9 @@ export const ReceitasPage: React.FC = () => {
                     <td className="py-3 px-4 text-xs text-[#F8D800]">{t.category}</td>
                     <td className="py-3 px-4 text-xs text-[#AEB5B0]">{t.accountName}</td>
                     <td className="py-3 px-4 text-xs text-[#AEB5B0]">{t.paymentMethod}</td>
+                    <td className="py-3 px-4 text-xs">
+                      <AnexosLancamento transacao={t} onAlterado={fetchData} />
+                    </td>
                     <td className="py-3 px-4 font-bold text-green-400">+ R$ {t.amount.toFixed(2)}</td>
                     <td className="py-3 px-4">
                       <Badge variant={t.status === 'CONFIRMADA' ? 'success' : 'warning'}>{t.status}</Badge>

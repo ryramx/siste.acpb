@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { ArrowDownRight, Plus, Search, Paperclip } from 'lucide-react';
+import { ArrowDownRight, Plus, Search } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { InputValor } from '../../components/ui/InputValor';
@@ -14,6 +14,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
 import { FinancialTabs } from '../../components/common/FinancialTabs';
 import { AcoesLancamento } from '../../components/common/AcoesLancamento';
+import { AnexosLancamento } from '../../components/common/AnexosLancamento';
 
 export const DespesasPage: React.FC = () => {
   const { hasPermission, user } = useAuth();
@@ -179,12 +180,7 @@ export const DespesasPage: React.FC = () => {
                     <td className="py-3 px-4 font-medium text-white">{t.description}</td>
                     <td className="py-3 px-4 text-xs text-[#F8D800]">{t.category}</td>
                     <td className="py-3 px-4 text-xs">
-                      {t.attachmentsCount > 0 ? (
-                        <span className="inline-flex items-center gap-1 text-[#F8D800] bg-[#0F1210] border border-[#222824] px-2 py-0.5 rounded">
-                          <Paperclip className="w-3 h-3" />
-                          {t.attachmentsCount} arquivo(s)
-                        </span>
-                      ) : <span className="text-[#727A74]">—</span>}
+                      <AnexosLancamento transacao={t} onAlterado={fetchData} />
                     </td>
                     <td className="py-3 px-4 font-bold text-red-400">- R$ {t.amount.toFixed(2)}</td>
                     <td className="py-3 px-4">

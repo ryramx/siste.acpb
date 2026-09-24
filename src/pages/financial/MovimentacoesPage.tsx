@@ -9,6 +9,7 @@ import { financialService } from '../../services/domainServices';
 import { FinancialTransaction } from '../../types/domain';
 import { FinancialTabs } from '../../components/common/FinancialTabs';
 import { AcoesLancamento } from '../../components/common/AcoesLancamento';
+import { AnexosLancamento } from '../../components/common/AnexosLancamento';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
 
@@ -121,6 +122,7 @@ export const MovimentacoesPage: React.FC = () => {
                   <th className="py-3 px-4">Descrição</th>
                   <th className="py-3 px-4 hidden md:table-cell">Categoria</th>
                   <th className="py-3 px-4 hidden lg:table-cell">Responsável</th>
+                  <th className="py-3 px-4">Comprovantes</th>
                   <th className="py-3 px-4">Valor</th>
                   <th className="py-3 px-4">Status</th>
                   {podeEditar && <th className="py-3 px-4 text-right">Ações</th>}
@@ -147,6 +149,9 @@ export const MovimentacoesPage: React.FC = () => {
                       <td className="py-3 px-4 font-medium text-white">{t.description}</td>
                       <td className="py-3 px-4 text-xs text-[#F8D800] hidden md:table-cell">{t.category}</td>
                       <td className="py-3 px-4 text-xs text-[#AEB5B0] hidden lg:table-cell">{t.responsibleName}</td>
+                      <td className="py-3 px-4 text-xs">
+                        <AnexosLancamento transacao={t} onAlterado={carregar} />
+                      </td>
                       <td className={`py-3 px-4 font-bold text-sm ${
                         t.type === 'RECEITA' ? 'text-green-400' : 'text-red-400'
                       }`}>

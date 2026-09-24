@@ -257,8 +257,10 @@ export const AcoesLancamento: React.FC<AcoesLancamentoProps> = ({ transacao, onA
 
           {transacao.attachmentsCount > 0 && (
             <p className="text-xs text-red-400">
-              Este lançamento tem {transacao.attachmentsCount} comprovante(s) anexado(s), que vão
-              junto.
+              Este lançamento tem {transacao.attachmentsCount} comprovante(s) anexado(s). O
+              servidor vai recusar a exclusão enquanto eles existirem — comprovante é documento
+              contábil e não sai em cascata junto com o lançamento. Remova os comprovantes
+              primeiro, pelo botão de anexos da linha, se a exclusão for mesmo o que você quer.
             </p>
           )}
 

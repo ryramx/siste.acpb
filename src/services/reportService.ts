@@ -1,4 +1,5 @@
 import { apiClient } from './apiClient';
+import { salvarArquivo } from '../utils/download';
 
 /** Formatos aceitos pelo backend (`FormatoRelatorio` em app/core/relatorios.py). */
 export type ReportFormat = 'csv' | 'xlsx' | 'pdf';
@@ -31,19 +32,6 @@ export function buildReportPath(
  * mas como o arquivo é baixado via blob autenticado esse header não chega ao <a download>. */
 export function buildReportFilename(key: ReportKey, formato: ReportFormat): string {
   return `relatorio_${key}.${formato}`;
-}
-
-/** Entrega o blob ao navegador como download. Isolado para que `download` possa
- * ser testado com este comportamento substituído. */
-function salvarArquivo(blob: Blob, nomeArquivo: string): void {
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = nomeArquivo;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  URL.revokeObjectURL(url);
 }
 
 export const reportService = {

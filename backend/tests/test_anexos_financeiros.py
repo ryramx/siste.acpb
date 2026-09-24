@@ -172,3 +172,28 @@ def test_download_sem_autenticacao_e_recusado(token_admin, movimentacao_id):
     assert sem_token.status_code == 401
 
     client.delete(f"/anexos-financeiros/{anexo_id}", headers=headers)
+
+
+def test_excluir_movimentacao_com_comprovante_e_recusado(token_admin, movimentacao_id):
+    """O comprovante é documento contábil: excluir o lançamento não pode levá-lo embora de
+    tabela. A recusa precisa dizer o que fazer — a mensagem genérica de integridade
+    referencial deixava o usuário sem saída na tela."""
+    headers = {"Authorization": f"Bearer {token_admin}"}
+    envio = client.post(
+        "/anexos-financeiros/",
+        headers=headers,
+        data={"movimentacao_financeira_id": movimentacao_id},
+        files={"arquivo": ("recibo.pdf", b"%PDF-1.4 conteudo", "application/pdf")},
+    )
+    assert envio.status_code == 201
+    anexo_id = envio.json()["id"]
+
+    recusa = client.delete(f"/movimentacoes-financeiras/{movimentacao_id}", headers=headers)
+    assert recusa.status_code == 409
+    assert "comprovante" in recusa.json()["detail"].lower()
+
+    # E o caminho de saída funciona: sem comprovantes, a exclusão passa.
+    assert client.delete(f"/anexos-financeiros/{anexo_id}", headers=headers).status_code == 204
+    assert client.delete(
+        f"/movimentacoes-financeiras/{movimentacao_id}", headers=headers
+    ).status_code == 204

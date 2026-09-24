@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { DollarSign, ArrowUpRight, ArrowDownRight, Plus, PieChart, TrendingUp } from 'lucide-react';
 import { FinancialTabs } from '../../components/common/FinancialTabs';
 import { AcoesLancamento } from '../../components/common/AcoesLancamento';
+import { AnexosLancamento } from '../../components/common/AnexosLancamento';
 import { Button } from '../../components/ui/Button';
 import { StatCard } from '../../components/ui/StatCard';
 import { Badge } from '../../components/ui/Badge';
@@ -295,13 +296,7 @@ export const FinancialDashboard: React.FC = () => {
                 </td>
                 <td className="py-3.5 px-4 text-xs text-[#AEB5B0]">{t.paymentMethod}</td>
                 <td className="py-3.5 px-4 text-xs">
-                  {t.attachmentsCount > 0 ? (
-                    <span className="inline-flex items-center gap-1 text-[#F8D800] bg-[#0F1210] px-2 py-1 rounded border border-[#222824]">
-                      📎 {t.attachmentsCount} arquivo(s)
-                    </span>
-                  ) : (
-                    <span className="text-[#727A74]">-</span>
-                  )}
+                  <AnexosLancamento transacao={t} onAlterado={fetchTransactions} />
                 </td>
                 <td className={`py-3.5 px-4 font-bold text-sm ${t.type === 'RECEITA' ? 'text-[#40C075]' : 'text-red-400'}`}>
                   {t.type === 'RECEITA' ? '+' : '-'} R$ {t.amount.toFixed(2)}

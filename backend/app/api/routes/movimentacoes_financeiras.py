@@ -11,6 +11,7 @@ from app.api.routes.health import get_db
 from app.core.auditoria import model_to_dict, obter_ip_cliente, registrar_auditoria
 from app.models.categoria_financeira import CategoriaFinanceira
 from app.models.conta_financeira import ContaFinanceira
+from app.models.anexo_financeiro import AnexoFinanceiro
 from app.models.movimentacao_financeira import MovimentacaoFinanceira
 from app.models.pessoa import Pessoa
 from app.models.projeto import Projeto
@@ -125,6 +126,25 @@ def deletar_movimentacao_financeira(
     obj = db.query(MovimentacaoFinanceira).filter(MovimentacaoFinanceira.id == id).first()
     if not obj:
         raise HTTPException(status_code=404, detail="MovimentacaoFinanceira não encontrado(a)")
+
+    # A chave estrangeira de `anexos_financeiros` já barraria a exclusão, mas com a mensagem
+    # genérica de integridade referencial — que não diz ao usuário o que fazer. Contar os
+    # anexos aqui permite nomear o motivo: o comprovante é documento contábil, e apagá-lo em
+    # cascata junto com o lançamento seria destruir a prova de uma despesa por um clique de
+    # correção. Quem realmente quer excluir remove os comprovantes primeiro, deliberadamente.
+    anexos = (
+        db.query(AnexoFinanceiro)
+        .filter(AnexoFinanceiro.movimentacao_financeira_id == id)
+        .count()
+    )
+    if anexos:
+        raise HTTPException(
+            status_code=409,
+            detail=(
+                f"Este lançamento tem {anexos} comprovante(s) anexado(s). Remova os "
+                "comprovantes antes de excluir o lançamento."
+            ),
+        )
 
     registrar_auditoria(
         db,
