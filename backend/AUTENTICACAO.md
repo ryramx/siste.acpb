@@ -40,6 +40,58 @@ tarefas 08-11 e devem ser respeitadas nas implementações seguintes.
   usuário e com expiração curta (**30 minutos**). Ver detalhamento na tarefa 14.
 - Um token usado ou expirado é rejeitado e não pode ser reaproveitado.
 
+## Troca da própria senha
+
+- `POST /auth/alterar-senha`, com o usuário logado, exigindo a **senha atual** no corpo. Sem essa
+  exigência, um token vazado — ou um aparelho emprestado já logado — permitiria tomar a conta em
+  definitivo sem conhecer a senha.
+- Existe porque o fluxo de recuperação por e-mail resolve **esquecimento**, não a troca deliberada
+  de quem desconfia que a senha foi vista; e porque a senha inicial de cada usuário é definida por
+  um administrador, o que torna a troca depois do primeiro acesso operação de rotina.
+- A troca **invalida os tokens de recuperação pendentes** do usuário. Quem troca a senha por
+  desconfiança não ganharia nada se um link de redefinição pedido antes continuasse valendo por
+  meia hora.
+- A troca **não** derruba as sessões abertas (nem a de quem trocou): JWT é stateless e não há
+  blacklist na v1, como registrado acima. Revogar sessões depende do refresh token que a v1 não
+  tem — é a mesma decisão adiada em "Logout", e aparece na tela para o usuário não supor que
+  trocar a senha expulsa quem estiver em outro aparelho.
+- A tentativa com senha atual errada é contada pelo limite descrito abaixo: sem isso a rota
+  serviria de oráculo para adivinhar a senha de quem teve o token vazado.
+
+## Limite de tentativas nas rotas públicas
+
+`/auth/login` e `/auth/recuperar-senha` são as únicas rotas que respondem sem token, e até a
+implementação do limite aceitavam tentativas ilimitadas. As duas consequências práticas eram
+força bruta contra qualquer senha fraca — com CPF e dados de beneficiários atrás da conta — e o
+uso da recuperação de senha para inundar a caixa de um usuário e queimar a cota diária do
+provedor de e-mail (300 mensagens/dia na Brevo), o que derrubaria a recuperação de **todos**.
+
+| Rota | O que é contado | Limite padrão |
+|---|---|---|
+| `POST /auth/login` | Apenas as **falhas**, por e-mail e por IP | 5 por e-mail e 20 por IP, em 15 min |
+| `POST /auth/recuperar-senha` | **Todas** as chamadas, por e-mail e por IP | 3 por e-mail e 10 por IP, em 60 min |
+| `POST /auth/alterar-senha` | Falhas de senha atual, por usuário | 5 em 15 min |
+
+Decisões por trás disso (implementação em `app/core/rate_limit.py`):
+
+- **Dois limites por rota**, porque contêm ataques diferentes: o limite por e-mail pega quem
+  martela uma conta de vários lugares; o limite por IP pega quem tenta poucas vezes em muitas
+  contas — cinco tentativas em cada um de mil e-mails nunca estouraria a cota de nenhum.
+- **Login conta só falha, e o acerto zera a contagem**: quem sabe a senha nunca é barrado por ter
+  errado antes. A recuperação conta tudo, porque de fora ela sempre "dá certo" (resposta idêntica
+  exista ou não o e-mail) e o custo a conter é o e-mail enviado.
+- **A recuperação registra a tentativa antes de saber se o e-mail existe.** O contrário
+  transformaria o 429 em sinal de que a conta existe — exatamente a enumeração que a resposta
+  idêntica evita.
+- **Efeito colateral aceito:** cinco senhas erradas bloqueiam aquele e-mail por até 15 minutos,
+  então é possível atrapalhar de propósito o login de alguém cujo e-mail se conheça. É um atraso,
+  não um bloqueio permanente, e o inverso — não ter limite — é pior.
+- **Contador em memória, por processo.** Com mais de um worker o limite efetivo se multiplica pelo
+  número de workers, e um redeploy zera a contagem. Hoje a API roda em um único processo no
+  Render, então o limite vale como escrito; nenhuma das ressalvas ajuda um atacante real, que não
+  reinicia o servidor. A alternativa (contador no banco ou em Redis) custa uma escrita por
+  tentativa, que é justamente o que um ataque produz em volume.
+
 ## Usuário inativo
 
 - Login (`POST /auth/login`) recusa credenciais de usuário com `ativo=false`, com mensagem genérica

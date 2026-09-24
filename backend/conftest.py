@@ -53,3 +53,19 @@ def _test_database_schema():
     config.set_main_option("script_location", str(raiz / "alembic"))
     command.upgrade(config, "head")
     yield
+
+
+@pytest.fixture(autouse=True)
+def _zerar_limites_de_tentativas():
+    """Zera os contadores de tentativa entre casos de teste.
+
+    Sem isto, o limite de `/auth/login` e `/auth/recuperar-senha` seria compartilhado por toda
+    a suíte: o `TestClient` usa sempre o mesmo IP, e os vários testes que erram a senha ou
+    pedem recuperação de propósito somariam até estourar a cota — fazendo falhar, com 429,
+    testes que não têm nada a ver com limite de tentativas.
+    """
+    from app.core.rate_limit import limpar_todos_os_limites
+
+    limpar_todos_os_limites()
+    yield
+    limpar_todos_os_limites()

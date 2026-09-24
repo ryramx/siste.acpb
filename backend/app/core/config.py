@@ -34,6 +34,21 @@ class Settings(BaseSettings):
     JWT_EXPIRE_MINUTES: int = 480
     RESET_PASSWORD_TOKEN_EXPIRE_MINUTES: int = 30
 
+    # Limite de tentativas nas rotas públicas de autenticação (ver app/core/rate_limit.py).
+    #
+    # Os valores são folgados para o uso real da associação — são poucas dezenas de usuários,
+    # e ninguém erra a senha cinco vezes em quinze minutos por acidente — e apertados o
+    # bastante para que força bruta deixe de ser viável.
+    LOGIN_MAX_FALHAS_POR_EMAIL: int = 5
+    LOGIN_MAX_FALHAS_POR_IP: int = 20
+    LOGIN_JANELA_MINUTOS: int = 15
+    # A recuperação de senha conta *todas* as chamadas, não só as falhas: de fora ela sempre
+    # "dá certo" (resposta idêntica exista ou não o e-mail), e o custo a conter é o e-mail
+    # enviado, que acontece justamente quando a chamada é bem-sucedida.
+    RECUPERACAO_MAX_POR_EMAIL: int = 3
+    RECUPERACAO_MAX_POR_IP: int = 10
+    RECUPERACAO_JANELA_MINUTOS: int = 60
+
     # Anexos financeiros (tarefa 20).
     ANEXOS_STORAGE_DIR: str = "storage/anexos_financeiros"
     ANEXOS_TAMANHO_MAXIMO_MB: int = 5

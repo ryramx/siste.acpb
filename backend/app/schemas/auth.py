@@ -24,6 +24,19 @@ class ConfirmarRecuperacaoSenhaRequest(BaseModel):
     senha_nova: str = Field(min_length=8)
 
 
+class AlterarSenhaRequest(BaseModel):
+    """Troca da própria senha, com o usuário logado.
+
+    Exige a senha atual: sem isso, um token vazado (ou um celular emprestado desbloqueado)
+    permitiria trocar a senha e tomar a conta em definitivo, sem precisar conhecê-la.
+    """
+
+    senha_atual: str
+    # Mesmo mínimo da redefinição por e-mail — não faria sentido a senha escolhida aqui poder
+    # ser mais fraca do que a escolhida lá.
+    senha_nova: str = Field(min_length=8)
+
+
 class MeResponse(BaseModel):
     id: int
     pessoa_id: int
