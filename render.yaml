@@ -55,6 +55,14 @@ services:
       # Precisa ser a regiao real do projeto no Supabase (o R2 ignoraria).
       - key: S3_REGION
         sync: false
+      # Monitoramento de erros (opcional). Com o DSN preenchido, todo erro 500 e todo erro de
+      # tela relatado pelo navegador chega ao Sentry; sem ele, ficam apenas no log do Render, o
+      # que significa que ninguem sabe de um erro sem estar olhando o log na hora. Pode ficar
+      # em branco na criacao do servico e ser preenchido depois -- a aplicacao sobe dos dois
+      # jeitos, de proposito (ver app/core/monitoramento.py).
+      - key: SENTRY_DSN
+        sync: false
+
       # E-mail de recuperacao de senha, enviado pela API HTTPS da Brevo.
       #
       # Nao e SMTP de proposito: o Render bloqueia as portas 25, 465 e 587 nos servicos do

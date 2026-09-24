@@ -175,6 +175,11 @@ Feito isso, faça o login com esse usuário e troque a senha.
 | `EMAIL_FROM_NOME` | Não | `Sistema ACPB` (padrão) |
 | `SMTP_*` | Não | Só com `EMAIL_BACKEND=smtp` (desenvolvimento ou servidor próprio) |
 | `JWT_EXPIRE_MINUTES`, `RESET_PASSWORD_TOKEN_EXPIRE_MINUTES` | Não | Padrões razoáveis; revisar por ambiente |
+| `SENTRY_DSN` | Não | DSN do projeto no Sentry. Vazio desliga o relato externo: os erros ficam só no log |
+| `SENTRY_TRACES_SAMPLE_RATE` | Não | `0.0` (padrão). O que falta é enxergar erro, não medir latência — e a cota do plano gratuito é pequena |
+| `LOG_LEVEL` | Não | `INFO` (padrão) |
+| `LOGIN_MAX_FALHAS_POR_EMAIL`, `LOGIN_MAX_FALHAS_POR_IP`, `LOGIN_JANELA_MINUTOS` | Não | Limite de tentativas de login (ver `AUTENTICACAO.md`) |
+| `RECUPERACAO_MAX_POR_EMAIL`, `RECUPERACAO_MAX_POR_IP`, `RECUPERACAO_JANELA_MINUTOS` | Não | Idem, para a recuperação de senha |
 
 A aplicação **recusa subir** em `ENVIRONMENT=production` se faltar qualquer obrigatória, se
 `BACKEND_CORS_ORIGINS` contiver `*`, se `STORAGE_BACKEND` for `local`, ou se não houver SMTP —
@@ -305,11 +310,15 @@ disponíveis — no plano gratuito do Render, com 512 MB, mantenha um worker só
 
 ## Logs
 
-- A aplicação usa o `logging` padrão do Python (ver `app/api/routes/auth.py` para um exemplo). Em
-  produção, configurar o nível (`INFO` como padrão, `WARNING` para bibliotecas ruidosas) e
-  redirecionar a saída para o coletor de logs da infraestrutura (arquivo rotacionado, ou stdout se
-  o orquestrador capturar container logs — é o caso do Render).
+- `app/core/monitoramento.py` configura o `logging` na subida da aplicação: toda linha sai com
+  hora, nível, `[request_id]` e o nome do logger, em stdout — que é o que o Render coleta. O nível
+  vem de `LOG_LEVEL` (padrão `INFO`).
+- Toda resposta traz o header `X-Request-Id`, e a mensagem de erro 500 mostra esse mesmo código ao
+  usuário. Quando alguém disser "deu erro", peça o código: ele leva direto à linha do log.
 - Nunca logar segredos — ver a seção "Logs" em `CORS_E_PRODUCAO.md`.
+- Erros de tela (JavaScript) que quebravam a interface não apareciam em log nenhum. Agora o
+  `ErrorBoundary` do frontend os relata em `POST /monitoramento/erro-cliente`, e eles entram no
+  mesmo log do servidor.
 
 ## Rollback
 
@@ -325,13 +334,15 @@ disponíveis — no plano gratuito do Render, com 512 MB, mantenha um worker só
 
 ## Backup
 
-Ver `BACKUP_E_RESTAURACAO.md` para a política (retenção, teste de restauração trimestral).
-A execução está em `scripts/backup.sh`: gera um `pg_dump` e envia para o bucket, com expiração
-automática por idade.
+Ver `BACKUP_E_RESTAURACAO.md` para a política e para o estado da automação. A execução está em
+`.github/workflows/backup.yml`, agendada às 06:00 UTC: `pg_dump` criptografado todo dia, espelho
+diário dos arquivos do Storage, cópia semanal aos domingos e pacote mensal (banco + arquivos) no
+dia 1, cada um com sua retenção.
 
-O plano gratuito do Neon **não** oferece restauração de longo prazo — sem esse script, um erro
-humano (um `DELETE` sem `WHERE`, uma migration destrutiva) é definitivo. Agende-o em qualquer
-executor de cron externo com as variáveis documentadas no cabeçalho do script.
+O plano gratuito do Neon **não** oferece restauração de longo prazo — sem esse backup, um erro
+humano (um `DELETE` sem `WHERE`, uma migration destrutiva) é definitivo. E o `pg_dump` não alcança
+os comprovantes: sem o backup dos arquivos, uma restauração devolveria as movimentações sem os
+documentos que a prestação de contas exige.
 
 Os arquivos em si (anexos e fotos) ficam no object storage, que é durável e não some em redeploy —
 mas nenhum provedor protege contra remoção acidental, então o bucket não substitui backup.
@@ -340,6 +351,15 @@ Atenção ao compartilhamento de cota: no Supabase, backups do banco e arquivos 
 o mesmo 1 GB. Se o volume apertar, mande os dumps para outro destino antes de reduzir retenção.
 
 ## Monitoramento mínimo
+
+**Erros da aplicação** são a parte que já está no código: o handler global registra toda exceção
+não prevista com traceback, método, caminho e id da requisição, e `SENTRY_DSN` — quando definido —
+manda o mesmo erro para fora do servidor. Sem DSN, saber de um 500 depende de alguém abrir o log
+do Render na hora certa; é o único item desta lista que a associação fecha criando uma conta
+gratuita e colando um valor no painel. O que sai para o Sentry é deliberadamente pobre em dado
+pessoal (ver `PRIVACIDADE_E_RETENCAO.md`).
+
+O resto continua sendo configuração de infraestrutura, fora do repositório:
 
 - Disponibilidade: verificação periódica de `/health/` e `/health/db` (uptime check externo).
 - Erros: taxa de respostas 5xx da API — um aumento súbito indica problema de código ou de banco.

@@ -49,6 +49,18 @@ class Settings(BaseSettings):
     RECUPERACAO_MAX_POR_IP: int = 10
     RECUPERACAO_JANELA_MINUTOS: int = 60
 
+    # Observabilidade (ver app/core/monitoramento.py).
+    #
+    # SENTRY_DSN vazio desliga o relato externo: os erros continuam no log do servidor. É o
+    # estado em desenvolvimento e nos testes, e também em produção enquanto a associação não
+    # criar a conta — não é motivo para a aplicação recusar subir, porque um sistema sem
+    # monitoramento atende, e um que não sobe não atende ninguém.
+    SENTRY_DSN: str = ""
+    # Amostragem de performance. Zero de propósito: o plano gratuito do Sentry tem cota, e o
+    # que falta aqui é enxergar erro, não medir latência.
+    SENTRY_TRACES_SAMPLE_RATE: float = 0.0
+    LOG_LEVEL: str = "INFO"
+
     # Anexos financeiros (tarefa 20).
     ANEXOS_STORAGE_DIR: str = "storage/anexos_financeiros"
     ANEXOS_TAMANHO_MAXIMO_MB: int = 5

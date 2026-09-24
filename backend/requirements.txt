@@ -14,3 +14,6 @@ python-multipart==0.0.9
 openpyxl==3.1.5
 reportlab==4.2.5
 boto3==1.35.76
+# Relato de erro para fora do servidor. Só entra em ação com SENTRY_DSN definido
+# (ver app/core/monitoramento.py); sem DSN, fica instalado e inerte.
+sentry-sdk==2.19.2

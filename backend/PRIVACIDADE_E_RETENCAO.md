@@ -32,7 +32,18 @@ recomendação para decisão futura da associação (não código).
   deliberada e temporária é o token de recuperação de senha, logado enquanto não há provedor de
   e-mail configurado — remover esse log ao integrar um provedor real (tarefa 14).
 - Erros 500 não vazam stack trace nem detalhes de schema ao cliente (`tratar_integrity_error`,
-  handler de `/health/db`) — detalhe técnico fica só no log do servidor.
+  handler de `/health/db` e, desde a implementação do monitoramento, o handler global de
+  `Exception` em `app/core/monitoramento.py`) — detalhe técnico fica só no log do servidor. O
+  cliente recebe apenas o `X-Request-Id`, que serve para localizar a linha do log e não diz nada
+  sobre o erro.
+- **Relato de erro para fora do servidor (Sentry), quando `SENTRY_DSN` está configurado:** vai
+  deliberadamente pobre — `send_default_pii=False`, corpo de requisição **nunca**
+  (`max_request_body_size="never"`) e remoção explícita de `Authorization`, `Cookie` e
+  `Set-Cookie` no `before_send`. Sem essas travas, um erro num POST de cadastro levaria CPF e
+  endereço para um terceiro junto com o traceback. Sem DSN, nada sai do servidor.
+- **Relato de erro de tela (`POST /monitoramento/erro-cliente`):** o navegador envia mensagem,
+  caminho e pilha de componentes — nunca conteúdo de formulário. A rota exige usuário autenticado
+  e tem limite de chamadas, para não virar canal de poluição do log.
 
 ## Acesso a beneficiários
 

@@ -56,6 +56,16 @@ Documento de decisão para a tarefa 37.
 - Erros inesperados (500) devem ser logados no servidor com detalhes técnicos, mas a resposta ao
   cliente permanece genérica (já é o padrão em `health.py` e nas rotas que usam
   `tratar_integrity_error`) — não vazar stack trace nem detalhes de schema/banco para o cliente.
+  Isso agora vale para **qualquer** exceção que escape de uma rota: o handler global em
+  `app/core/monitoramento.py` registra o traceback no log com método, caminho e id da requisição,
+  e responde ao cliente apenas com o id.
+- Todas as linhas de log saem com hora, nível e `[request_id]` (ver `configurar_logging`), e toda
+  resposta carrega o header `X-Request-Id`. É o que permite ligar um "deu erro na tela" à linha
+  exata do log — antes, as mensagens da aplicação se misturavam à saída do Uvicorn sem nenhum
+  contexto de correlação.
+- `SENTRY_DSN`, quando definido, envia os erros para fora do servidor, que é a única forma de
+  alguém saber de um 500 sem estar olhando o log na hora. Sem DSN a aplicação sobe normalmente e
+  os erros ficam só no log — ver a seção de monitoramento em `DEPLOY.md`.
 
 ## Variáveis de ambiente obrigatórias em produção
 

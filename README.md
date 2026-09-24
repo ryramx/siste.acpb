@@ -17,19 +17,22 @@ O projeto tem como objetivo reduzir a dependência de controles manuais e inform
 | Módulo                                 | Back-end | Front-end |
 | -------------------------------------- | -------- | --------- |
 | Autenticação (login, JWT, recuperação) | ✅        | ✅         |
+| Limite de tentativas no login e na recuperação | ✅        | — (é do servidor) |
+| Trocar a própria senha / Minha conta   | ✅        | ✅         |
 | Usuários, perfis e permissões (RBAC)   | ✅        | ✅         |
-| Pessoas e telefones                    | ✅        | ✅         |
+| Pessoas e telefones                    | ✅        | ✅ tela própria de cadastro, com os vínculos de cada pessoa |
 | Membros                                | ✅        | ✅         |
 | Voluntários                            | ✅        | ✅         |
 | Beneficiários e atendimentos           | ✅        | ✅         |
 | Projetos                               | ✅        | ✅         |
 | Eventos, calendário e inscrições       | ✅        | ✅         |
 | Financeiro                             | ✅        | ✅         |
-| Anexos/comprovantes financeiros        | ✅        | ⏳ API pronta; a tela apenas conta os anexos, não envia nem abre |
+| Anexos/comprovantes financeiros        | ✅        | ✅ enviar, visualizar na tela, baixar e remover |
 | Foto de pessoa (upload/remoção)        | ✅        | ✅         |
 | Dashboards (geral e financeiro)        | ✅        | ✅         |
 | Relatórios (CSV / Excel / PDF)         | ✅        | ✅         |
 | Auditoria                              | ✅        | ✅         |
+| Monitoramento de erros (log com id, handler global, Sentry opcional, erro de tela relatado) | ✅        | ✅         |
 | Patrimônio                             | ✅        | ✅         |
 | Contas e categorias financeiras        | ✅        | ✅ criar, desativar e reativar pela tela |
 | Cargos (de membro)                     | ✅        | ⏳ somente leitura na interface |

@@ -243,3 +243,171 @@ Testes: `backend/tests/test_patrimonios.py` (9 casos: CRUD, código duplicado �
 → 422, valor negativo → 422, responsável inexistente → 404, filtros, auditoria, 403 para perfil sem
 permissão, 401 sem token) e `src/services/patrimonioService.test.ts` (8 casos). Backend: 97/97.
 Frontend: 52/52. `tsc` e `npm run build` limpos. Sem navegador disponível para teste visual manual.
+
+## Cinco lacunas fechadas depois de uma revisão do que faltava - "Concluído"
+
+Rodada nascida de uma pergunta ("o que está faltando para esse sistema?") e da leitura do
+repositório em busca da resposta. Cinco itens, na ordem de risco/esforço em que foram atacados.
+
+### 1. Limite de tentativas no login e na recuperação de senha
+
+`/auth/login` e `/auth/recuperar-senha` eram as únicas rotas sem token e aceitavam tentativas
+ilimitadas. Duas consequências: força bruta contra qualquer senha fraca — com CPF e dados
+socioeconômicos de beneficiários atrás da conta — e o uso da recuperação para inundar a caixa de um
+usuário e **queimar a cota de 300 e-mails/dia da Brevo**, o que derrubaria a recuperação de senha de
+todos até o dia seguinte.
+
+Implementado em `app/core/rate_limit.py` (janela deslizante em memória, sem dependência nova) com
+dois limites por rota, porque contêm ataques diferentes: por e-mail pega quem martela uma conta de
+vários lugares, por IP pega quem tenta poucas vezes em muitas contas. Números, decisões e as
+limitações (contador por processo; um redeploy zera) estão documentados em `AUTENTICACAO.md`.
+
+**Decisões:** o login conta só as falhas e o acerto zera a contagem, então quem sabe a senha nunca é
+barrado; a recuperação conta todas as chamadas, porque de fora ela sempre "dá certo" e o custo a
+conter é o e-mail enviado; e a recuperação **registra a tentativa antes de saber se o e-mail
+existe**, senão o 429 viraria sinal de que a conta existe — a enumeração que a resposta idêntica
+evita. O limite é checado antes de tocar no banco: o Argon2 é deliberadamente lento, e esse custo é
+o que um ataque em volume transformaria em negação de serviço.
+
+**Efeito colateral aceito:** cinco senhas erradas atrasam aquele e-mail por até 15 minutos, então dá
+para atrapalhar de propósito o login de alguém cujo e-mail se conheça. É atraso, não bloqueio
+permanente, e não ter limite é pior.
+
+Fixture autouse em `conftest.py` zera os contadores entre casos — sem isso, os vários testes que
+erram a senha de propósito somariam até fazer testes sem relação alguma falharem com 429. Testes:
+`tests/test_rate_limit.py` (11 casos).
+
+### 2. Tela dos comprovantes financeiros
+
+A API de anexos existia desde a tarefa 20 e nenhuma tela chegava até ela: a tabela apenas *contava*
+os arquivos. Na prática, "armazenar comprovantes financeiros" — objetivo do PRD e o que a
+contabilidade pede — só era alcançável por chamada direta ao endpoint.
+
+Novos `services/anexoService.ts` e `components/common/AnexosLancamento.tsx`, ligados nas quatro telas
+financeiras (o botão substituiu a contagem estática em Despesas e no dashboard; Receitas e
+Movimentações ganharam a coluna). `utils/download.ts` saiu de dentro do `reportService` para ser
+compartilhado pelos dois.
+
+**Decisões:** a visualização é **dentro do modal**, não em aba nova — o conteúdo só chega depois do
+`await` (o endpoint exige `Authorization`, então não há URL que um `<a>` abra sozinho) e uma aba
+aberta longe do clique é bloqueada como popup. PDF usa `<iframe>` e não `<embed>`, que é o único que
+o Safari do iPhone renderiza a partir de blob. Tipo e tamanho são validados no cliente antes do
+envio, espelhando o backend, para não subir 5MB por rede de celular e ouvir um 400 no fim. Todo blob
+de visualização é revogado ao trocar de arquivo ou fechar.
+
+**Achado, corrigido no backend:** o diálogo de exclusão de lançamento dizia que os comprovantes
+"vão junto", mas a chave estrangeira de `anexos_financeiros` não tem cascata — a exclusão era
+recusada com a mensagem genérica de integridade referencial, sem dizer ao usuário o que fazer. A
+rota passou a contar os anexos e recusar com 409 nomeando o motivo, e o texto da tela agora diz a
+verdade: comprovante é documento contábil e não sai em cascata por um clique de correção. Testes:
+`tests/test_anexos_financeiros.py::test_excluir_movimentacao_com_comprovante_e_recusado` e
+`src/services/anexoService.test.ts` (11 casos).
+
+### 3. Backup dos arquivos e backups semanal/mensal
+
+O `pg_dump` diário não alcança os comprovantes nem as fotos: eles vivem no Supabase Storage, fora do
+banco. Uma restauração devolveria as movimentações **sem os comprovantes**. E dos três níveis de
+retenção previstos na política, só o diário existia — faltava justamente o mensal, que é o que
+atende à guarda de 24 meses dos registros financeiros.
+
+`.github/workflows/backup.yml` passou a fazer, além do dump diário: espelho diário dos arquivos
+(`aws s3 sync` **sem** `--delete`), cópia do dump aos domingos (6 meses) e, no dia 1, pacote
+`.tar.gz` criptografado de todos os arquivos junto com o dump (24 meses). A retenção virou uma função
+de shell aplicada às três pastas, com a data lida do nome do arquivo — não da data de modificação no
+bucket, que uma cópia server-side reescreveria.
+
+**Decisões:** os arquivos têm duas estratégias porque as perdas são diferentes — o espelho responde
+à perda provável do dia a dia (alguém remove o comprovante errado) e por isso **não** expira nem usa
+`--delete`; o pacote mensal responde a "preciso dos comprovantes de dois anos atrás", que um espelho
+do presente não responde. O semanal leva só o banco: empacotar os arquivos 26 vezes por ano
+encostaria na cota de 1GB do plano gratuito sem cobrir nada novo. O espelho é a única parte sem
+criptografia adicional, para que conferir um comprovante não exija restaurar o backup inteiro.
+
+**Limitação que continua:** o destino é o mesmo projeto Supabase que guarda os arquivos de produção.
+Protege contra perda do banco no Neon, exclusão acidental e corrupção — não contra perder o projeto
+Supabase inteiro. Fechar isso é decisão da associação (segundo provedor); os segredos `BACKUP_S3_*`
+já são separados dos da API para que apontar para outro lugar seja só trocar valores. Registrado em
+`BACKUP_E_RESTAURACAO.md`, que teve a seção de automação reescrita.
+
+### 4. Tela de Pessoas e troca da própria senha
+
+Duas ausências que não estavam registradas em documento nenhum.
+
+**Pessoas:** não havia rota nem item de menu. Pessoa só era criada de dentro do formulário de membro,
+voluntário ou beneficiário — então uma pessoa **sem vínculo**, ou com o vínculo encerrado, ficava
+inalcançável pela interface, embora continuasse no banco com CPF e endereço e o backend sempre tenha
+tido o CRUD completo. Isso contradizia a decisão de modelagem central do sistema (Pessoa é a
+entidade; vínculo é acessório). Novos `services/pessoaService.ts` e `pages/people/PeopleList.tsx`,
+rota `/pessoas` (`view_people`) e o item "Cadastro de pessoas" como primeiro do submenu Pessoas.
+
+A lista mostra os vínculos de cada pessoa e tem filtro "Sem vínculo", que é a razão de a tela
+existir. Os vínculos vêm de quatro requisições no total, não por linha. **Decisão:** um 403 numa
+dessas listas vira "não sei", não zero — quem não pode ver voluntários não deve concluir que ninguém
+é voluntário, então a tela mostra "—" em vez de "Sem vínculo" e avisa que a visão está parcial. CPF é
+validado no cliente (`cpfValido`) porque o backend só verifica duplicidade, não os dígitos, e um CPF
+errado é pior que nenhum: é a chave pela qual a pessoa é encontrada depois. Campo vazio grava `null`
+e não `''`, senão a segunda pessoa sem CPF colidiria com a primeira na restrição de unicidade. O
+diálogo de exclusão explica que ela existe para pedido de exclusão do titular (LGPD) e cadastro
+duplicado — para quem só saiu da associação, o caminho é encerrar o vínculo.
+
+Chaves de permissão novas: `edit_people` e `delete_people` (`pessoas.excluir` é a única permissão de
+exclusão dedicada do sistema e hoje só o Administrador a tem).
+
+**Troca de senha:** o único caminho era o fluxo de recuperação por e-mail, que serve ao esquecimento.
+Como a senha inicial é definida por um administrador, trocá-la é rotina — e quem desconfia que a
+senha foi vista não deveria depender de receber um e-mail. Nova rota `POST /auth/alterar-senha`
+(exige a senha atual, limitada por usuário) e nova tela `/minha-conta`, sem exigência de permissão,
+com foto, perfis e o formulário de troca.
+
+**Decisões:** a troca invalida os tokens de recuperação pendentes (senão um link pedido antes
+continuaria valendo por meia hora, justamente o caminho de volta para quem tomou o e-mail); e **não**
+derruba as sessões abertas, porque JWT é stateless e não há blacklist na v1 — a tela diz isso ao
+usuário para ele não supor que trocar a senha expulsa quem estiver em outro aparelho. A auditoria
+registra a troca sem nada do conteúdo (o que mudou é o hash, que não entra em auditoria). Testes:
+`tests/test_alterar_senha.py` (8 casos) e `src/services/pessoaService.test.ts` (10 casos).
+
+### 5. Monitoramento de erros
+
+Um erro 500 em produção só era conhecido por quem abrisse o log do Render na hora certa, e um erro
+de renderização no React apagava a tela sem deixar rastro **nenhum** — nenhuma requisição falhava.
+Era o modo de falha mais invisível do sistema.
+
+`app/core/monitoramento.py` reúne três peças: log com formato fixo (hora, nível, `[request_id]`),
+`RequestIdMiddleware` que devolve `X-Request-Id` em toda resposta, e handler global de `Exception`
+que loga o traceback com método e caminho e responde ao cliente apenas com o código da requisição —
+que a mensagem de erro mostra, para o usuário poder informá-lo. O relato externo (Sentry) liga só
+quando `SENTRY_DSN` existe; sem DSN a aplicação sobe normalmente, porque um sistema sem
+monitoramento atende e um que não sobe não atende ninguém.
+
+**Privacidade:** o que sai para o Sentry é deliberadamente pobre — `send_default_pii=False`, corpo de
+requisição nunca, e remoção explícita de `Authorization`, `Cookie` e `Set-Cookie` no `before_send`.
+Sem isso, um erro num POST de cadastro levaria CPF e endereço para um terceiro junto com o traceback.
+Registrado em `PRIVACIDADE_E_RETENCAO.md`.
+
+No frontend, `ErrorBoundary` (fora dos providers, para pegar também um erro dentro deles) troca a
+tela branca por uma tela com explicação e caminho de volta, e relata o erro em
+`POST /monitoramento/erro-cliente` — rota autenticada, com limite de chamadas e campos curtos, que
+leva mensagem, caminho e pilha de componentes ao mesmo log dos erros de servidor. Nunca conteúdo de
+formulário. Testes: `tests/test_monitoramento.py` (9 casos), `tests/test_erro_cliente.py` (4 casos) e
+`src/components/common/ErrorBoundary.test.tsx` (5 casos).
+
+### Estado ao fim da rodada
+
+Backend: 186/186. Frontend: 211/211. `tsc --noEmit` e `npm run build` limpos. **Sem navegador neste
+ambiente:** as quatro telas novas ou alteradas (comprovantes, Pessoas, Minha conta, tela de erro) não
+foram abertas em navegador de verdade — o que os testes cobrem é o serviço, o comportamento do
+componente em jsdom e as regras do backend.
+
+### O que a revisão apontou e ficou de fora
+
+Ordem original do levantamento; os cinco primeiros são os desta rodada. Continuam abertos:
+
+- **Estoque e Doações**, nem modelados (`docs/futuro/`) — são 2 dos 15 objetivos do PRD e dependem de
+  validação com a associação.
+- **Cargos de membro**: somente leitura na interface.
+- **Campos sensíveis de beneficiário** (renda, necessidades) visíveis a todo perfil com
+  `beneficiarios.visualizar` — gap já registrado em `PRIVACIDADE_E_RETENCAO.md`.
+- **Rotina de limpeza dos tokens de recuperação** expirados.
+- **Alerta de backup ausente por mais de 48h** e **teste de restauração**, que nunca foi executado.
+- **Cobertura de tela**: o financeiro, módulo com mais regra de negócio, segue sem teste de
+  componente; não há teste ponta a ponta em navegador.

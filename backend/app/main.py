@@ -1,14 +1,19 @@
 from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
+from app.core.monitoramento import configurar_monitoramento
 from app.api.deps import get_current_user
-from app.api.routes import auth, health, pessoas, cargos, membros, voluntarios, projetos, eventos, beneficiarios, inscricoes, dashboard, contas_financeiras, categorias_financeiras, movimentacoes_financeiras, usuarios, perfis, permissoes, auditoria, telefones, cadastros, atendimentos, anexos_financeiros, relatorios, patrimonios
+from app.api.routes import auth, health, monitoramento, pessoas, cargos, membros, voluntarios, projetos, eventos, beneficiarios, inscricoes, dashboard, contas_financeiras, categorias_financeiras, movimentacoes_financeiras, usuarios, perfis, permissoes, auditoria, telefones, cadastros, atendimentos, anexos_financeiros, relatorios, patrimonios
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
     description="API do Sistema de Gestão da Associação Cristã Pau-Brasil",
     version="0.1.0"
 )
+
+# Log com formato fixo, id por requisição e relato externo de erro (quando há SENTRY_DSN).
+# Antes disto, um 500 em produção só existia para quem abrisse o log do Render na hora certa.
+configurar_monitoramento(app)
 
 # Configuração de CORS
 if settings.BACKEND_CORS_ORIGINS:
@@ -55,3 +60,4 @@ app.include_router(atendimentos.router, prefix="/atendimentos", tags=["atendimen
 app.include_router(anexos_financeiros.router, prefix="/anexos-financeiros", tags=["anexos financeiros"], dependencies=_protegido)
 app.include_router(relatorios.router, prefix="/relatorios", tags=["relatorios"], dependencies=_protegido)
 app.include_router(patrimonios.router, prefix="/patrimonios", tags=["patrimonio"], dependencies=_protegido)
+app.include_router(monitoramento.router, prefix="/monitoramento", tags=["monitoramento"], dependencies=_protegido)
