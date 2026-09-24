@@ -9,6 +9,8 @@ import { ProtectedRoute } from '../components/common/ProtectedRoute';
 import { Login } from '../pages/auth/Login';
 import { RedefinirSenha } from '../pages/auth/RedefinirSenha';
 import { Dashboard } from '../pages/dashboard/Dashboard';
+import { PeopleList } from '../pages/people/PeopleList';
+import { MinhaContaPage } from '../pages/account/MinhaContaPage';
 import { MembersList } from '../pages/members/MembersList';
 import { MemberForm } from '../pages/members/MemberForm';
 import { MemberDetails } from '../pages/members/MemberDetails';
@@ -67,7 +69,21 @@ export const AppRoutes: React.FC = () => {
                 }
               />
 
-              {/* Membros */}
+              {/* Pessoas: o cadastro base, que os vínculos apontam. */}
+              <Route
+                path="pessoas"
+                element={
+                  <ProtectedRoute permission="view_people">
+                    <PeopleList />
+                  </ProtectedRoute>
+                }
+              />
+
+              {/* A própria conta. Sem permissão: todo usuário autenticado precisa poder
+                  trocar a própria senha, independente do perfil. */}
+              <Route path="minha-conta" element={<MinhaContaPage />} />
+
+            {/* Membros */}
               <Route
                 path="membros"
                 element={

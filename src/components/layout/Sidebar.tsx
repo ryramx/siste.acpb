@@ -12,6 +12,8 @@ import {
   FileText,
   ScrollText,
   Settings,
+  IdCard,
+  UserCog,
   LogOut,
   ChevronDown,
   ChevronRight,
@@ -109,7 +111,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
             O grupo só aparece se o perfil alcançar ao menos um dos submenus. Sem esta
             verificação ele aparecia para todo mundo e, para quem não tinha nenhuma das três
             permissões, abria vazio — um menu que só serve para frustrar quem clica. */}
-        {(hasPermission('view_members') ||
+        {(hasPermission('view_people') ||
+          hasPermission('view_members') ||
           hasPermission('view_volunteers') ||
           hasPermission('view_beneficiaries')) && (
         <div>
@@ -128,6 +131,24 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
           {isOpen && peopleOpen && (
             <div className="ml-8 mt-1 space-y-1 border-l border-[#222824] pl-2">
+              {/* Primeiro da lista porque e a entidade base: membro, voluntario e beneficiario
+                  sao vinculos que apontam para um cadastro daqui. */}
+              {hasPermission('view_people') && (
+                <NavLink
+                  to="/pessoas"
+                  onClick={onMobileClose}
+                  className={({ isActive }) =>
+                    `flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-colors ${
+                      isActive
+                        ? 'text-[#F8D800] bg-[#004922]/40 font-semibold'
+                        : 'text-[#AEB5B0] hover:text-white hover:bg-[#222824]'
+                    }`
+                  }
+                >
+                  <IdCard className="w-4 h-4 shrink-0" />
+                  Cadastro de pessoas
+                </NavLink>
+              )}
               {hasPermission('view_members') && (
                 <NavLink
                   to="/membros"
@@ -351,6 +372,23 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </div>
           </div>
         )}
+
+        {/* Sem verificacao de permissao: trocar a propria senha e ver os proprios perfis nao
+            dependem de perfil nenhum. */}
+        <NavLink
+          to="/minha-conta"
+          onClick={onMobileClose}
+          className={({ isActive }) =>
+            `w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+              isActive
+                ? 'text-[#F8D800] bg-[#004922]/40 font-semibold'
+                : 'text-[#AEB5B0] hover:bg-[#222824] hover:text-white'
+            }`
+          }
+        >
+          <UserCog className="w-5 h-5 shrink-0" />
+          {isOpen && <span>Minha conta</span>}
+        </NavLink>
 
         <button
           onClick={handleLogout}

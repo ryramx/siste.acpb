@@ -30,8 +30,13 @@ export type PermissionKey =
   | 'view_events'
   | 'edit_events'
   /** Cadastro de Pessoa em si (distinto de membros/voluntários/beneficiários).
-   * Usada pelo relatório de pessoas, que exige `pessoas.visualizar` no backend. */
+   * Usada pelo relatório de pessoas e pela tela de Pessoas, que exigem
+   * `pessoas.visualizar` no backend. */
   | 'view_people'
+  | 'edit_people'
+  /** `pessoas.excluir` é a única permissão de exclusão dedicada do sistema (ver RBAC.md) e
+   * hoje pertence só ao Administrador: apagar uma Pessoa apaga CPF e endereço em definitivo. */
+  | 'delete_people'
   | 'view_financial'
   | 'edit_financial'
   /** Patrimônio: bens da associação (`patrimonio.*`). */

@@ -39,6 +39,8 @@ const REGRAS_DE_PERMISSAO: Record<PermissionKey, string[] | null> = {
   view_events: ['eventos.visualizar'],
   edit_events: ['eventos.criar', 'eventos.editar'],
   view_people: ['pessoas.visualizar'],
+  edit_people: ['pessoas.criar', 'pessoas.editar'],
+  delete_people: ['pessoas.excluir'],
   view_financial: ['financeiro.visualizar'],
   edit_financial: ['financeiro.criar', 'financeiro.editar'],
   view_assets: ['patrimonio.visualizar'],
@@ -124,6 +126,16 @@ export const authService = {
 
   clearCurrentUser(): void {
     localStorage.removeItem(USER_STORAGE_KEY);
+  },
+
+  /** Troca a senha do usuário logado. O backend exige a senha atual e responde 400 quando ela
+   * está errada, 429 quando houve tentativa demais e 422 quando a nova é curta demais — em
+   * todos os casos a mensagem do servidor é a que a tela mostra. */
+  async alterarSenha(senhaAtual: string, senhaNova: string): Promise<void> {
+    await apiClient.post('/auth/alterar-senha', {
+      senha_atual: senhaAtual,
+      senha_nova: senhaNova
+    });
   },
 
   hasPermission(permissoesDoUsuario: string[], permission: PermissionKey): boolean {
