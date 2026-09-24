@@ -11,7 +11,7 @@ precisam de backup próprio.
 | Backup completo do banco (`pg_dump`, formato custom `-F c`) | Diário, fora do horário de uso (madrugada) | 30 dias rolantes |
 | Backup completo do banco | Semanal (aos domingos) | 6 meses |
 | Backup completo do banco | Mensal (dia 1) | 24 meses (obrigação legal/contábil de guarda de registros financeiros) |
-| Arquivos de anexos financeiros (`backend/storage/anexos_financeiros/`) | Diário, junto com o backup do banco | Mesma retenção do backup diário/semanal/mensal correspondente |
+| Arquivos de anexos financeiros e fotos de pessoa (hoje no Supabase Storage, não em `backend/storage/`) | Espelho diário, junto com o backup do banco; pacote fechado no mensal | Espelho sem expiração; pacote mensal por 24 meses (ver "Estado da automação") |
 
 Justificativa da retenção de 24 meses nos backups mensais: o sistema guarda movimentações
 financeiras e comprovantes que a associação pode precisar apresentar em prestação de contas ou
@@ -82,13 +82,37 @@ pg_restore -h <host> -U acpb_app -d acpb_db_teste_restauracao acpb_db_restaurar.
 
 ## Estado da automação
 
-O backup **diário do banco** está automatizado em `.github/workflows/backup.yml`: `pg_dump -F c`,
-verificação de tamanho, criptografia simétrica e envio para armazenamento externo, com retenção de
-30 dias. Roda às 06:00 UTC e também sob demanda pela aba Actions.
+`.github/workflows/backup.yml` roda todo dia às 06:00 UTC (03:00 em Brasília) e também sob demanda
+pela aba Actions. O que ele faz:
 
-Ele só funciona depois que os segredos do repositório forem preenchidos (a lista está no cabeçalho
-do workflow). Enquanto não estiverem, o job **falha todo dia, de propósito** — um backup silencioso
+| Quando | O que gera | Onde | Retenção |
+|---|---|---|---|
+| Todo dia | `pg_dump -F c` do banco, criptografado com `gpg -c` (AES256) | `backups/diario/` | 30 dias |
+| Todo dia | Espelho dos arquivos do Storage (`anexos_financeiros/`, `fotos_pessoas/`) | `backups/arquivos/espelho/` | Sem expiração (ver abaixo) |
+| Domingos | Cópia do dump do dia | `backups/semanal/` | 6 meses |
+| Dia 1 | Cópia do dump + pacote `.tar.gz` criptografado de todos os arquivos | `backups/mensal/` | 24 meses |
+
+O job só funciona depois que os segredos do repositório forem preenchidos (a lista está no cabeçalho
+do workflow). Enquanto não estiverem, ele **falha todo dia, de propósito** — um backup silencioso
 que não roda é pior do que nenhum, porque passa a impressão de que existe.
+
+### Os arquivos têm dois backups, com propósitos diferentes
+
+O `pg_dump` não alcança os comprovantes nem as fotos: eles vivem no Storage, fora do banco. Sem
+backup próprio, uma restauração devolveria as movimentações **sem os comprovantes** — exatamente o
+documento que a prestação de contas exige. São duas estratégias porque as perdas são diferentes:
+
+- **Espelho diário** (`aws s3 sync`, sem `--delete`): responde à perda mais provável do dia a dia —
+  alguém remove o comprovante errado pela tela. O espelho guarda o arquivo apagado, e a cópia é
+  incremental, então o custo diário é só o dos arquivos novos. Não expira por idade: apagar dele
+  por tempo é justamente o que ele existe para evitar.
+- **Pacote mensal** (`.tar.gz` criptografado, 24 meses): responde a "preciso dos comprovantes de
+  março de dois anos atrás". O espelho não serve para isso — é um retrato do presente, sem recorte
+  de data.
+
+O espelho é a única parte que não vai criptografada: é cópia dentro do mesmo bucket, sob as mesmas
+credenciais, e cifrá-la impediria conferir um comprovante sem restaurar o backup inteiro. O pacote
+mensal, que é o de longo prazo, vai criptografado.
 
 ### O que mudou em relação à política acima
 
@@ -102,15 +126,22 @@ Supabase Storage. Consequências:
   ferramenta evitaria instalar uma dependência só para isso. Os comandos de referência acima
   continuam válidos para restauração manual, trocando `age -d` por
   `gpg --decrypt --output <arquivo>.dump <arquivo>.dump.gpg`.
+- **O semanal leva só o banco**, não os arquivos. A tabela de retenção previa os arquivos em todas
+  as frequências; empacotá-los 26 vezes por ano encostaria na cota de 1GB do plano gratuito do
+  Supabase sem acrescentar nada que o espelho diário e o pacote mensal já não cubram.
 
 ### Pendente
 
-- **Anexos financeiros e fotos no Supabase Storage não têm backup.** Ficam fora do banco, então o
-  `pg_dump` não os alcança — as movimentações seriam restauradas sem os comprovantes. Falta decidir
-  entre replicar o bucket para outro provedor ou baixá-lo junto no mesmo workflow.
-- **Backups semanais (6 meses) e mensais (24 meses)** previstos na tabela de retenção: só o diário
-  está automatizado. O mensal é o que atende à guarda de 24 meses dos registros financeiros.
+- **O destino é o mesmo projeto Supabase que guarda os arquivos de produção.** Protege contra perda
+  do banco no Neon, exclusão acidental pelo sistema e corrupção de dados — **não** contra perder o
+  projeto Supabase inteiro (encerramento de conta, suspensão por inatividade no plano gratuito).
+  Fechar essa ponta exige um segundo provedor, que é decisão da associação; o workflow já isola
+  tudo em segredos `BACKUP_S3_*` separados dos da API justamente para que apontá-lo para outro
+  lugar seja só trocar valores.
 - **Alerta de backup ausente por mais de 48h.** Hoje a falha aparece como job vermelho no GitHub,
   que notifica quem estiver inscrito no repositório; não há verificação independente de que o
   último arquivo é recente.
-- **Teste de restauração trimestral** continua sendo processo humano, e nunca foi executado.
+- **Teste de restauração trimestral** continua sendo processo humano, e nunca foi executado. O passo
+  "Resumo do que existe hoje" do workflow imprime no log o que há em cada pasta, para que a
+  conferência seja ler uma tela em vez de abrir o painel do Supabase — mas ler a lista não é
+  testar a restauração.

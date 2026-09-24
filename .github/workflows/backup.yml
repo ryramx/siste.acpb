@@ -1,4 +1,4 @@
-# Backup diario do banco de producao.
+# Backup do banco e dos arquivos de producao.
 #
 # BACKUP_E_RESTAURACAO.md definia a politica e deixava a automacao de fora, como "trabalho de
 # infraestrutura". O resultado pratico era um procedimento escrito e nenhum backup acontecendo,
@@ -7,8 +7,23 @@
 # O documento original pressupunha servidor proprio: copia local em /var/backups e anexos em
 # backend/storage/. A producao real e outra -- Render (disco efemero), banco no Neon e anexos no
 # Supabase Storage. Entao nao ha copia local que sobreviva, e o backup nasce ja fora do provedor
-# do banco, que e o que a regra 3-2-1 pede. ATENCAO: este workflow cobre o BANCO. Os anexos no
-# Supabase ainda nao tem backup proprio -- ver a secao "Pendente" em BACKUP_E_RESTAURACAO.md.
+# do banco, que e o que a regra 3-2-1 pede.
+#
+# O que este workflow cobre, todo dia:
+#   1. BANCO: pg_dump completo, criptografado, em backups/diario/ (retencao 30 dias).
+#   2. ARQUIVOS: espelho dos comprovantes e fotos em backups/arquivos/espelho/, sem --delete,
+#      para que um arquivo apagado no sistema continue existindo no espelho.
+#   3. Aos domingos: copia do dump em backups/semanal/ (retencao 6 meses).
+#   4. No dia 1: dump + tarball criptografado dos arquivos em backups/mensal/ (retencao 24
+#      meses -- e o backup que atende a guarda contabil dos registros financeiros).
+#
+# LIMITACAO CONHECIDA, aceita de proposito: o destino e o MESMO projeto Supabase que guarda os
+# arquivos de producao (os segredos abaixo sao os mesmos valores que a API usa). Isso protege
+# contra perda do banco no Neon, contra exclusao acidental pelo sistema e contra corrupcao de
+# dados -- nao contra a perda do projeto Supabase inteiro. Fechar essa ponta exige um segundo
+# provedor, que a associacao precisa decidir e pagar ou criar; ver a secao "Pendente" em
+# backend/BACKUP_E_RESTAURACAO.md. Esta limitacao nao e motivo para nao ter o backup: sem ele
+# um DROP acidental no Neon, ou o fim do plano gratuito, levava tudo.
 #
 # Segredos necessarios no repositorio (Settings > Secrets and variables > Actions):
 #   BACKUP_DATABASE_URL     connection string do Neon (a mesma DATABASE_URL do Render)
@@ -33,10 +48,20 @@ on:
   # Permite rodar sob demanda pela aba Actions -- e assim que se testa a configuracao sem
   # esperar a madrugada, e tambem como tirar um backup antes de uma migration arriscada.
   workflow_dispatch:
+    inputs:
+      forcar_mensal:
+        description: "Gerar tambem o pacote mensal (dump + arquivos), mesmo fora do dia 1"
+        type: boolean
+        default: false
 
 jobs:
   backup:
     runs-on: ubuntu-latest
+
+    env:
+      # Os prefixos que a aplicacao usa dentro do bucket (ver `criar_backend` em
+      # app/core/object_storage.py): comprovantes financeiros e fotos de pessoa.
+      PREFIXOS_DE_ARQUIVOS: "anexos_financeiros fotos_pessoas"
 
     steps:
       - name: Conferir segredos
@@ -61,6 +86,23 @@ jobs:
           BACKUP_S3_ACCESS_KEY_ID: ${{ secrets.BACKUP_S3_ACCESS_KEY_ID }}
           BACKUP_S3_SECRET_ACCESS_KEY: ${{ secrets.BACKUP_S3_SECRET_ACCESS_KEY }}
           BACKUP_S3_REGION: ${{ secrets.BACKUP_S3_REGION }}
+
+      - name: Decidir o que este dia gera
+        # Um passo so para a decisao, em vez de repetir `date` em cada `if`: assim a data usada
+        # no nome dos arquivos e a mesma em todos os passos, mesmo que o job atravesse a
+        # meia-noite UTC.
+        id: quando
+        run: |
+          hoje=$(date -u +%Y-%m-%d)
+          echo "data=$hoje" >> "$GITHUB_OUTPUT"
+          # %u: 7 = domingo. O semanal da politica e aos domingos.
+          [ "$(date -u +%u)" = "7" ] && echo "semanal=sim" >> "$GITHUB_OUTPUT" || true
+          if [ "$(date -u +%d)" = "01" ] || [ "$FORCAR_MENSAL" = "true" ]; then
+            echo "mensal=sim" >> "$GITHUB_OUTPUT"
+          fi
+          echo "Data: $hoje (dia da semana $(date -u +%u), dia do mes $(date -u +%d))"
+        env:
+          FORCAR_MENSAL: ${{ inputs.forcar_mensal }}
 
       - name: Gerar o dump
         # pg_dump roda dentro da imagem oficial do Postgres em vez do cliente do runner: o
@@ -96,20 +138,21 @@ jobs:
             exit 1
           fi
 
-      - name: Criptografar
+      - name: Criptografar o dump
         # O arquivo sai criptografado antes de deixar o runner. A senha fica no cofre da
         # associacao, separada do destino: quem tiver acesso ao bucket nao le os dados.
         run: |
           gpg --batch --yes --symmetric --cipher-algo AES256 \
             --passphrase "$BACKUP_PASSPHRASE" \
-            --output "acpb-$(date -u +%Y-%m-%d).dump.gpg" acpb.dump
+            --output "acpb-${DATA}.dump.gpg" acpb.dump
           rm acpb.dump
         env:
           BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+          DATA: ${{ steps.quando.outputs.data }}
 
-      - name: Enviar para o armazenamento externo
+      - name: Enviar o dump diario
         run: |
-          aws s3 cp "acpb-$(date -u +%Y-%m-%d).dump.gpg" \
+          aws s3 cp "acpb-${DATA}.dump.gpg" \
             "s3://$BACKUP_S3_BUCKET/backups/diario/" \
             --endpoint-url "$BACKUP_S3_ENDPOINT_URL"
         env:
@@ -118,23 +161,150 @@ jobs:
           AWS_DEFAULT_REGION: ${{ secrets.BACKUP_S3_REGION }}
           BACKUP_S3_BUCKET: ${{ secrets.BACKUP_S3_BUCKET }}
           BACKUP_S3_ENDPOINT_URL: ${{ secrets.BACKUP_S3_ENDPOINT_URL }}
+          DATA: ${{ steps.quando.outputs.data }}
 
-      - name: Aplicar retencao de 30 dias nos diarios
-        # A politica preve ainda semanais (6 meses) e mensais (24 meses). Aqui so o diario esta
-        # automatizado; os demais dependem de decidir onde guardar copia de longo prazo.
+      - name: Espelhar os arquivos (comprovantes e fotos)
+        # O pg_dump nao alcanca os arquivos: eles ficam no Storage, fora do banco. Sem este
+        # passo, uma restauracao devolvia as movimentacoes sem os comprovantes -- justamente o
+        # documento que a prestacao de contas exige.
+        #
+        # `sync` sem `--delete` de proposito: o espelho precisa guardar tambem o que foi apagado
+        # no sistema, que e o caso de perda mais provavel no dia a dia (alguem remove o
+        # comprovante errado). Em troca, o espelho so cresce; o custo e limitado porque cada
+        # comprovante tem no maximo 5MB e cada foto 2MB, e nada e reenviado a cada dia -- o
+        # `sync` copia apenas o que ainda nao esta la.
+        #
+        # Os arquivos vao sem criptografia adicional: sao copia dentro do mesmo bucket, sob as
+        # mesmas credenciais, e cifra-los aqui impediria conferir um comprovante sem restaurar
+        # o backup inteiro. O pacote mensal, que e o de longo prazo, vai criptografado.
         run: |
-          limite=$(date -u -d '30 days ago' +%Y-%m-%d)
-          aws s3 ls "s3://$BACKUP_S3_BUCKET/backups/diario/" \
-            --endpoint-url "$BACKUP_S3_ENDPOINT_URL" \
-            | awk '{print $4}' | grep -E '^acpb-[0-9]{4}-[0-9]{2}-[0-9]{2}\.dump\.gpg$' \
-            | while read -r arquivo; do
-                data=$(echo "$arquivo" | sed -E 's/^acpb-(.*)\.dump\.gpg$/\1/')
-                if [ "$data" \< "$limite" ]; then
-                  echo "Removendo backup vencido: $arquivo"
-                  aws s3 rm "s3://$BACKUP_S3_BUCKET/backups/diario/$arquivo" \
-                    --endpoint-url "$BACKUP_S3_ENDPOINT_URL"
-                fi
-              done
+          for prefixo in $PREFIXOS_DE_ARQUIVOS; do
+            echo "Espelhando $prefixo/"
+            aws s3 sync "s3://$BACKUP_S3_BUCKET/$prefixo/" \
+              "s3://$BACKUP_S3_BUCKET/backups/arquivos/espelho/$prefixo/" \
+              --endpoint-url "$BACKUP_S3_ENDPOINT_URL" \
+              --no-progress
+          done
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.BACKUP_S3_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.BACKUP_S3_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: ${{ secrets.BACKUP_S3_REGION }}
+          BACKUP_S3_BUCKET: ${{ secrets.BACKUP_S3_BUCKET }}
+          BACKUP_S3_ENDPOINT_URL: ${{ secrets.BACKUP_S3_ENDPOINT_URL }}
+
+      - name: Copiar para o semanal (domingos)
+        if: steps.quando.outputs.semanal == 'sim'
+        # Copia no servidor, sem baixar e reenviar: o arquivo do dia ja esta no bucket e ja esta
+        # criptografado. Um dump por semana, retido 6 meses, conforme a politica.
+        run: |
+          aws s3 cp \
+            "s3://$BACKUP_S3_BUCKET/backups/diario/acpb-${DATA}.dump.gpg" \
+            "s3://$BACKUP_S3_BUCKET/backups/semanal/acpb-${DATA}.dump.gpg" \
+            --endpoint-url "$BACKUP_S3_ENDPOINT_URL"
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.BACKUP_S3_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.BACKUP_S3_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: ${{ secrets.BACKUP_S3_REGION }}
+          BACKUP_S3_BUCKET: ${{ secrets.BACKUP_S3_BUCKET }}
+          BACKUP_S3_ENDPOINT_URL: ${{ secrets.BACKUP_S3_ENDPOINT_URL }}
+          DATA: ${{ steps.quando.outputs.data }}
+
+      - name: Montar o pacote mensal de arquivos (dia 1)
+        if: steps.quando.outputs.mensal == 'sim'
+        # O mensal e o backup de longo prazo (24 meses) e o unico que leva os arquivos como um
+        # pacote fechado e criptografado: e ele que responde a "preciso dos comprovantes de
+        # marco de dois anos atras". O espelho diario nao serve para isso -- ele e um retrato do
+        # presente, sem recorte de data.
+        run: |
+          mkdir -p arquivos
+          for prefixo in $PREFIXOS_DE_ARQUIVOS; do
+            aws s3 sync "s3://$BACKUP_S3_BUCKET/$prefixo/" "arquivos/$prefixo/" \
+              --endpoint-url "$BACKUP_S3_ENDPOINT_URL" \
+              --no-progress
+          done
+          quantidade=$(find arquivos -type f | wc -l)
+          echo "Arquivos empacotados: $quantidade"
+          tar -czf arquivos.tar.gz arquivos
+          gpg --batch --yes --symmetric --cipher-algo AES256 \
+            --passphrase "$BACKUP_PASSPHRASE" \
+            --output "acpb-arquivos-${DATA}.tar.gz.gpg" arquivos.tar.gz
+          rm -rf arquivos arquivos.tar.gz
+          ls -la "acpb-arquivos-${DATA}.tar.gz.gpg"
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.BACKUP_S3_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.BACKUP_S3_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: ${{ secrets.BACKUP_S3_REGION }}
+          BACKUP_S3_BUCKET: ${{ secrets.BACKUP_S3_BUCKET }}
+          BACKUP_S3_ENDPOINT_URL: ${{ secrets.BACKUP_S3_ENDPOINT_URL }}
+          BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+          DATA: ${{ steps.quando.outputs.data }}
+
+      - name: Enviar o mensal (dia 1)
+        if: steps.quando.outputs.mensal == 'sim'
+        run: |
+          aws s3 cp \
+            "s3://$BACKUP_S3_BUCKET/backups/diario/acpb-${DATA}.dump.gpg" \
+            "s3://$BACKUP_S3_BUCKET/backups/mensal/acpb-${DATA}.dump.gpg" \
+            --endpoint-url "$BACKUP_S3_ENDPOINT_URL"
+          aws s3 cp "acpb-arquivos-${DATA}.tar.gz.gpg" \
+            "s3://$BACKUP_S3_BUCKET/backups/mensal/" \
+            --endpoint-url "$BACKUP_S3_ENDPOINT_URL"
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.BACKUP_S3_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.BACKUP_S3_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: ${{ secrets.BACKUP_S3_REGION }}
+          BACKUP_S3_BUCKET: ${{ secrets.BACKUP_S3_BUCKET }}
+          BACKUP_S3_ENDPOINT_URL: ${{ secrets.BACKUP_S3_ENDPOINT_URL }}
+          DATA: ${{ steps.quando.outputs.data }}
+
+      - name: Aplicar retencao
+        # Uma funcao para as tres pastas, porque a regra e a mesma e so o prazo muda. A data
+        # sai do proprio nome do arquivo (ISO, entao comparacao de texto ja ordena direito) --
+        # nao da data de modificacao no bucket, que uma copia server-side reescreveria.
+        #
+        # O espelho de arquivos nao entra aqui: apagar dele por idade e exatamente o que ele
+        # existe para evitar.
+        run: |
+          expirar() {
+            pasta="$1"; dias="$2"; padrao="$3"
+            limite=$(date -u -d "$dias days ago" +%Y-%m-%d)
+            echo "Retencao de $pasta: removendo anteriores a $limite"
+            aws s3 ls "s3://$BACKUP_S3_BUCKET/backups/$pasta/" \
+              --endpoint-url "$BACKUP_S3_ENDPOINT_URL" \
+              | awk '{print $4}' | grep -E "$padrao" \
+              | while read -r arquivo; do
+                  data=$(echo "$arquivo" | grep -oE '[0-9]{4}-[0-9]{2}-[0-9]{2}')
+                  if [ "$data" \< "$limite" ]; then
+                    echo "Removendo backup vencido: $pasta/$arquivo"
+                    aws s3 rm "s3://$BACKUP_S3_BUCKET/backups/$pasta/$arquivo" \
+                      --endpoint-url "$BACKUP_S3_ENDPOINT_URL"
+                  fi
+                done
+          }
+
+          expirar diario 30 '^acpb-[0-9]{4}-[0-9]{2}-[0-9]{2}\.dump\.gpg$'
+          # 6 meses e 24 meses da politica, em dias.
+          expirar semanal 186 '^acpb-[0-9]{4}-[0-9]{2}-[0-9]{2}\.dump\.gpg$'
+          # O mensal tem dois arquivos por data: o dump e o pacote de arquivos.
+          expirar mensal 730 '^acpb-(arquivos-)?[0-9]{4}-[0-9]{2}-[0-9]{2}\.(dump\.gpg|tar\.gz\.gpg)$'
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.BACKUP_S3_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.BACKUP_S3_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: ${{ secrets.BACKUP_S3_REGION }}
+          BACKUP_S3_BUCKET: ${{ secrets.BACKUP_S3_BUCKET }}
+          BACKUP_S3_ENDPOINT_URL: ${{ secrets.BACKUP_S3_ENDPOINT_URL }}
+
+      - name: Resumo do que existe hoje
+        # Vai para o log do job para que uma conferencia mensal seja ler uma tela, em vez de
+        # abrir o painel do Supabase. Tambem torna visivel o crescimento do espelho, que e o
+        # que pode encostar na cota de 1GB do plano gratuito.
+        run: |
+          for pasta in diario semanal mensal arquivos/espelho; do
+            echo "--- backups/$pasta"
+            aws s3 ls "s3://$BACKUP_S3_BUCKET/backups/$pasta/" \
+              --endpoint-url "$BACKUP_S3_ENDPOINT_URL" \
+              --recursive --human-readable --summarize | tail -20
+          done
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.BACKUP_S3_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.BACKUP_S3_SECRET_ACCESS_KEY }}
