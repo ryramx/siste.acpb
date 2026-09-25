@@ -1,6 +1,6 @@
 # 44 — Gráficos do dashboard financeiro
 
-**Situação:** Pendente
+**Situação:** Concluído
 
 ## Problema
 

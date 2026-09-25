@@ -608,31 +608,64 @@ Financeiro
 
 ```
 ┌─────────────────────────────────────────────────┐
-│ Dashboard Financeiro                            │
-├──────────────┬──────────────┬───────────────────┤
 │ Receitas     │ Despesas     │ Saldo             │
 │ R$ 8.420     │ R$ 6.830     │ R$ 1.590          │
 └──────────────┴──────────────┴───────────────────┘
 
-┌─────────────────────────┐
-│ Receitas por categoria  │
-│                         │
-│ Doações      █████████  │
-│ Eventos      ████       │
-│ Convênios    ██████     │
-└─────────────────────────┘
+[6 meses] [12 meses] [Este ano] [Tudo]      ← filtro, uma linha, vale para tudo abaixo
 
-┌─────────────────────────┐
-│ Despesas por categoria  │
-│                         │
-│ Projetos     ███████    │
-│ Aluguel      █████      │
-│ Energia      ███        │
-│ Alimentação  ████       │
-└─────────────────────────┘
+┌─────────────────────────────────────────────────┐
+│ Receitas e despesas por mês      ▪Receitas ▪Desp│
+│ 10 mil ┤                                        │
+│  5 mil ┤   ▌▌   ▌▌   ▌▌   ▌▌   ▌▌   ▌▌          │
+│      0 ┼───────────────────────────────────     │
+│         abr  mai  jun  jul  ago  set            │
+│ Ver os mesmos dados em tabela                   │
+└─────────────────────────────────────────────────┘
+
+┌───────────────────────────┐ ┌───────────────────────────┐
+│ Receitas por categoria    │ │ Despesas por categoria    │
+│ Doações   ███████ R$ 5.2k │ │ Aluguel  ██████ R$ 1.2k   │
+│ Eventos   ████    R$ 2.1k │ │ Material ████   R$ 800    │
+└───────────────────────────┘ └───────────────────────────┘
 ```
 
----
+## Decisões dos gráficos
+
+**Colunas agrupadas, não linhas, na evolução mensal.** A pergunta que a diretoria faz é "neste
+mês entrou mais do que saiu?" — uma comparação *dentro* de cada mês, que duas barras lado a lado
+respondem de relance. Linha responde melhor a "a tendência está subindo?", que é a pergunta
+secundária aqui.
+
+**Barra, não pizza, na composição por categoria.** Comparar comprimento é mais preciso que
+comparar ângulo, e a lista de categorias da associação passa de meia dúzia — em fatias, as
+menores viram lascas sem rótulo. Horizontal porque nome de categoria é texto longo, que na
+vertical só caberia girado.
+
+**Uma cor por gráfico de categoria, não uma por categoria.** O nome já está escrito ao lado da
+barra e o comprimento já diz o tamanho; colorir cada uma gastaria o canal de cor repetindo
+informação que a barra já carrega.
+
+**O par de cores das séries foi validado, não escolhido a olho.** Verde e vermelho puros — o
+óbvio para entrada e saída — ficam a ΔE 1,6 sob deuteranopia: para uma parte dos leitores seriam
+a mesma cor, lado a lado na mesma barra. O par em uso (`serie-receita` / `serie-despesa`) fica
+em ΔE 6,9, dentro da banda que exige **codificação secundária** — e ela está presente: legenda
+sempre visível, posição fixa no par (receita sempre à esquerda), a dica ao passar o mouse e a
+tabela equivalente. Os valores em texto do resto da tela continuam em verde e vermelho
+tradicionais: eles nunca aparecem encostados um no outro, então o problema não existe lá.
+
+**Todo número do gráfico existe fora dele.** Cada mês tem rótulo acessível com os três valores,
+e o botão "ver os mesmos dados em tabela" abre a tabela equivalente. Gráfico que só entrega o
+número ao passar o mouse exclui quem usa teclado, leitor de tela ou celular.
+
+**O período é um filtro só, acima de tudo.** Os três gráficos recarregam juntos — números que
+discordam entre si por causa de filtros separados são pior do que número nenhum. Enquanto
+recarrega, o gráfico anterior fica esmaecido em vez de virar esqueleto, para a tela não saltar.
+
+**As agregações vêm do banco, não do navegador.** `GET /dashboard/financeiro/evolucao` e
+`/por-categoria` somam no Postgres. Somar no cliente exigiria carregar a lista inteira de
+lançamentos, o que deixa de funcionar quando ela crescer.
+
 
 # 20. Receitas e despesas
 

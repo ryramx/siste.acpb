@@ -16,6 +16,16 @@
      o outro é sinal de valor, e confundi-los faria o saldo mudar de cor junto com o tema. */
   --color-valor-positivo: #40C075;
 
+  /* Séries dos gráficos financeiros. São tokens à parte dos valores em texto acima porque o
+     trabalho é outro: aqui as duas cores ficam LADO A LADO na mesma barra agrupada, e o par
+     precisa sobreviver a daltonismo. O par em texto (#40C075 / red-400) nunca se toca.
+     Conferido com o validador de paleta (OKLab, simulação Machado-Oliveira-Fernandes):
+     ΔE 6,9 sob deuteranopia — dentro da banda que exige codificação secundária, que os
+     gráficos trazem (legenda, rótulos, separação por posição e a tabela equivalente).
+     Verde e vermelho puros davam ΔE 1,6: para um daltônico seriam a mesma cor. */
+  --color-serie-receita: #1BAF7A;
+  --color-serie-despesa: #E34948;
+
   --color-surface-bg: #0F1210;
   --color-surface-card: #181D1A;
   --color-surface-card-hover: #1e2521;

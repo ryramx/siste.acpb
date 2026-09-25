@@ -68,7 +68,7 @@ tarefas do plano original. Quando uma é concluída, o que ela entregou vai para
 | Tarefa | Conteúdo |
 | ------ | -------- |
 | [`tarefas/43-tokens-de-cor-e-contraste.md`](tarefas/43-tokens-de-cor-e-contraste.md) | ✅ Concluída — paleta e contrastes em [`produto/descricao-da-ui.md`](produto/descricao-da-ui.md) |
-| [`tarefas/44-graficos-do-dashboard-financeiro.md`](tarefas/44-graficos-do-dashboard-financeiro.md) | Desenhar as agregações financeiras que a API já calcula e ninguém mostra |
+| [`tarefas/44-graficos-do-dashboard-financeiro.md`](tarefas/44-graficos-do-dashboard-financeiro.md) | ✅ Concluída — decisões na seção 19 de [`produto/descricao-da-ui.md`](produto/descricao-da-ui.md) |
 | [`tarefas/45-diagramas-da-documentacao.md`](tarefas/45-diagramas-da-documentacao.md) | Arquitetura, backup e autenticação como SVG versionado |
 
 ## 🔮 Futuro

@@ -1,7 +1,16 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { DollarSign, ArrowUpRight, ArrowDownRight, Plus, PieChart, TrendingUp } from 'lucide-react';
+import { DollarSign, ArrowUpRight, ArrowDownRight, Plus, TrendingUp } from 'lucide-react';
 import { FinancialTabs } from '../../components/common/FinancialTabs';
+import { GraficoEvolucaoMensal } from '../../components/charts/GraficoEvolucaoMensal';
+import { GraficoPorCategoria } from '../../components/charts/GraficoPorCategoria';
+import {
+  ChaveDePeriodo,
+  PontoMensal,
+  TotalPorCategoria,
+  dashboardFinanceiroService,
+  periodoDe
+} from '../../services/dashboardFinanceiroService';
 import { AcoesLancamento } from '../../components/common/AcoesLancamento';
 import { AnexosLancamento } from '../../components/common/AnexosLancamento';
 import { Button } from '../../components/ui/Button';
@@ -20,82 +29,6 @@ import { formatarData, formatarMoeda, formatarMoedaComSinal, participacao, somar
 import { usePeriodoFinanceiro } from '../../hooks/usePeriodoFinanceiro';
 import { descreverPeriodo } from '../../utils/periodo';
 
-interface CategoriaBreakdownProps {
-  titulo: string;
-  icon: React.ReactNode;
-  transactions: FinancialTransaction[];
-  type: 'RECEITA' | 'DESPESA';
-  barColor: string;
-  textColor: string;
-}
-
-/** Quantas categorias aparecem antes de "Ver todas". Despesas tem 15 no cadastro padrão, e a
- * lista inteira empurrava o resto do dashboard para baixo. */
-const CATEGORIAS_VISIVEIS = 5;
-
-export const CategoriaBreakdown: React.FC<CategoriaBreakdownProps> = ({
-  titulo,
-  icon,
-  transactions,
-  type,
-  barColor,
-  textColor
-}) => {
-  const filtradas = transactions.filter((t) => t.type === type && t.status === 'CONFIRMADA');
-  const porCategoria = new Map<string, number[]>();
-  filtradas.forEach((t) => porCategoria.set(t.category, [...(porCategoria.get(t.category) ?? []), t.amount]));
-  const totalGeral = somarValores(filtradas.map((t) => t.amount));
-  const linhas = Array.from(porCategoria.entries())
-    .map(([categoria, valores]) => [categoria, somarValores(valores)] as const)
-    .sort((a, b) => b[1] - a[1]);
-  const [expandido, setExpandido] = useState(false);
-  const visiveis = expandido ? linhas : linhas.slice(0, CATEGORIAS_VISIVEIS);
-
-  return (
-    <div className="bg-surface-card border border-surface-border p-6 rounded-2xl space-y-4">
-      <h3 className="text-base font-bold text-white font-heading flex items-center gap-2">
-        {icon}
-        {titulo}
-      </h3>
-      {linhas.length === 0 ? (
-        <p className="text-xs text-text-muted pt-2">Nenhum lançamento confirmado ainda.</p>
-      ) : (
-        <div className="space-y-3 pt-2">
-          {visiveis.map(([categoria, total]) => {
-            const { texto, largura } = participacao(total, totalGeral);
-            return (
-              <div key={categoria}>
-                <div className="flex justify-between text-xs font-semibold mb-1">
-                  <span className="text-white">{categoria}</span>
-                  <span className={textColor}>
-                    {formatarMoeda(total)} ({texto})
-                  </span>
-                </div>
-                <div className="w-full bg-surface-bg h-2.5 rounded-full overflow-hidden border border-surface-border">
-                  {/* Largura mínima: sem ela uma categoria pequena ao lado de uma enorme some. */}
-                  <div
-                    className={`${barColor} h-full`}
-                    style={{ width: `${largura}%`, minWidth: largura > 0 ? '2px' : 0 }}
-                  />
-                </div>
-              </div>
-            );
-          })}
-          {linhas.length > CATEGORIAS_VISIVEIS && (
-            <button
-              type="button"
-              onClick={() => setExpandido(!expandido)}
-              className="text-xs font-semibold text-acpb-yellow hover:underline"
-            >
-              {expandido ? 'Recolher' : `Ver todas (${linhas.length})`}
-            </button>
-          )}
-        </div>
-      )}
-    </div>
-  );
-};
-
 export const FinancialDashboard: React.FC = () => {
   const navigate = useNavigate();
   const { hasPermission, user } = useAuth();
@@ -107,6 +40,14 @@ export const FinancialDashboard: React.FC = () => {
   const [contas, setContas] = useState<OpcaoFinanceira[]>([]);
   const [categorias, setCategorias] = useState<OpcaoFinanceira[]>([]);
   const [projetos, setProjetos] = useState<OpcaoFinanceira[]>([]);
+
+  // Agregações vindas do backend. Somar no navegador só funciona enquanto a lista inteira de
+  // lançamentos couber na memória da aba — e não respeita filtro de período nenhum.
+  const [periodoGraficos, setPeriodoGraficos] = useState<ChaveDePeriodo>('DOZE_MESES');
+  const [evolucao, setEvolucao] = useState<PontoMensal[]>([]);
+  const [receitasPorCategoria, setReceitasPorCategoria] = useState<TotalPorCategoria[]>([]);
+  const [despesasPorCategoria, setDespesasPorCategoria] = useState<TotalPorCategoria[]>([]);
+  const [carregandoGraficos, setCarregandoGraficos] = useState(true);
 
   // Modal Novo Lançamento
   const [modalOpen, setModalOpen] = useState(false);
@@ -168,6 +109,40 @@ export const FinancialDashboard: React.FC = () => {
       setNewTx((prev) => (prev.accountId ? prev : { ...prev, accountId: lista[0]?.id ?? '' }));
     });
   }, []);
+
+  // Um efeito só para os gráficos: o filtro de período vale para os três ao mesmo tempo, e
+  // recarregar tudo junto é o que mantém os números coerentes entre eles.
+  useEffect(() => {
+    let cancelado = false;
+    setCarregandoGraficos(true);
+    const filtro = periodoDe(periodoGraficos);
+
+    Promise.all([
+      dashboardFinanceiroService.evolucaoMensal(filtro),
+      dashboardFinanceiroService.porCategoria('RECEITA', filtro),
+      dashboardFinanceiroService.porCategoria('DESPESA', filtro)
+    ])
+      .then(([pontos, receitas, despesas]) => {
+        if (cancelado) return;
+        setEvolucao(pontos);
+        setReceitasPorCategoria(receitas);
+        setDespesasPorCategoria(despesas);
+      })
+      .catch((err) => {
+        if (cancelado) return;
+        const message = err instanceof Error ? err.message : 'Tente novamente em instantes.';
+        addToast({ type: 'error', title: 'Erro ao carregar os gráficos', message });
+      })
+      .finally(() => {
+        if (!cancelado) setCarregandoGraficos(false);
+      });
+
+    // Trocar de período rápido dispara duas buscas; sem isto, a resposta da primeira podia
+    // chegar depois e sobrescrever a segunda com dados do período antigo.
+    return () => {
+      cancelado = true;
+    };
+  }, [periodoGraficos]);
 
   useEffect(() => {
     financialService.listarCategorias(txType).then((lista) => {
@@ -274,23 +249,52 @@ export const FinancialDashboard: React.FC = () => {
         />
       </div>
 
-      {/* Distribuição por Categoria (agregada a partir dos lançamentos reais) */}
+      {/* Filtro de período: uma linha, acima do que ele governa, e vale para os três gráficos
+          ao mesmo tempo — números que discordam entre si por causa de filtros separados são
+          pior que número nenhum. */}
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="text-xs text-text-muted">Período dos gráficos:</span>
+        {(
+          [
+            ['SEIS_MESES', 'Últimos 6 meses'],
+            ['DOZE_MESES', 'Últimos 12 meses'],
+            ['ANO', 'Este ano'],
+            ['TUDO', 'Tudo']
+          ] as [ChaveDePeriodo, string][]
+        ).map(([chave, rotulo]) => (
+          <button
+            key={chave}
+            type="button"
+            onClick={() => setPeriodoGraficos(chave)}
+            aria-pressed={periodoGraficos === chave}
+            className={`text-xs px-3 py-1.5 rounded-lg border transition-colors cursor-pointer ${
+              periodoGraficos === chave
+                ? 'bg-acpb-green/20 border-acpb-green text-white font-semibold'
+                : 'bg-surface-card border-surface-border text-text-secondary hover:text-white hover:border-surface-border-hover'
+            }`}
+          >
+            {rotulo}
+          </button>
+        ))}
+      </div>
+
+      <GraficoEvolucaoMensal dados={evolucao} recarregando={carregandoGraficos} />
+
+      {/* Composição por categoria, agora agregada pelo banco e não somada no navegador. */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <CategoriaBreakdown
-          titulo="Receitas por Categoria"
-          icon={<PieChart className="w-5 h-5 text-acpb-green-fg" />}
-          transactions={transactions}
-          type="RECEITA"
-          barColor="bg-acpb-green"
-          textColor="text-valor-positivo"
+        <GraficoPorCategoria
+          titulo="Receitas por categoria"
+          subtitulo="De onde veio o dinheiro no período"
+          dados={receitasPorCategoria}
+          tipo="RECEITA"
+          recarregando={carregandoGraficos}
         />
-        <CategoriaBreakdown
-          titulo="Despesas por Categoria"
-          icon={<PieChart className="w-5 h-5 text-red-500" />}
-          transactions={transactions}
-          type="DESPESA"
-          barColor="bg-red-800"
-          textColor="text-red-400"
+        <GraficoPorCategoria
+          titulo="Despesas por categoria"
+          subtitulo="Para onde foi o dinheiro no período"
+          dados={despesasPorCategoria}
+          tipo="DESPESA"
+          recarregando={carregandoGraficos}
         />
       </div>
 
