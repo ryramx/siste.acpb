@@ -317,6 +317,7 @@ const toVolunteer = (
   name: pessoa.nome_completo,
   email: pessoa.email ?? '',
   phone: telefone?.numero ?? '',
+  whatsapp: telefone?.whatsapp ?? false,
   area: voluntario.area ?? NAO_INFORMADA,
   skills: voluntario.habilidades ? voluntario.habilidades.split(',').map((s) => s.trim()).filter(Boolean) : [],
   availability: voluntario.disponibilidade ?? NAO_INFORMADA,
