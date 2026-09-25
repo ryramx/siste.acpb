@@ -84,6 +84,9 @@ def main() -> None:
             email=email,
             senha_hash=hash_password(senha),
             ativo=True,
+            # O primeiro administrador é o dono da instalação: nenhum outro admin pode
+            # desativá-lo nem tomar a conta dele (ver scripts/proteger_conta.py).
+            protegido=True,
             created_at=agora,
             updated_at=agora,
         )

@@ -20,7 +20,9 @@ const ACOES = [
   { value: 'criar', label: 'Criar' },
   { value: 'editar', label: 'Editar' },
   { value: 'excluir', label: 'Excluir' },
-  { value: 'desativar', label: 'Desativar' }
+  { value: 'desativar', label: 'Desativar' },
+  // Tentativa recusada pelas travas de administrador (ver backend/app/api/routes/usuarios.py).
+  { value: 'bloquear', label: 'Bloqueada' }
 ];
 
 const TABELAS = [
@@ -38,7 +40,8 @@ const VARIANTE_POR_ACAO: Record<string, 'success' | 'info' | 'danger' | 'warning
   criar: 'success',
   editar: 'info',
   excluir: 'danger',
-  desativar: 'warning'
+  desativar: 'warning',
+  bloquear: 'danger'
 };
 
 function formatarDataHora(iso: string): string {

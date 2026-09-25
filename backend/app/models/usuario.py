@@ -44,6 +44,16 @@ class Usuario(Base, TimestampMixin):
         nullable=False
     )
 
+    # Conta principal do sistema (a do dono). Só ela mesma pode se alterar: ninguém mais a
+    # desativa, troca o e-mail, redefine a senha ou tira o perfil de Administrador. É marcada
+    # por scripts/proteger_conta.py, nunca pela API — ver a migration a3c8e61f2b90.
+    protegido: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        default=False,
+        server_default="false"
+    )
+
     ultimo_login: Mapped[datetime | None] = mapped_column(
         DateTime,
         nullable=True

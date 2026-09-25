@@ -12,6 +12,9 @@ export interface SystemUser {
   name: string;
   email: string;
   ativo: boolean;
+  /** Conta principal do sistema: só ela mesma pode se alterar (ver backend
+   * app/api/routes/usuarios.py). O backend recusa; a tela só evita oferecer o botão. */
+  protegido: boolean;
   perfis: UserProfileLink[];
   ultimoLogin: string | null;
   createdAt: string;

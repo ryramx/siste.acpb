@@ -78,6 +78,7 @@ describe('settingsService', () => {
         name: 'Fulano de Tal',
         email: 'admin@acpb.local',
         ativo: true,
+        protegido: false,
         perfis: [{ perfilId: '5', nome: 'Administrador' }],
         ultimoLogin: null,
         createdAt: '2026-01-01T00:00:00'

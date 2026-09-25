@@ -99,6 +99,8 @@ def test_cria_administrador_com_perfil_vinculado(limpar_admin):
     usuario = db.query(Usuario).filter(Usuario.email == EMAIL).first()
     assert usuario is not None
     assert usuario.ativo is True
+    # O primeiro admin é o dono da instalação: nasce como conta principal.
+    assert usuario.protegido is True
     assert verify_password(SENHA, usuario.senha_hash)
     assert usuario.pessoa.nome_completo == "Admin Bootstrap"
 
