@@ -35,6 +35,26 @@ const ROTULO_DO_VINCULO: Record<VinculoDePessoa, string> = {
 
 const vazio: DadosDePessoa = { nomeCompleto: '' };
 
+const VinculosDaPessoa: React.FC<{ pessoa: Pessoa; vinculosCompletos: boolean }> = ({
+  pessoa,
+  vinculosCompletos
+}) =>
+  pessoa.vinculos.length === 0 ? (
+    <span className="text-xs text-[#727A74]">{vinculosCompletos ? 'Sem vínculo' : '—'}</span>
+  ) : (
+    <div className="flex flex-wrap gap-1">
+      {pessoa.vinculos.map((v) => (
+        <Badge
+          key={v}
+          variant={v === 'usuario' ? 'warning' : 'success'}
+          className="whitespace-nowrap"
+        >
+          {ROTULO_DO_VINCULO[v]}
+        </Badge>
+      ))}
+    </div>
+  );
+
 function paraFormulario(pessoa: Pessoa): DadosDePessoa {
   return {
     nomeCompleto: pessoa.nomeCompleto,
@@ -202,7 +222,12 @@ export const PeopleList: React.FC = () => {
           </p>
         </div>
         {podeEditar && (
-          <Button variant="secondary" onClick={abrirNova} leftIcon={<Plus className="w-4 h-4" />}>
+          <Button
+            variant="secondary"
+            onClick={abrirNova}
+            leftIcon={<Plus className="w-4 h-4" />}
+            className="shrink-0 whitespace-nowrap"
+          >
             Nova pessoa
           </Button>
         )}
@@ -243,7 +268,11 @@ export const PeopleList: React.FC = () => {
       ) : filtradas.length === 0 ? (
         <EmptyState
           title="Nenhuma pessoa encontrada"
-          description="Ajuste a busca ou o filtro para ver o cadastro."
+          description={
+            filtro === 'TECNICAS' && busca.trim() === ''
+              ? 'Nenhuma conta está marcada como técnica. A marcação é feita em Configurações > Usuários, na conta de acesso.'
+              : 'Ajuste a busca ou o filtro para ver o cadastro.'
+          }
           actionLabel={podeEditar ? 'Nova pessoa' : undefined}
           onAction={abrirNova}
         />
@@ -256,7 +285,7 @@ export const PeopleList: React.FC = () => {
                   <th className="py-3 px-4">Nome</th>
                   <th className="py-3 px-4 hidden md:table-cell">CPF</th>
                   <th className="py-3 px-4 hidden lg:table-cell">Contato</th>
-                  <th className="py-3 px-4">Vínculos</th>
+                  <th className="py-3 px-4 hidden sm:table-cell">Vínculos</th>
                   {(podeEditar || podeExcluir) && <th className="py-3 px-4 text-right">Ações</th>}
                 </tr>
               </thead>
@@ -271,29 +300,22 @@ export const PeopleList: React.FC = () => {
                           {p.contaTecnica && (
                             <div className="text-xs text-[#727A74]">Conta técnica do sistema</div>
                           )}
+                          {/* No celular a coluna de vínculos some e eles vêm aqui: com a coluna, a
+                              tabela passava da largura da tela e empurrava as ações para fora. */}
+                          <div className="sm:hidden mt-1">
+                            <VinculosDaPessoa pessoa={p} vinculosCompletos={vinculosCompletos} />
+                          </div>
                         </div>
                       </div>
                     </td>
-                    <td className="py-3 px-4 text-xs text-[#AEB5B0] hidden md:table-cell">
+                    <td className="py-3 px-4 text-xs text-[#AEB5B0] hidden md:table-cell whitespace-nowrap">
                       {p.cpf ? exibirCPF(p.cpf) : '—'}
                     </td>
                     <td className="py-3 px-4 text-xs text-[#AEB5B0] hidden lg:table-cell">
                       {p.email ?? '—'}
                     </td>
-                    <td className="py-3 px-4">
-                      {p.vinculos.length === 0 ? (
-                        <span className="text-xs text-[#727A74]">
-                          {vinculosCompletos ? 'Sem vínculo' : '—'}
-                        </span>
-                      ) : (
-                        <div className="flex flex-wrap gap-1">
-                          {p.vinculos.map((v) => (
-                            <Badge key={v} variant={v === 'usuario' ? 'warning' : 'success'}>
-                              {ROTULO_DO_VINCULO[v]}
-                            </Badge>
-                          ))}
-                        </div>
-                      )}
+                    <td className="py-3 px-4 hidden sm:table-cell">
+                      <VinculosDaPessoa pessoa={p} vinculosCompletos={vinculosCompletos} />
                     </td>
                     {(podeEditar || podeExcluir) && (
                       <td className="py-3 px-4 whitespace-nowrap">

@@ -188,8 +188,15 @@ export const pessoaService = {
       idsDeVinculo('/usuarios/')
     ]);
 
+    // Ordem alfabética aqui porque o backend não ordena: o Postgres devolve na ordem física, e a
+    // pessoa recém-editada pulava para o fim da lista. `localeCompare` em pt-BR põe "Álvaro" junto
+    // de "Alice", e não depois de "Zélia".
+    const emOrdem = [...pessoas].sort((a, b) =>
+      a.nome_completo.localeCompare(b.nome_completo, 'pt-BR', { sensitivity: 'base' })
+    );
+
     return {
-      pessoas: pessoas.map((p) => {
+      pessoas: emOrdem.map((p) => {
         const vinculos: VinculoDePessoa[] = [];
         if (membros.ids.has(p.id)) vinculos.push('membro');
         if (voluntarios.ids.has(p.id)) vinculos.push('voluntario');

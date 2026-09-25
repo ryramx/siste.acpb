@@ -411,3 +411,26 @@ Ordem original do levantamento; os cinco primeiros são os desta rodada. Continu
 - **Alerta de backup ausente por mais de 48h** e **teste de restauração**, que nunca foi executado.
 - **Cobertura de tela**: o financeiro, módulo com mais regra de negócio, segue sem teste de
   componente; não há teste ponta a ponta em navegador.
+
+## Telas novas abertas em navegador - "Concluído"
+
+As telas de Pessoas, Minha conta e a tela de erro foram abertas no Chromium (Playwright), com backend
+e Postgres locais, dados de teste e quatro perfis (Administrador, Secretário, Financeiro, Voluntário),
+em 1366 px e 390 px. As regras de vínculo, permissão, CPF, troca de senha, foto e o relato da tela de
+erro funcionaram como descrito. Defeitos encontrados e corrigidos:
+
+- **Modais fora da tela com a página rolada**, em todo o sistema. `.animate-fade-in` usava
+  `animation-fill-mode: both`, e o `transform` que sobrava no container da página prendia o
+  `position: fixed` do modal à caixa da página. Agora a animação usa `backwards` e o `Modal` é
+  renderizado num portal no `body`.
+- **Ações cortadas no celular** na lista de Pessoas: abaixo de `sm` os vínculos vão para baixo do
+  nome, e a coluna própria some.
+- **CPF, "Nova pessoa" e "Usuário do sistema" quebrando linha** na tabela e no cabeçalho.
+- **Aviso "Senha curta" que nunca aparecia** em Minha conta: o `minLength` dos campos fazia o
+  navegador barrar o envio antes.
+- **Lista de Pessoas sem ordem**: quem era editado ia para o fim. Agora a lista vem em ordem
+  alfabética (pt-BR).
+- O filtro "Contas técnicas", quando vazio, diz onde se marca uma conta técnica
+  (Configurações > Usuários).
+
+Frontend: 212/212. `tsc --noEmit` e `npm run build` limpos.
