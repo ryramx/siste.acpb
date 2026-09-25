@@ -60,11 +60,11 @@ describe('RedefinirSenha', () => {
 
     const usuario = digitar();
     renderComLink(LINK);
-    await usuario.type(screen.getByLabelText(/^Nova senha/i), 'curta');
-    await usuario.type(screen.getByLabelText(/^Repita a nova senha/i), 'curta');
+    await usuario.type(screen.getByLabelText(/^Nova senha/i), 'abcd');
+    await usuario.type(screen.getByLabelText(/^Repita a nova senha/i), 'abcd');
     await usuario.click(screen.getByRole('button', { name: /Salvar nova senha/i }));
 
-    expect(await screen.findByRole('alert')).toHaveTextContent('pelo menos 8');
+    expect(await screen.findByRole('alert')).toHaveTextContent('pelo menos 5');
     expect(redefinir).not.toHaveBeenCalled();
   });
 

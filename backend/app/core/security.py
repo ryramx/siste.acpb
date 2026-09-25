@@ -8,6 +8,10 @@ from pwdlib import PasswordHash
 
 from app.core.config import settings
 
+# Mínimo de caracteres de qualquer senha, em todos os caminhos (criar usuário, trocar, redefinir,
+# recuperar e o script do primeiro admin). O frontend repete o valor só para avisar antes.
+SENHA_TAMANHO_MINIMO = 5
+
 _password_hash = PasswordHash.recommended()
 
 

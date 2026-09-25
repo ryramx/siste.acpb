@@ -2,6 +2,8 @@ import re
 from datetime import datetime
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
+from app.core.security import SENHA_TAMANHO_MINIMO
+
 # Formato simples (não usamos EmailStr): o e-mail institucional pode usar o domínio interno
 # "acpb.local" (não roteável publicamente), que a validação estrita de EmailStr rejeita por ser
 # domínio de uso especial (RFC 6761). Ainda validamos o formato básico "algo@algo.algo".
@@ -17,7 +19,7 @@ def _validar_formato_email(v: str) -> str:
 class UsuarioCreate(BaseModel):
     pessoa_id: int
     email: str
-    senha: str = Field(min_length=8)
+    senha: str = Field(min_length=SENHA_TAMANHO_MINIMO)
     ativo: bool = True
 
     @field_validator("email")
@@ -38,7 +40,7 @@ class UsuarioUpdate(BaseModel):
 
 class UsuarioAlterarSenha(BaseModel):
     senha_atual: str
-    senha_nova: str = Field(min_length=8)
+    senha_nova: str = Field(min_length=SENHA_TAMANHO_MINIMO)
 
 
 class UsuarioRedefinirSenha(BaseModel):
@@ -49,7 +51,7 @@ class UsuarioRedefinirSenha(BaseModel):
     envio falhava, só o acesso direto ao banco resolvia.
     """
 
-    senha_nova: str = Field(min_length=8)
+    senha_nova: str = Field(min_length=SENHA_TAMANHO_MINIMO)
 
 
 class UsuarioResponse(BaseModel):

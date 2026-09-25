@@ -33,6 +33,7 @@ import {
   EventItem,
   FinancialTransaction
 } from '../../types/domain';
+import { useAuth } from '../../contexts/AuthContext';
 
 /** Opção de pessoa disponível para vincular (voluntário ou beneficiário ainda não no projeto). */
 interface CandidateOption {
@@ -43,6 +44,10 @@ interface CandidateOption {
 export const ProjectDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { hasPermission } = useAuth();
+  // Secretário, Coordenador e Voluntário veem projetos mas não o financeiro. Pedir as
+  // movimentações para eles só rende um 403 — e, dentro do Promise.all, derrubava a tela toda.
+  const podeVerFinanceiro = hasPermission('view_financial');
 
   const [project, setProject] = useState<Project | null>(null);
   const [activeTab, setActiveTab] = useState<'overview' | 'beneficiaries' | 'volunteers' | 'events' | 'financial'>('overview');
@@ -64,6 +69,9 @@ export const ProjectDetails: React.FC = () => {
     status: string;
   } | null>(null);
   const [saving, setSaving] = useState(false);
+  const [erroCarregamento, setErroCarregamento] = useState<string | null>(null);
+  // Incrementar dispara o efeito de novo, sem recarregar a página inteira.
+  const [tentativa, setTentativa] = useState(0);
   const [formError, setFormError] = useState<string | null>(null);
 
   const [volunteerOptions, setVolunteerOptions] = useState<CandidateOption[]>([]);
@@ -76,21 +84,41 @@ export const ProjectDetails: React.FC = () => {
 
   useEffect(() => {
     if (!id) return;
+    // Quando o perfil do usuário chega depois da tela, o efeito roda de novo; a resposta da
+    // busca anterior não pode sobrescrever a nova.
+    let cancelado = false;
+    setLoading(true);
+    setErroCarregamento(null);
+    // Sem o catch, qualquer falha deixava a tela em "Carregando detalhes do projeto..." para
+    // sempre, sem dizer o que aconteceu (o mesmo defeito que a tela de evento já teve).
     Promise.all([
       projectService.getById(id),
       projectService.getBeneficiaries(id),
       projectService.getVolunteers(id),
       eventService.getAll(),
-      financialService.getAll()
-    ]).then(([p, bList, vList, eList, fList]) => {
-      setProject(p || null);
-      setBeneficiaries(bList);
-      setVolunteers(vList);
-      setEvents(eList.filter((e) => e.projectId === id));
-      setFinancials(fList.filter((item) => item.projectId === id));
-      setLoading(false);
-    });
-  }, [id]);
+      podeVerFinanceiro ? financialService.getAll() : Promise.resolve([] as FinancialTransaction[])
+    ])
+      .then(([p, bList, vList, eList, fList]) => {
+        if (cancelado) return;
+        setProject(p || null);
+        setBeneficiaries(bList);
+        setVolunteers(vList);
+        setEvents(eList.filter((e) => e.projectId === id));
+        setFinancials(fList.filter((item) => item.projectId === id));
+      })
+      .catch((err) => {
+        if (cancelado) return;
+        setErroCarregamento(
+          err instanceof Error ? err.message : 'Não foi possível carregar o projeto.'
+        );
+      })
+      .finally(() => {
+        if (!cancelado) setLoading(false);
+      });
+    return () => {
+      cancelado = true;
+    };
+  }, [id, podeVerFinanceiro, tentativa]);
 
   /** Carrega candidatos sob demanda, ao abrir o modal — listar todos no load da página
    *  custaria duas varreduras de /pessoas/ que a maioria das visitas nunca usa. */
@@ -219,6 +247,20 @@ export const ProjectDetails: React.FC = () => {
   };
 
   if (loading) return <div className="p-8 text-center text-[#AEB5B0]">Carregando detalhes do projeto...</div>;
+  if (erroCarregamento) {
+    return (
+      <div className="p-8 text-center space-y-4">
+        <p className="text-white">Não foi possível carregar este projeto.</p>
+        <p className="text-xs text-[#AEB5B0]">{erroCarregamento}</p>
+        <div className="flex items-center justify-center gap-2">
+          <Button variant="outline" onClick={() => navigate('/projetos')}>
+            Voltar para projetos
+          </Button>
+          <Button onClick={() => setTentativa((t) => t + 1)}>Tentar de novo</Button>
+        </div>
+      </div>
+    );
+  }
   if (!project) return <div className="p-8 text-center text-white">Projeto não encontrado.</div>;
 
   return (
@@ -272,13 +314,16 @@ export const ProjectDetails: React.FC = () => {
           subtitle="Ações externas"
           accentColor="blue"
         />
-        <StatCard
-          title="Custos Totais"
-          value={`R$ ${project.totalExpenses.toFixed(2)}`}
-          icon={<DollarSign className="w-5 h-5 text-red-400" />}
-          subtitle="Despesas vinculadas"
-          accentColor="neutral"
-        />
+        {/* Sem acesso ao financeiro o total chega zerado, e "R$ 0.00" leria como "sem gastos". */}
+        {podeVerFinanceiro && (
+          <StatCard
+            title="Custos Totais"
+            value={`R$ ${project.totalExpenses.toFixed(2)}`}
+            icon={<DollarSign className="w-5 h-5 text-red-400" />}
+            subtitle="Despesas vinculadas"
+            accentColor="neutral"
+          />
+        )}
       </div>
 
       {/* Navegação por Abas */}
@@ -288,7 +333,7 @@ export const ProjectDetails: React.FC = () => {
           { key: 'beneficiaries', label: `Beneficiários (${beneficiaries.length})` },
           { key: 'volunteers', label: `Voluntários (${volunteers.length})` },
           { key: 'events', label: `Eventos (${events.length})` },
-          { key: 'financial', label: `Financeiro (${financials.length})` }
+          ...(podeVerFinanceiro ? [{ key: 'financial', label: `Financeiro (${financials.length})` }] : [])
         ].map((tab) => (
           <button
             key={tab.key}

@@ -170,7 +170,7 @@ def test_senha_curta_e_recusada_na_redefinicao(token_admin):
         resposta = client.post(
             f"/usuarios/{alvo_id}/redefinir-senha",
             headers={"Authorization": f"Bearer {token_admin}"},
-            json={"senha_nova": "curta"},
+            json={"senha_nova": "abcd"},
         )
         assert resposta.status_code == 422
     finally:

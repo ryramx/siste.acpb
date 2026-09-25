@@ -24,7 +24,7 @@ from datetime import datetime
 # Permite `python scripts/criar_admin.py` além de `python -m scripts.criar_admin`.
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from app.core.security import hash_password  # noqa: E402
+from app.core.security import SENHA_TAMANHO_MINIMO, hash_password  # noqa: E402
 from app.db.session import SessionLocal  # noqa: E402
 from app.models.perfil import Perfil  # noqa: E402
 from app.models.pessoa import Pessoa  # noqa: E402
@@ -32,7 +32,6 @@ from app.models.usuario import Usuario  # noqa: E402
 from app.models.usuario_perfil import UsuarioPerfil  # noqa: E402
 
 PERFIL_ADMIN = "Administrador"
-SENHA_TAMANHO_MINIMO = 8
 
 
 def _erro(mensagem: str) -> None:
