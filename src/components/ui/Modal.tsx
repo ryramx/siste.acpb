@@ -1,4 +1,5 @@
 import React, { useEffect, useId } from 'react';
+import { createPortal } from 'react-dom';
 import { Button } from './Button';
 
 interface ModalProps {
@@ -39,7 +40,10 @@ export const Modal: React.FC<ModalProps> = ({
     '2xl': 'max-w-2xl'
   };
 
-  return (
+  // Portal no body: o modal não pode depender de nenhum ancestral. Um ancestral com `transform`,
+  // `filter` ou `contain` prende o `position: fixed` à caixa dele, e o modal abriria na altura da
+  // página em vez de no centro da janela.
+  return createPortal(
     <div
       // overflow-y-auto no fundo: um modal alto ficava centralizado com o topo fora da tela,
       // e o cabeçalho (com o botão de fechar) era cortado — pior no celular, onde sobra
@@ -78,6 +82,7 @@ export const Modal: React.FC<ModalProps> = ({
           </div>
         )}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };

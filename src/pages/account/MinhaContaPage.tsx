@@ -38,7 +38,9 @@ export const MinhaContaPage: React.FC = () => {
     e.preventDefault();
 
     // As duas validações são do navegador de propósito: erro de digitação não precisa de
-    // requisição, e a confirmação nem chega ao backend (ele recebe uma senha só).
+    // requisição, e a confirmação nem chega ao backend (ele recebe uma senha só). Os campos não
+    // têm `minLength`: com ele o navegador barrava o envio com o balão nativo, no idioma dele, e
+    // esta mensagem nunca aparecia.
     if (senhaNova.length < MINIMO_DA_SENHA) {
       addToast({
         type: 'error',
@@ -148,7 +150,6 @@ export const MinhaContaPage: React.FC = () => {
             value={senhaNova}
             onChange={(e) => setSenhaNova(e.target.value)}
             autoComplete="new-password"
-            minLength={MINIMO_DA_SENHA}
             required
           />
           <Input
@@ -157,7 +158,6 @@ export const MinhaContaPage: React.FC = () => {
             value={confirmacao}
             onChange={(e) => setConfirmacao(e.target.value)}
             autoComplete="new-password"
-            minLength={MINIMO_DA_SENHA}
             required
           />
         </div>

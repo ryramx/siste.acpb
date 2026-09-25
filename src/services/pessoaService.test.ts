@@ -72,9 +72,26 @@ describe('pessoaService.listar', () => {
 
     const { pessoas, vinculosCompletos } = await pessoaService.listar();
 
+    const porId = (id: string) => pessoas.find((p) => p.id === id)!;
     expect(vinculosCompletos).toBe(true);
-    expect(pessoas[0].vinculos).toEqual(['membro', 'voluntario']);
-    expect(pessoas[1].vinculos).toEqual(['usuario']);
+    expect(porId('10').vinculos).toEqual(['membro', 'voluntario']);
+    expect(porId('11').vinculos).toEqual(['usuario']);
+  });
+
+  it('devolve as pessoas em ordem alfabetica, com acento ordenado junto da letra', async () => {
+    vi.spyOn(apiClient, 'get').mockImplementation(((caminho: string) => {
+      if (caminho === '/pessoas/')
+        return Promise.resolve([
+          { ...pessoaApi, id: 1, nome_completo: 'Zélia' },
+          { ...pessoaApi, id: 2, nome_completo: 'Álvaro' },
+          { ...pessoaApi, id: 3, nome_completo: 'Bruno' }
+        ]);
+      return Promise.resolve([]);
+    }) as typeof apiClient.get);
+
+    const { pessoas } = await pessoaService.listar();
+
+    expect(pessoas.map((p) => p.nomeCompleto)).toEqual(['Álvaro', 'Bruno', 'Zélia']);
   });
 
   it('nao afirma "sem vinculo" quando uma lista foi negada por permissao', async () => {
