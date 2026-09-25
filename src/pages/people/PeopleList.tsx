@@ -146,7 +146,8 @@ export const PeopleList: React.FC = () => {
       (digitos !== '' && (p.cpf ?? '').includes(digitos));
 
     const casaFiltro =
-      filtro === 'TODAS' ||
+      // Contas técnicas não são gente da associação: só aparecem no filtro próprio.
+      (filtro === 'TODAS' && !p.contaTecnica) ||
       (filtro === 'SEM_VINCULO' && p.vinculos.length === 0 && !p.contaTecnica) ||
       (filtro === 'TECNICAS' && p.contaTecnica);
 
@@ -223,6 +224,7 @@ export const PeopleList: React.FC = () => {
   };
 
   const semVinculo = pessoas.filter((p) => p.vinculos.length === 0 && !p.contaTecnica).length;
+  const tecnicas = pessoas.filter((p) => p.contaTecnica).length;
 
   return (
     <div className="space-y-6 animate-fade-in pb-12">
@@ -263,9 +265,9 @@ export const PeopleList: React.FC = () => {
             value={filtro}
             onChange={(e) => setFiltro(e.target.value)}
             options={[
-              { value: 'TODAS', label: `Todas as pessoas (${pessoas.length})` },
+              { value: 'TODAS', label: `Todas as pessoas (${pessoas.length - tecnicas})` },
               { value: 'SEM_VINCULO', label: `Sem vínculo (${semVinculo})` },
-              { value: 'TECNICAS', label: 'Contas técnicas do sistema' }
+              { value: 'TECNICAS', label: `Contas técnicas do sistema (${tecnicas})` }
             ]}
           />
         </div>

@@ -108,6 +108,33 @@ def test_relatorio_pessoas_csv(token_admin):
     assert b"nome_completo" in response.content
 
 
+def test_relatorio_pessoas_deixa_de_fora_as_contas_tecnicas(token_admin):
+    """RQ-03: conta técnica opera o sistema, não é gente da associação."""
+    db = SessionLocal()
+    agora = datetime.utcnow()
+    tecnica = Pessoa(
+        nome_completo="Conta Tecnica Relatorio", conta_tecnica=True,
+        created_at=agora, updated_at=agora,
+    )
+    real = Pessoa(nome_completo="Pessoa Real Relatorio", created_at=agora, updated_at=agora)
+    db.add_all([tecnica, real])
+    db.commit()
+    try:
+        response = client.get(
+            "/relatorios/pessoas",
+            headers={"Authorization": f"Bearer {token_admin}"},
+            params={"formato": "csv"},
+        )
+        assert response.status_code == 200
+        assert "Pessoa Real Relatorio".encode() in response.content
+        assert "Conta Tecnica Relatorio".encode() not in response.content
+    finally:
+        db.delete(tecnica)
+        db.delete(real)
+        db.commit()
+        db.close()
+
+
 def test_relatorio_csv_usa_ponto_e_virgula_e_bom(token_admin):
     """O Excel em portugues so divide as colunas com ';' e so reconhece o UTF-8 com BOM.
 
