@@ -1,21 +1,27 @@
 // Componente reutilizável para navegação de abas do Módulo Financeiro
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import { useAuth } from '../../contexts/AuthContext';
+import { PermissionKey } from '../../types/user';
 
-const financialTabs = [
+const financialTabs: { to: string; label: string; permissao?: PermissionKey }[] = [
   { to: '/financeiro', label: '📊 Dashboard' },
   { to: '/financeiro/receitas', label: '↑ Receitas' },
   { to: '/financeiro/despesas', label: '↓ Despesas' },
   { to: '/financeiro/movimentacoes', label: '↕ Movimentações' },
-  { to: '/financeiro/cadastros', label: '⚙ Categorias e contas' },
+  // Só para quem pode criar e editar: quem só consulta o financeiro não tem o que fazer ali.
+  { to: '/financeiro/cadastros', label: '⚙ Categorias e contas', permissao: 'edit_financial' },
 ];
 
 export const FinancialTabs: React.FC = () => {
   const { pathname } = useLocation();
+  const { hasPermission } = useAuth();
 
   return (
     <div className="flex items-center gap-1 bg-[#181D1A] border border-[#222824] p-1.5 rounded-xl overflow-x-auto">
-      {financialTabs.map((tab) => {
+      {financialTabs
+        .filter((tab) => !tab.permissao || hasPermission(tab.permissao))
+        .map((tab) => {
         const isActive = tab.to === '/financeiro'
           ? pathname === '/financeiro'
           : pathname.startsWith(tab.to);
