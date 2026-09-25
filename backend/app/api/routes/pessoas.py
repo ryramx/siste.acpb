@@ -7,6 +7,7 @@ from app.core.erros import tratar_integrity_error
 from datetime import datetime
 
 from app.api.deps import get_current_user, get_permissoes_usuario, require_permission
+from app.core.upload import exigir_tipo_real, ler_com_limite
 from app.api.routes.health import get_db
 from app.core.auditoria import model_to_dict, obter_ip_cliente, registrar_auditoria
 from app.core.foto_pessoa_storage import (
@@ -166,18 +167,14 @@ async def enviar_foto_pessoa(
             detail=f"Tipo de arquivo não permitido. Aceitos: {', '.join(sorted(TIPOS_PERMITIDOS))}",
         )
 
-    conteudo = await arquivo.read()
-    if len(conteudo) == 0:
-        raise HTTPException(status_code=400, detail="Arquivo vazio")
-    if len(conteudo) > TAMANHO_MAXIMO_BYTES:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Imagem excede o tamanho máximo de {settings.FOTOS_TAMANHO_MAXIMO_MB}MB",
-        )
+    conteudo = await ler_com_limite(
+        arquivo, TAMANHO_MAXIMO_BYTES, settings.FOTOS_TAMANHO_MAXIMO_MB
+    )
+    tipo_mime = exigir_tipo_real(conteudo, TIPOS_PERMITIDOS)
 
     nome_antigo = pessoa.foto_arquivo
-    novo_nome = gerar_nome_armazenado(arquivo.content_type)
-    salvar_conteudo(novo_nome, conteudo, arquivo.content_type)
+    novo_nome = gerar_nome_armazenado(tipo_mime)
+    salvar_conteudo(novo_nome, conteudo, tipo_mime)
 
     pessoa.foto_arquivo = novo_nome
     pessoa.updated_at = datetime.utcnow()

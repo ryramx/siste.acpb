@@ -109,6 +109,30 @@ def test_upload_com_tipo_nao_permitido_e_rejeitado(token_admin, movimentacao_id)
     assert response.status_code == 400
 
 
+def test_exe_renomeado_para_pdf_e_rejeitado(token_admin, movimentacao_id):
+    """O navegador declara application/pdf pela extensão; o conteúdo é de executável."""
+    response = client.post(
+        "/anexos-financeiros/",
+        headers={"Authorization": f"Bearer {token_admin}"},
+        data={"movimentacao_financeira_id": str(movimentacao_id)},
+        files={"arquivo": ("comprovante.pdf", b"MZ\x90\x00 executavel", "application/pdf")},
+    )
+    assert response.status_code == 400
+    assert "conteúdo" in response.json()["detail"]
+
+
+def test_arquivo_acima_do_limite_retorna_413(token_admin, movimentacao_id):
+    grande = b"%PDF-1.4 " + b"0" * (5 * 1024 * 1024)
+    response = client.post(
+        "/anexos-financeiros/",
+        headers={"Authorization": f"Bearer {token_admin}"},
+        data={"movimentacao_financeira_id": str(movimentacao_id)},
+        files={"arquivo": ("grande.pdf", grande, "application/pdf")},
+    )
+    assert response.status_code == 413
+    assert "5MB" in response.json()["detail"]
+
+
 def test_upload_com_movimentacao_inexistente_retorna_404(token_admin):
     response = client.post(
         "/anexos-financeiros/",
