@@ -12,6 +12,7 @@ import { AcoesLancamento } from '../../components/common/AcoesLancamento';
 import { AnexosLancamento } from '../../components/common/AnexosLancamento';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
+import { formatarData, formatarMoedaComSinal, somarValores } from '../../utils/dinheiro';
 
 export const MovimentacoesPage: React.FC = () => {
   const { hasPermission } = useAuth();
@@ -49,9 +50,9 @@ export const MovimentacoesPage: React.FC = () => {
     return matchSearch && matchType && matchStatus;
   });
 
-  const totalReceitas = filtered.filter(t => t.type === 'RECEITA' && t.status === 'CONFIRMADA').reduce((acc, t) => acc + t.amount, 0);
-  const totalDespesas = filtered.filter(t => t.type === 'DESPESA' && t.status === 'CONFIRMADA').reduce((acc, t) => acc + t.amount, 0);
-  const saldo = totalReceitas - totalDespesas;
+  const totalReceitas = somarValores(filtered.filter(t => t.type === 'RECEITA' && t.status === 'CONFIRMADA').map((t) => t.amount));
+  const totalDespesas = somarValores(filtered.filter(t => t.type === 'DESPESA' && t.status === 'CONFIRMADA').map((t) => t.amount));
+  const saldo = somarValores([totalReceitas, -totalDespesas]);
 
   return (
     <div className="space-y-6 animate-fade-in pb-12">
@@ -70,16 +71,16 @@ export const MovimentacoesPage: React.FC = () => {
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="bg-[#181D1A] border border-[#222824] border-l-4 border-l-green-500 p-4 rounded-xl">
           <span className="text-xs text-[#AEB5B0]">Entradas (Receitas)</span>
-          <div className="text-xl font-bold text-green-400 mt-1">+ R$ {totalReceitas.toFixed(2)}</div>
+          <div className="text-xl font-bold text-green-400 mt-1">{formatarMoedaComSinal(totalReceitas, true)}</div>
         </div>
         <div className="bg-[#181D1A] border border-[#222824] border-l-4 border-l-red-600 p-4 rounded-xl">
           <span className="text-xs text-[#AEB5B0]">Saídas (Despesas)</span>
-          <div className="text-xl font-bold text-red-400 mt-1">- R$ {totalDespesas.toFixed(2)}</div>
+          <div className="text-xl font-bold text-red-400 mt-1">{formatarMoedaComSinal(totalDespesas, false)}</div>
         </div>
         <div className={`bg-[#181D1A] border border-[#222824] border-l-4 p-4 rounded-xl ${saldo >= 0 ? 'border-l-[#F8D800]' : 'border-l-red-600'}`}>
           <span className="text-xs text-[#AEB5B0]">Saldo Líquido</span>
           <div className={`text-xl font-bold mt-1 ${saldo >= 0 ? 'text-[#F8D800]' : 'text-red-400'}`}>
-            {saldo >= 0 ? '+ ' : '- '}R$ {Math.abs(saldo).toFixed(2)}
+            {formatarMoedaComSinal(saldo, saldo >= 0)}
           </div>
         </div>
       </div>
@@ -145,7 +146,7 @@ export const MovimentacoesPage: React.FC = () => {
                           {t.type === 'RECEITA' ? 'Entrada' : 'Saída'}
                         </span>
                       </td>
-                      <td className="py-3 px-4 text-xs text-[#AEB5B0]">{t.date}</td>
+                      <td className="py-3 px-4 text-xs text-[#AEB5B0]">{formatarData(t.date)}</td>
                       <td className="py-3 px-4 font-medium text-white">{t.description}</td>
                       <td className="py-3 px-4 text-xs text-[#F8D800] hidden md:table-cell">{t.category}</td>
                       <td className="py-3 px-4 text-xs text-[#AEB5B0] hidden lg:table-cell">{t.responsibleName}</td>
@@ -155,7 +156,7 @@ export const MovimentacoesPage: React.FC = () => {
                       <td className={`py-3 px-4 font-bold text-sm ${
                         t.type === 'RECEITA' ? 'text-green-400' : 'text-red-400'
                       }`}>
-                        {t.type === 'RECEITA' ? '+ ' : '- '}R$ {t.amount.toFixed(2)}
+                        {formatarMoedaComSinal(t.amount, t.type === 'RECEITA')}
                       </td>
                       <td className="py-3 px-4">
                         <Badge variant={t.status === 'CONFIRMADA' ? 'success' : 'warning'}>{t.status}</Badge>

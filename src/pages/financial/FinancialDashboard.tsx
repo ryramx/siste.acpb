@@ -16,6 +16,7 @@ import { FinancialTransaction } from '../../types/domain';
 import { useAuth } from '../../contexts/AuthContext';
 import { opcoesStatus, placeholderDescricao, rotuloData } from '../../utils/lancamento';
 import { useToast } from '../../contexts/ToastContext';
+import { formatarData, formatarMoeda, formatarMoedaComSinal, participacao, somarValores } from '../../utils/dinheiro';
 
 interface CategoriaBreakdownProps {
   titulo: string;
@@ -35,10 +36,12 @@ const CategoriaBreakdown: React.FC<CategoriaBreakdownProps> = ({
   textColor
 }) => {
   const filtradas = transactions.filter((t) => t.type === type && t.status === 'CONFIRMADA');
-  const totais = new Map<string, number>();
-  filtradas.forEach((t) => totais.set(t.category, (totais.get(t.category) ?? 0) + t.amount));
-  const totalGeral = filtradas.reduce((acc, t) => acc + t.amount, 0);
-  const linhas = Array.from(totais.entries()).sort((a, b) => b[1] - a[1]);
+  const porCategoria = new Map<string, number[]>();
+  filtradas.forEach((t) => porCategoria.set(t.category, [...(porCategoria.get(t.category) ?? []), t.amount]));
+  const totalGeral = somarValores(filtradas.map((t) => t.amount));
+  const linhas = Array.from(porCategoria.entries())
+    .map(([categoria, valores]) => [categoria, somarValores(valores)] as const)
+    .sort((a, b) => b[1] - a[1]);
 
   return (
     <div className="bg-[#181D1A] border border-[#222824] p-6 rounded-2xl space-y-4">
@@ -51,17 +54,21 @@ const CategoriaBreakdown: React.FC<CategoriaBreakdownProps> = ({
       ) : (
         <div className="space-y-3 pt-2">
           {linhas.map(([categoria, total]) => {
-            const percentual = totalGeral > 0 ? Math.round((total / totalGeral) * 100) : 0;
+            const { texto, largura } = participacao(total, totalGeral);
             return (
               <div key={categoria}>
                 <div className="flex justify-between text-xs font-semibold mb-1">
                   <span className="text-white">{categoria}</span>
                   <span className={textColor}>
-                    R$ {total.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} ({percentual}%)
+                    {formatarMoeda(total)} ({texto})
                   </span>
                 </div>
                 <div className="w-full bg-[#0F1210] h-2.5 rounded-full overflow-hidden border border-[#222824]">
-                  <div className={`${barColor} h-full`} style={{ width: `${percentual}%` }} />
+                  {/* Largura mínima: sem ela uma categoria pequena ao lado de uma enorme some. */}
+                  <div
+                    className={`${barColor} h-full`}
+                    style={{ width: `${largura}%`, minWidth: largura > 0 ? '2px' : 0 }}
+                  />
                 </div>
               </div>
             );
@@ -147,15 +154,13 @@ export const FinancialDashboard: React.FC = () => {
     });
   }, [txType]);
 
-  const totalReceitas = transactions
-    .filter((t) => t.type === 'RECEITA' && t.status === 'CONFIRMADA')
-    .reduce((acc, curr) => acc + curr.amount, 0);
+  const totalReceitas = somarValores(transactions
+    .filter((t) => t.type === 'RECEITA' && t.status === 'CONFIRMADA').map((curr) => curr.amount));
 
-  const totalDespesas = transactions
-    .filter((t) => t.type === 'DESPESA' && t.status === 'CONFIRMADA')
-    .reduce((acc, curr) => acc + curr.amount, 0);
+  const totalDespesas = somarValores(transactions
+    .filter((t) => t.type === 'DESPESA' && t.status === 'CONFIRMADA').map((curr) => curr.amount));
 
-  const saldo = totalReceitas - totalDespesas;
+  const saldo = somarValores([totalReceitas, -totalDespesas]);
 
   const handleCreateTx = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -226,21 +231,21 @@ export const FinancialDashboard: React.FC = () => {
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <StatCard
           title="Receitas Totais"
-          value={`R$ ${totalReceitas.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`}
+          value={formatarMoeda(totalReceitas)}
           icon={<ArrowUpRight className="w-5 h-5 text-[#40C075]" />}
           subtitle="Doações, contribuições e convênios"
           accentColor="green"
         />
         <StatCard
           title="Despesas Operacionais"
-          value={`R$ ${totalDespesas.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`}
+          value={formatarMoeda(totalDespesas)}
           icon={<ArrowDownRight className="w-5 h-5 text-red-400" />}
           subtitle="Aluguel, energia, alimentos, etc."
           accentColor="neutral"
         />
         <StatCard
           title="Saldo Líquido Atual"
-          value={`R$ ${saldo.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`}
+          value={formatarMoeda(saldo)}
           icon={<TrendingUp className="w-5 h-5 text-[#F8D800]" />}
           subtitle="Disponível em caixa"
           accentColor="yellow"
@@ -289,7 +294,7 @@ export const FinancialDashboard: React.FC = () => {
           <tbody className="divide-y divide-[#222824]">
             {transactions.map((t) => (
               <tr key={t.id} className="hover:bg-[#1e2521] transition-colors">
-                <td className="py-3.5 px-4 text-[#AEB5B0] text-xs">{t.date}</td>
+                <td className="py-3.5 px-4 text-[#AEB5B0] text-xs">{formatarData(t.date)}</td>
                 <td className="py-3.5 px-4">
                   <div className="font-semibold text-white">{t.description}</div>
                   <div className="text-xs text-[#F8D800]">{t.category}</div>
@@ -299,7 +304,7 @@ export const FinancialDashboard: React.FC = () => {
                   <AnexosLancamento transacao={t} onAlterado={fetchTransactions} />
                 </td>
                 <td className={`py-3.5 px-4 font-bold text-sm ${t.type === 'RECEITA' ? 'text-[#40C075]' : 'text-red-400'}`}>
-                  {t.type === 'RECEITA' ? '+' : '-'} R$ {t.amount.toFixed(2)}
+                  {formatarMoedaComSinal(t.amount, t.type === 'RECEITA')}
                 </td>
                 <td className="py-3.5 px-4">
                   <Badge variant={t.status === 'CONFIRMADA' ? 'success' : 'warning'}>

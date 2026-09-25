@@ -34,6 +34,7 @@ import {
   FinancialTransaction
 } from '../../types/domain';
 import { useAuth } from '../../contexts/AuthContext';
+import { formatarData, formatarMoeda } from '../../utils/dinheiro';
 
 /** Opção de pessoa disponível para vincular (voluntário ou beneficiário ainda não no projeto). */
 interface CandidateOption {
@@ -318,7 +319,7 @@ export const ProjectDetails: React.FC = () => {
         {podeVerFinanceiro && (
           <StatCard
             title="Custos Totais"
-            value={`R$ ${project.totalExpenses.toFixed(2)}`}
+            value={formatarMoeda(project.totalExpenses)}
             icon={<DollarSign className="w-5 h-5 text-red-400" />}
             subtitle="Despesas vinculadas"
             accentColor="neutral"
@@ -464,7 +465,7 @@ export const ProjectDetails: React.FC = () => {
                   className="p-3 bg-[#0F1210] border border-[#222824] rounded-xl flex justify-between items-center"
                 >
                   <span className="text-sm font-medium text-white">{e.title}</span>
-                  <span className="text-xs text-[#AEB5B0]">{e.date}</span>
+                  <span className="text-xs text-[#AEB5B0]">{formatarData(e.date)}</span>
                 </div>
               ))
             )}
@@ -476,7 +477,7 @@ export const ProjectDetails: React.FC = () => {
             {financials.map((f) => (
               <div key={f.id} className="p-3 bg-[#0F1210] border border-[#222824] rounded-xl flex justify-between items-center text-xs">
                 <span className="text-white font-medium">{f.description}</span>
-                <span className="text-red-400 font-bold">R$ {f.amount.toFixed(2)}</span>
+                <span className="text-red-400 font-bold">{formatarMoeda(f.amount)}</span>
               </div>
             ))}
           </div>

@@ -10,6 +10,7 @@ import { FinancialTransaction } from '../../types/domain';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
 import { opcoesStatus, rotuloData } from '../../utils/lancamento';
+import { formatarMoeda } from '../../utils/dinheiro';
 
 interface AcoesLancamentoProps {
   transacao: FinancialTransaction;
@@ -251,8 +252,8 @@ export const AcoesLancamento: React.FC<AcoesLancamentoProps> = ({ transacao, onA
       >
         <div className="space-y-4">
           <p className="text-sm text-[#AEB5B0]">
-            Excluir <strong className="text-white">{transacao.description}</strong> de R${' '}
-            {transacao.amount.toFixed(2)}? O lançamento some das telas e dos totais.
+            Excluir <strong className="text-white">{transacao.description}</strong> de{' '}
+            {formatarMoeda(transacao.amount)}? O lançamento some das telas e dos totais.
           </p>
 
           {transacao.attachmentsCount > 0 && (

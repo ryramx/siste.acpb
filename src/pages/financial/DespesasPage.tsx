@@ -15,6 +15,7 @@ import { useToast } from '../../contexts/ToastContext';
 import { FinancialTabs } from '../../components/common/FinancialTabs';
 import { AcoesLancamento } from '../../components/common/AcoesLancamento';
 import { AnexosLancamento } from '../../components/common/AnexosLancamento';
+import { formatarData, formatarMoeda, formatarMoedaComSinal, somarValores } from '../../utils/dinheiro';
 
 export const DespesasPage: React.FC = () => {
   const { hasPermission, user } = useAuth();
@@ -72,8 +73,8 @@ export const DespesasPage: React.FC = () => {
     return matchSearch && matchStatus && matchCat;
   });
 
-  const totalPago = filtered.filter(t => t.status === 'CONFIRMADA').reduce((acc, t) => acc + t.amount, 0);
-  const totalPendente = filtered.filter(t => t.status === 'PENDENTE').reduce((acc, t) => acc + t.amount, 0);
+  const totalPago = somarValores(filtered.filter(t => t.status === 'CONFIRMADA').map((t) => t.amount));
+  const totalPendente = somarValores(filtered.filter(t => t.status === 'PENDENTE').map((t) => t.amount));
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -119,13 +120,13 @@ export const DespesasPage: React.FC = () => {
         <div className="bg-[#181D1A] border border-red-900/40 border-l-4 border-l-red-600 p-5 rounded-xl">
           <span className="text-xs text-[#AEB5B0] uppercase tracking-wider font-semibold">Total Confirmado</span>
           <div className="text-2xl font-bold text-red-400 mt-1 font-heading">
-            R$ {totalPago.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+            {formatarMoeda(totalPago)}
           </div>
         </div>
         <div className="bg-[#181D1A] border border-[#F8D800]/20 border-l-4 border-l-[#F8D800] p-5 rounded-xl">
           <span className="text-xs text-[#AEB5B0] uppercase tracking-wider font-semibold">Pendente de Pagamento</span>
           <div className="text-2xl font-bold text-[#F8D800] mt-1 font-heading">
-            R$ {totalPendente.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+            {formatarMoeda(totalPendente)}
           </div>
         </div>
       </div>
@@ -176,13 +177,13 @@ export const DespesasPage: React.FC = () => {
               <tbody className="divide-y divide-[#222824]">
                 {filtered.map((t) => (
                   <tr key={t.id} className="hover:bg-[#1e2521] transition-colors">
-                    <td className="py-3 px-4 text-xs text-[#AEB5B0]">{t.date}</td>
+                    <td className="py-3 px-4 text-xs text-[#AEB5B0]">{formatarData(t.date)}</td>
                     <td className="py-3 px-4 font-medium text-white">{t.description}</td>
                     <td className="py-3 px-4 text-xs text-[#F8D800]">{t.category}</td>
                     <td className="py-3 px-4 text-xs">
                       <AnexosLancamento transacao={t} onAlterado={fetchData} />
                     </td>
-                    <td className="py-3 px-4 font-bold text-red-400">- R$ {t.amount.toFixed(2)}</td>
+                    <td className="py-3 px-4 font-bold text-red-400">{formatarMoedaComSinal(t.amount, false)}</td>
                     <td className="py-3 px-4">
                       <Badge variant={t.status === 'CONFIRMADA' ? 'success' : 'warning'}>{t.status}</Badge>
                     </td>
