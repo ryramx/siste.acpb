@@ -11,6 +11,7 @@ import {
   projectService
 } from '../../services/domainServices';
 import { formatarCPF } from '../../utils/mascaras';
+import { erroNomePessoa } from '../../utils/nomePessoa';
 
 type Papel = 'voluntario' | 'beneficiario';
 
@@ -94,8 +95,9 @@ export const NovoVinculoModal: React.FC<NovoVinculoModalProps> = ({
       .catch(() => setErro('Não foi possível carregar a lista de pessoas.'));
   }, [isOpen, hoje]);
 
+  const erroNome = origem === 'nova' ? erroNomePessoa(nomeCompleto, 'O nome completo') : undefined;
   const podeSalvar =
-    origem === 'cadastrada' ? pessoaId !== '' : nomeCompleto.trim() !== '';
+    origem === 'cadastrada' ? pessoaId !== '' : nomeCompleto.trim() !== '' && !erroNome;
 
   const salvar = async () => {
     if (!podeSalvar) return;
@@ -162,6 +164,7 @@ export const NovoVinculoModal: React.FC<NovoVinculoModalProps> = ({
               label="Nome completo"
               value={nomeCompleto}
               onChange={(e) => setNomeCompleto(e.target.value)}
+              error={erroNome}
               required
             />
             <div className="grid grid-cols-2 gap-3">
