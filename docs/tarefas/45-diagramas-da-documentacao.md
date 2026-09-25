@@ -1,6 +1,6 @@
 # 45 — Diagramas da documentação
 
-**Situação:** Pendente
+**Situação:** Concluído
 
 ## Problema
 

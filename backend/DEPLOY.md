@@ -5,6 +5,8 @@ o deploy e operar o sistema em produção.
 
 ## Arquitetura de produção
 
+![Arquitetura de produção: o navegador fala com o site estático e com a API no Render; a API fala com o Neon, com o Supabase Storage e com a Brevo; o GitHub Actions faz o backup do Neon para o Supabase](../docs/diagramas/arquitetura-de-producao.svg)
+
 O sistema é dividido em quatro serviços, em três plataformas com plano gratuito permanente:
 
 | Peça | Plataforma | Por quê |

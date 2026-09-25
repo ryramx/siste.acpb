@@ -3,6 +3,8 @@
 Documento de decisão para a tarefa 07. As decisões aqui viram configuração de código nas
 tarefas 08-11 e devem ser respeitadas nas implementações seguintes.
 
+![Caminho de uma requisição autenticada: o login limitado por tentativas devolve um JWT de 8 horas; cada chamada passa por get_current_user, que consulta o usuário no banco, e por require_permission, que resolve as permissões dos perfis ativos](../docs/diagramas/requisicao-autenticada.svg)
+
 ## Mecanismo
 
 - **JWT (JSON Web Token)** assinado com algoritmo **HS256** (chave simétrica), suficiente para um

@@ -59,6 +59,17 @@ vale saber o que a motivou.
 > cada uma entregou está registrado em `progresso-das-tarefas.md`, e os arquivos
 > em si continuam no histórico do git.
 
+## 🖼 Diagramas
+
+SVG escrito à mão e versionado — aparece no `git diff` e se corrige com um editor de texto,
+diferente do DER em PNG. Cada um é citado de dentro do documento que ele explica.
+
+| Diagrama | Explica | Citado em |
+| -------- | ------- | --------- |
+| [`diagramas/arquitetura-de-producao.svg`](diagramas/arquitetura-de-producao.svg) | Quem fala com quem em produção, e por onde o backup passa | [`backend/DEPLOY.md`](../backend/DEPLOY.md) |
+| [`diagramas/ciclo-de-backup.svg`](diagramas/ciclo-de-backup.svg) | O que cada dia gera, onde cai e por quanto tempo fica | [`backend/BACKUP_E_RESTAURACAO.md`](../backend/BACKUP_E_RESTAURACAO.md) |
+| [`diagramas/requisicao-autenticada.svg`](diagramas/requisicao-autenticada.svg) | Do token à permissão do módulo, com os pontos de 401, 403 e 429 | [`backend/AUTENTICACAO.md`](../backend/AUTENTICACAO.md) |
+
 ## 🛠 Tarefas em aberto
 
 Trabalho especificado e ainda não entregue, uma tarefa por arquivo — a mesma convenção das 42
@@ -69,7 +80,7 @@ tarefas do plano original. Quando uma é concluída, o que ela entregou vai para
 | ------ | -------- |
 | [`tarefas/43-tokens-de-cor-e-contraste.md`](tarefas/43-tokens-de-cor-e-contraste.md) | ✅ Concluída — paleta e contrastes em [`produto/descricao-da-ui.md`](produto/descricao-da-ui.md) |
 | [`tarefas/44-graficos-do-dashboard-financeiro.md`](tarefas/44-graficos-do-dashboard-financeiro.md) | ✅ Concluída — decisões na seção 19 de [`produto/descricao-da-ui.md`](produto/descricao-da-ui.md) |
-| [`tarefas/45-diagramas-da-documentacao.md`](tarefas/45-diagramas-da-documentacao.md) | Arquitetura, backup e autenticação como SVG versionado |
+| [`tarefas/45-diagramas-da-documentacao.md`](tarefas/45-diagramas-da-documentacao.md) | ✅ Concluída — os três diagramas estão em [`diagramas/`](diagramas/) |
 
 ## 🔮 Futuro
 

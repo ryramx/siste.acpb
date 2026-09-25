@@ -380,6 +380,8 @@ Postgres (o ensaio usou a 16 nas duas pontas) e o pacote mensal de arquivos.
 `.github/workflows/backup.yml` roda todo dia às 06:00 UTC (03:00 em Brasília) e também sob demanda
 pela aba Actions. O que ele faz:
 
+![Ciclo de backup: dump diário retido 30 dias e espelho dos arquivos todo dia; cópia semanal aos domingos retida 6 meses; no dia 1, dump e pacote de arquivos retidos 24 meses](../docs/diagramas/ciclo-de-backup.svg)
+
 | Quando | O que gera | Onde | Retenção |
 |---|---|---|---|
 | Todo dia | `pg_dump -F c` do banco, criptografado com `gpg -c` (AES256) | `backups/diario/` | 30 dias |
