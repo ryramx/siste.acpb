@@ -257,6 +257,11 @@ export const UsersManagement: React.FC = () => {
     }
   };
 
+  const ehVoceMesmo = editUser !== null && user?.id === editUser.id;
+  // Conta principal aberta por outro admin: o backend recusa e-mail, senha, desativar e tirar
+  // o Administrador (ver backend/app/api/routes/usuarios.py). A tela só não oferece.
+  const contaDeOutroTitular = editUser !== null && editUser.protegido && !ehVoceMesmo;
+
   return (
     <div className="space-y-4">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -309,7 +314,14 @@ export const UsersManagement: React.FC = () => {
                 {filteredUsers.map((u) => (
                   <tr key={u.id} className="hover:bg-[#1e2521] transition-colors">
                     <td className="py-3.5 px-4">
-                      <div className="font-semibold text-white">{u.name}</div>
+                      <div className="font-semibold text-white">
+                        {u.name}
+                        {u.protegido && (
+                          <span className="ml-2 align-middle">
+                            <Badge variant="info">CONTA PRINCIPAL</Badge>
+                          </span>
+                        )}
+                      </div>
                       <div className="text-xs text-[#727A74]">{u.email}</div>
                       {/* Em tela estreita as colunas de perfil e status saem da tabela para
                           não empurrar as ações para fora da largura do celular; a mesma
@@ -444,6 +456,12 @@ export const UsersManagement: React.FC = () => {
       >
         {editUser && (
           <div className="space-y-6">
+            {contaDeOutroTitular && (
+              <p className="text-xs text-[#F8D800] p-3 bg-[#0F1210] border border-[#222824] rounded-lg">
+                Esta é a conta principal do sistema. Só o próprio titular pode trocar o e-mail e
+                a senha, remover o perfil de Administrador ou desativá-la.
+              </p>
+            )}
             {/* ---------- Dados ---------- */}
             <section className="space-y-3">
               <h4 className="text-xs font-semibold text-[#F8D800] uppercase tracking-wider">
@@ -468,6 +486,7 @@ export const UsersManagement: React.FC = () => {
                   name="email-usuario"
                   type="email"
                   required
+                  disabled={contaDeOutroTitular}
                   value={formEmail}
                   onChange={(e) => setFormEmail(e.target.value)}
                 />
@@ -522,6 +541,11 @@ export const UsersManagement: React.FC = () => {
               <div className="space-y-2">
                 {allProfiles.map((perfil) => {
                   const vinculado = editUser.perfis.some((pp) => pp.perfilId === perfil.id);
+                  // O backend recusa tirar o Administrador de si mesmo e da conta principal.
+                  const adminTravado =
+                    vinculado &&
+                    perfil.nome === 'Administrador' &&
+                    (ehVoceMesmo || editUser.protegido);
                   return (
                     <label
                       key={perfil.id}
@@ -531,7 +555,9 @@ export const UsersManagement: React.FC = () => {
                         <input
                           type="checkbox"
                           checked={vinculado}
-                          disabled={togglingProfileId === perfil.id || !perfil.ativo}
+                          disabled={
+                            togglingProfileId === perfil.id || !perfil.ativo || adminTravado
+                          }
                           onChange={() => handleToggleProfile(perfil, vinculado)}
                           className="w-4 h-4 accent-[#004922]"
                         />
@@ -556,35 +582,47 @@ export const UsersManagement: React.FC = () => {
                   confirmarReset();
                 }}
               >
-                <Input
-                  label="Nova senha provisória"
-                  name="senha-provisoria"
-                  type="text"
-                  minLength={5}
-                  helperText="Mínimo de 5 caracteres. Deixe em branco para não alterar a senha."
-                  value={novaSenhaReset}
-                  onChange={(e) => setNovaSenhaReset(e.target.value)}
-                />
+                {!contaDeOutroTitular && (
+                  <Input
+                    label="Nova senha provisória"
+                    name="senha-provisoria"
+                    type="text"
+                    minLength={5}
+                    helperText="Mínimo de 5 caracteres. Deixe em branco para não alterar a senha."
+                    value={novaSenhaReset}
+                    onChange={(e) => setNovaSenhaReset(e.target.value)}
+                  />
+                )}
+                {editUser.ativo && ehVoceMesmo && (
+                  <p className="text-xs text-[#727A74]">
+                    Você não pode desativar a sua própria conta nem remover o seu perfil de
+                    Administrador.
+                  </p>
+                )}
                 <div className="flex flex-wrap justify-end gap-2">
-                  <Button
-                    type="submit"
-                    variant="outline"
-                    size="sm"
-                    isLoading={redefinindo}
-                    disabled={novaSenhaReset.length < 5}
-                  >
-                    Redefinir senha
-                  </Button>
-                  <Button
-                    type="button"
-                    variant={editUser.ativo ? 'danger' : 'primary'}
-                    size="sm"
-                    isLoading={togglingUserId === editUser.id}
-                    onClick={() => handleToggleAtivo(editUser)}
-                    leftIcon={<Power className="w-3.5 h-3.5" />}
-                  >
-                    {editUser.ativo ? 'Desativar usuário' : 'Reativar usuário'}
-                  </Button>
+                  {!contaDeOutroTitular && (
+                    <Button
+                      type="submit"
+                      variant="outline"
+                      size="sm"
+                      isLoading={redefinindo}
+                      disabled={novaSenhaReset.length < 5}
+                    >
+                      Redefinir senha
+                    </Button>
+                  )}
+                  {!(editUser.ativo && (ehVoceMesmo || editUser.protegido)) && (
+                    <Button
+                      type="button"
+                      variant={editUser.ativo ? 'danger' : 'primary'}
+                      size="sm"
+                      isLoading={togglingUserId === editUser.id}
+                      onClick={() => handleToggleAtivo(editUser)}
+                      leftIcon={<Power className="w-3.5 h-3.5" />}
+                    >
+                      {editUser.ativo ? 'Desativar usuário' : 'Reativar usuário'}
+                    </Button>
+                  )}
                 </div>
               </form>
             </section>

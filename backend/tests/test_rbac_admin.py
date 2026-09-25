@@ -88,7 +88,10 @@ def test_nao_permite_criar_perfil_duplicado(token_admin):
     assert response.status_code == 400
 
 
-def test_nao_permite_remover_ultimo_administrador_ativo(token_admin):
+def test_nao_permite_remover_o_proprio_perfil_de_administrador_sendo_o_ultimo(token_admin):
+    # O caso do último admin ativo removendo o próprio perfil hoje para antes, na trava de
+    # "remover o próprio perfil" (403). A trava do último admin tem teste próprio em
+    # test_protecao_de_administradores.py, com um ator que não é admin.
     # Isola o teste: desativa (sem excluir) todos os OUTROS usuários administradores ativos,
     # restaurando o estado original ao final, para não depender/alterar dados de produção.
     db = SessionLocal()
@@ -115,7 +118,7 @@ def test_nao_permite_remover_ultimo_administrador_ativo(token_admin):
             f"/usuarios/{usuario_teste.id}/perfis/{perfil_admin.id}",
             headers={"Authorization": f"Bearer {token_admin}"},
         )
-        assert response.status_code == 409
+        assert response.status_code == 403
     finally:
         for u in outros_admins:
             u.ativo = estados_originais[u.id]

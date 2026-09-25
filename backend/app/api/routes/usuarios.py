@@ -26,6 +26,89 @@ router = APIRouter()
 
 PERFIL_ADMINISTRADOR = "Administrador"
 
+# Travas contra perder o acesso ao sistema. Sem elas, qualquer administrador podia desativar a
+# si mesmo, o último admin ativo ou o dono do sistema — e o script de recuperação
+# (scripts/criar_admin.py) se recusa a rodar enquanto houver algum admin ativo, então o dono
+# desativado por outro admin ficava sem caminho de volta.
+MSG_DESATIVAR_PROPRIA = "Você não pode desativar a sua própria conta."
+MSG_REMOVER_PROPRIO_ADMIN = "Você não pode remover o seu próprio perfil de Administrador."
+MSG_CONTA_PRINCIPAL = (
+    "Esta é a conta principal do sistema. Só o próprio titular pode alterá-la."
+)
+MSG_ULTIMO_ADMIN = "Não é possível remover o último administrador ativo do sistema"
+
+
+def _outros_admins_ativos(db: Session, excluindo_usuario_id: int) -> int:
+    return (
+        db.query(UsuarioPerfil)
+        .join(Usuario, Usuario.id == UsuarioPerfil.usuario_id)
+        .join(Perfil, Perfil.id == UsuarioPerfil.perfil_id)
+        .filter(
+            Perfil.nome == PERFIL_ADMINISTRADOR,
+            UsuarioPerfil.usuario_id != excluindo_usuario_id,
+            Usuario.ativo.is_(True),
+        )
+        .count()
+    )
+
+
+def _eh_admin(db: Session, usuario_id: int) -> bool:
+    return (
+        db.query(UsuarioPerfil)
+        .join(Perfil, Perfil.id == UsuarioPerfil.perfil_id)
+        .filter(UsuarioPerfil.usuario_id == usuario_id, Perfil.nome == PERFIL_ADMINISTRADOR)
+        .first()
+        is not None
+    )
+
+
+def _recusar(
+    db: Session,
+    request: Request,
+    usuario_atual: Usuario,
+    *,
+    tabela: str,
+    registro_id: int,
+    tentativa: str,
+    status_code: int,
+    detalhe: str,
+) -> None:
+    """Registra a tentativa bloqueada na auditoria e responde com o erro.
+
+    Só pode ser chamada antes de qualquer alteração no alvo: o commit aqui grava a auditoria
+    e gravaria junto qualquer mudança pendente na sessão.
+    """
+    registrar_auditoria(
+        db,
+        usuario_id=usuario_atual.id,
+        acao="bloquear",
+        tabela=tabela,
+        registro_id=registro_id,
+        descricao=detalhe,
+        dados_novos={"tentativa": tentativa},
+        ip=obter_ip_cliente(request),
+    )
+    db.commit()
+    raise HTTPException(status_code=status_code, detail=detalhe)
+
+
+def _exigir_que_pode_desativar(
+    db: Session, request: Request, usuario_atual: Usuario, alvo: Usuario
+) -> None:
+    recusa = None
+    if alvo.id == usuario_atual.id:
+        recusa = (403, MSG_DESATIVAR_PROPRIA)
+    elif alvo.protegido:
+        recusa = (403, MSG_CONTA_PRINCIPAL)
+    elif alvo.ativo and _eh_admin(db, alvo.id) and _outros_admins_ativos(db, alvo.id) == 0:
+        recusa = (409, MSG_ULTIMO_ADMIN)
+    if recusa:
+        _recusar(
+            db, request, usuario_atual,
+            tabela="usuarios", registro_id=alvo.id, tentativa="desativar",
+            status_code=recusa[0], detalhe=recusa[1],
+        )
+
 
 @router.get(
     "/",
@@ -109,9 +192,23 @@ def atualizar_usuario(
     if not usuario:
         raise HTTPException(status_code=404, detail="Usuário não encontrado")
 
-    dados_antes = model_to_dict(usuario)
-
     update_data = obj_in.model_dump(exclude_unset=True)
+    if update_data.get("ativo") is False and usuario.ativo:
+        _exigir_que_pode_desativar(db, request, usuario_atual, usuario)
+    # Reativar a conta principal é o único ajuste que outro usuário pode fazer nela: é o
+    # caminho de volta caso ela tenha ficado inativa de algum jeito.
+    if (
+        usuario.protegido
+        and usuario.id != usuario_atual.id
+        and any(k != "ativo" for k in update_data)
+    ):
+        _recusar(
+            db, request, usuario_atual,
+            tabela="usuarios", registro_id=usuario.id, tentativa="editar",
+            status_code=403, detalhe=MSG_CONTA_PRINCIPAL,
+        )
+
+    dados_antes = model_to_dict(usuario)
     for key, value in update_data.items():
         setattr(usuario, key, value)
     usuario.updated_at = datetime.utcnow()
@@ -155,6 +252,13 @@ def redefinir_senha_de_usuario(
     usuario = db.query(Usuario).filter(Usuario.id == id).first()
     if not usuario:
         raise HTTPException(status_code=404, detail="Usuário não encontrado")
+    if usuario.protegido and usuario.id != usuario_atual.id:
+        # Trocar a senha do dono é tomar a conta dele.
+        _recusar(
+            db, request, usuario_atual,
+            tabela="usuarios", registro_id=usuario.id, tentativa="redefinir-senha",
+            status_code=403, detalhe=MSG_CONTA_PRINCIPAL,
+        )
 
     dados_antes = model_to_dict(usuario)
     usuario.senha_hash = hash_password(obj_in.senha_nova)
@@ -193,6 +297,7 @@ def desativar_usuario(
     usuario = db.query(Usuario).filter(Usuario.id == id).first()
     if not usuario:
         raise HTTPException(status_code=404, detail="Usuário não encontrado")
+    _exigir_que_pode_desativar(db, request, usuario_atual, usuario)
 
     dados_antes = model_to_dict(usuario)
     usuario.ativo = False
@@ -285,20 +390,20 @@ def desvincular_perfil_do_usuario(
 
     perfil = db.query(Perfil).filter(Perfil.id == perfil_id).first()
     if perfil and perfil.nome == PERFIL_ADMINISTRADOR:
-        outros_admins_ativos = (
-            db.query(UsuarioPerfil)
-            .join(Usuario, Usuario.id == UsuarioPerfil.usuario_id)
-            .filter(
-                UsuarioPerfil.perfil_id == perfil_id,
-                UsuarioPerfil.usuario_id != id,
-                Usuario.ativo.is_(True),
-            )
-            .count()
-        )
-        if outros_admins_ativos == 0:
-            raise HTTPException(
-                status_code=409,
-                detail="Não é possível remover o último administrador ativo do sistema",
+        alvo = db.query(Usuario).filter(Usuario.id == id).first()
+        recusa = None
+        if id == usuario_atual.id:
+            recusa = (403, MSG_REMOVER_PROPRIO_ADMIN)
+        elif alvo is not None and alvo.protegido:
+            recusa = (403, MSG_CONTA_PRINCIPAL)
+        elif _outros_admins_ativos(db, id) == 0:
+            recusa = (409, MSG_ULTIMO_ADMIN)
+        if recusa:
+            _recusar(
+                db, request, usuario_atual,
+                tabela="usuario_perfis", registro_id=vinculo.id,
+                tentativa="remover perfil Administrador",
+                status_code=recusa[0], detalhe=recusa[1],
             )
 
     registrar_auditoria(

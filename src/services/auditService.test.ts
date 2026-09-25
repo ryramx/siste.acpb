@@ -11,6 +11,7 @@ function usuario(id: string, name: string): SystemUser {
     name,
     email: `${name}@acpb.local`,
     ativo: true,
+    protegido: false,
     perfis: [],
     ultimoLogin: null,
     createdAt: '2026-01-01T00:00:00'

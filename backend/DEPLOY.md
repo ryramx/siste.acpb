@@ -181,6 +181,24 @@ um admin existente. Daí em diante, usuários são criados pela tela de administ
 
 Feito isso, faça o login com esse usuário e troque a senha.
 
+Esse primeiro administrador nasce como **conta principal**: nenhum outro admin consegue
+desativá-lo, trocar o e-mail ou a senha dele, nem tirar o perfil de Administrador dele. Só a
+própria conta se altera. A tela mostra o selo "CONTA PRINCIPAL" e esconde esses botões, e a API
+recusa com 403 (a tentativa fica na auditoria como `bloquear`). Além disso, ninguém desativa a
+própria conta nem tira o próprio Administrador, e o último administrador ativo não pode ser
+desativado nem rebaixado.
+
+Numa instalação que já existia antes dessa trava, nenhuma conta vem marcada. Marque a do dono
+pelo shell do Render:
+
+```bash
+CONTA_EMAIL=dono@acpb.org.br python -m scripts.proteger_conta
+```
+
+Para passar a propriedade do sistema para outra pessoa, marque a nova conta e desmarque a
+antiga com `--remover`. Não há tela nem rota para isso de propósito: se um admin pudesse
+marcar ou desmarcar pela API, poderia também desproteger o dono.
+
 ## Variáveis de ambiente
 
 ### API (Render)

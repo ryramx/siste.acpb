@@ -12,6 +12,7 @@ interface ApiUsuario {
   pessoa_id: number;
   email: string;
   ativo: boolean;
+  protegido?: boolean;
   ultimo_login: string | null;
   created_at: string;
   updated_at: string;
@@ -76,6 +77,7 @@ function toSystemUser(
     name: nomePessoa,
     email: usuario.email,
     ativo: usuario.ativo,
+    protegido: usuario.protegido ?? false,
     perfis,
     ultimoLogin: usuario.ultimo_login,
     createdAt: usuario.created_at

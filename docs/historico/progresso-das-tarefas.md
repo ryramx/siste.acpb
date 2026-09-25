@@ -434,3 +434,20 @@ erro funcionaram como descrito. Defeitos encontrados e corrigidos:
   (Configurações > Usuários).
 
 Frontend: 212/212. `tsc --noEmit` e `npm run build` limpos.
+
+## Travas para não perder o acesso de administrador - "Concluído"
+
+Item RQ-04 da rodada de QA de 25/09/2026. Qualquer admin podia desativar a si mesmo, o último
+admin ativo ou o dono do sistema (`POST /usuarios/{id}/desativar` e `PUT` com `ativo=false` não
+verificavam nada), e o `criar_admin` se recusa a rodar enquanto houver algum admin ativo, então o
+dono desativado por outro admin ficava sem caminho de volta.
+
+- Ninguém desativa a própria conta nem remove o próprio perfil de Administrador (403).
+- O último administrador ativo não pode ser desativado nem rebaixado (409).
+- Nova marca `usuarios.protegido` (conta principal): só a própria conta troca e-mail e senha,
+  se desativa ou perde o Administrador. Marcada por `scripts/proteger_conta.py` no shell do
+  servidor; o `criar_admin` já cria o primeiro admin marcado. Sem rota nem tela para marcar.
+- Toda tentativa recusada vai para a auditoria com a ação `bloquear`.
+- A tela de usuários mostra o selo "CONTA PRINCIPAL" e esconde os botões que o backend recusaria.
+
+Backend: 194/194. Frontend: 218/218. `tsc --noEmit` e `npm run build` limpos.

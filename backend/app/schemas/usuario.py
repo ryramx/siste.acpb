@@ -59,6 +59,7 @@ class UsuarioResponse(BaseModel):
     pessoa_id: int
     email: str
     ativo: bool
+    protegido: bool = False
     ultimo_login: datetime | None = None
     created_at: datetime
     updated_at: datetime
