@@ -16,10 +16,12 @@ import { FinancialTabs } from '../../components/common/FinancialTabs';
 import { AcoesLancamento } from '../../components/common/AcoesLancamento';
 import { AnexosLancamento } from '../../components/common/AnexosLancamento';
 import { formatarData, formatarMoeda, formatarMoedaComSinal, somarValores } from '../../utils/dinheiro';
+import { usePeriodoFinanceiro } from '../../hooks/usePeriodoFinanceiro';
 
 export const DespesasPage: React.FC = () => {
   const { hasPermission, user } = useAuth();
   const { addToast } = useToast();
+  const [periodo] = usePeriodoFinanceiro();
 
   const [transactions, setTransactions] = useState<FinancialTransaction[]>([]);
   const [loading, setLoading] = useState(true);
@@ -45,13 +47,16 @@ export const DespesasPage: React.FC = () => {
 
   const fetchData = async () => {
     setLoading(true);
-    const data = await financialService.getAll();
+    const data = await financialService.getAll(periodo);
     setTransactions(data.filter((t) => t.type === 'DESPESA'));
     setLoading(false);
   };
 
   useEffect(() => {
     fetchData();
+  }, [periodo.ano, periodo.mes]);
+
+  useEffect(() => {
     financialService.listarProjetos().then(setProjetos).catch(() => setProjetos([]));
     financialService.listarContas().then((lista) => {
       setContas(lista);

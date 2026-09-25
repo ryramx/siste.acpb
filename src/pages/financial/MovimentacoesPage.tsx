@@ -13,10 +13,12 @@ import { AnexosLancamento } from '../../components/common/AnexosLancamento';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
 import { formatarData, formatarMoedaComSinal, somarValores } from '../../utils/dinheiro';
+import { usePeriodoFinanceiro } from '../../hooks/usePeriodoFinanceiro';
 
 export const MovimentacoesPage: React.FC = () => {
   const { hasPermission } = useAuth();
   const { addToast } = useToast();
+  const [periodo] = usePeriodoFinanceiro();
   const [transactions, setTransactions] = useState<FinancialTransaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -26,7 +28,7 @@ export const MovimentacoesPage: React.FC = () => {
   const carregar = () => {
     setLoading(true);
     financialService
-      .getAll()
+      .getAll(periodo)
       .then(setTransactions)
       .catch((err) => {
         // Sem o catch a tabela ficava no esqueleto de carregamento para sempre quando a API
@@ -37,7 +39,7 @@ export const MovimentacoesPage: React.FC = () => {
       .finally(() => setLoading(false));
   };
 
-  useEffect(carregar, []);
+  useEffect(carregar, [periodo.ano, periodo.mes]);
 
   const podeEditar = hasPermission('edit_financial');
 

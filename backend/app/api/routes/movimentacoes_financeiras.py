@@ -1,6 +1,7 @@
-from datetime import datetime
+from datetime import date, datetime
 
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
+from sqlalchemy import extract
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 
@@ -39,9 +40,51 @@ def _validar_referencias(db: Session, dados: dict) -> None:
     ).first():
         raise HTTPException(status_code=404, detail="Pessoa responsável não encontrada")
 
+def _intervalo_do_periodo(ano: int, mes: int | None) -> tuple[date, date]:
+    """[início, fim) do ano inteiro ou de um mês dele."""
+    if mes is None:
+        return date(ano, 1, 1), date(ano + 1, 1, 1)
+    fim = date(ano + 1, 1, 1) if mes == 12 else date(ano, mes + 1, 1)
+    return date(ano, mes, 1), fim
+
+
 @router.get("/", response_model=list[MovimentacaoFinanceiraResponse], dependencies=[Depends(require_permission("financeiro.visualizar"))])
-def listar_movimentacoes_financeiras(db: Session = Depends(get_db)):
-    return db.query(MovimentacaoFinanceira).all()
+def listar_movimentacoes_financeiras(
+    ano: int | None = Query(None, ge=1900, le=2999),
+    mes: int | None = Query(None, ge=1, le=12),
+    db: Session = Depends(get_db),
+):
+    """Lançamentos, do mais recente ao mais antigo.
+
+    `ano` (e opcionalmente `mes`) limita ao período (RQ-07 da rodada de QA de 25/09/2026):
+    com os anos, tudo junto numa tela só fazia perder o controle dos gastos. Sem `ano`, vem
+    tudo, como antes — o detalhe de projeto usa assim. O filtro é por intervalo de datas, e não
+    por EXTRACT, para poder usar o índice da coluna.
+    """
+    if mes is not None and ano is None:
+        raise HTTPException(status_code=422, detail="Informe o ano junto com o mês")
+    consulta = db.query(MovimentacaoFinanceira)
+    if ano is not None:
+        inicio, fim = _intervalo_do_periodo(ano, mes)
+        consulta = consulta.filter(
+            MovimentacaoFinanceira.data_movimentacao >= inicio,
+            MovimentacaoFinanceira.data_movimentacao < fim,
+        )
+    return consulta.order_by(
+        MovimentacaoFinanceira.data_movimentacao.desc(), MovimentacaoFinanceira.id.desc()
+    ).all()
+
+
+@router.get("/anos", response_model=list[int], dependencies=[Depends(require_permission("financeiro.visualizar"))])
+def listar_anos_com_movimentacao(db: Session = Depends(get_db)):
+    """Anos que têm lançamento, mais o ano atual, do mais recente ao mais antigo.
+
+    Alimenta o seletor de ano: oferecer um ano sem nada levaria a uma tela vazia.
+    """
+    ano_da_data = extract("year", MovimentacaoFinanceira.data_movimentacao)
+    anos = {int(a) for (a,) in db.query(ano_da_data).distinct().all()}
+    anos.add(date.today().year)
+    return sorted(anos, reverse=True)
 
 @router.get("/{id}", response_model=MovimentacaoFinanceiraResponse, dependencies=[Depends(require_permission("financeiro.visualizar"))])
 def obter_movimentacao_financeira(id: int, db: Session = Depends(get_db)):

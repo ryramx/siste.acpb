@@ -17,6 +17,8 @@ import { useAuth } from '../../contexts/AuthContext';
 import { opcoesStatus, placeholderDescricao, rotuloData } from '../../utils/lancamento';
 import { useToast } from '../../contexts/ToastContext';
 import { formatarData, formatarMoeda, formatarMoedaComSinal, participacao, somarValores } from '../../utils/dinheiro';
+import { usePeriodoFinanceiro } from '../../hooks/usePeriodoFinanceiro';
+import { descreverPeriodo } from '../../utils/periodo';
 
 interface CategoriaBreakdownProps {
   titulo: string;
@@ -98,6 +100,7 @@ export const FinancialDashboard: React.FC = () => {
   const navigate = useNavigate();
   const { hasPermission, user } = useAuth();
   const { addToast } = useToast();
+  const [periodo] = usePeriodoFinanceiro();
 
   const [transactions, setTransactions] = useState<FinancialTransaction[]>([]);
   const [loading, setLoading] = useState(true);
@@ -137,7 +140,7 @@ export const FinancialDashboard: React.FC = () => {
 
   const fetchTransactions = async () => {
     try {
-      const data = await financialService.getAll();
+      const data = await financialService.getAll(periodo);
       setTransactions(data);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Tente novamente em instantes.';
@@ -148,7 +151,11 @@ export const FinancialDashboard: React.FC = () => {
   };
 
   useEffect(() => {
+    setLoading(true);
     fetchTransactions();
+  }, [periodo.ano, periodo.mes]);
+
+  useEffect(() => {
     financialService
       .listarProjetos()
       .then(setProjetos)
@@ -259,10 +266,10 @@ export const FinancialDashboard: React.FC = () => {
           accentColor="neutral"
         />
         <StatCard
-          title="Saldo Líquido Atual"
+          title="Saldo do Período"
           value={formatarMoeda(saldo)}
           icon={<TrendingUp className="w-5 h-5 text-[#F8D800]" />}
-          subtitle="Disponível em caixa"
+          subtitle={`Receitas menos despesas em ${descreverPeriodo(periodo)}`}
           accentColor="yellow"
         />
       </div>
