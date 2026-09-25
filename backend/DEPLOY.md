@@ -87,6 +87,35 @@ recuperação de senha quebrada até alguém ler o e-mail. Cadastrar a lista int
 preferível a desligar a verificação ("Interromper a revisão dos endereços de IP"), que faria a
 chave funcionar de qualquer lugar do mundo caso vazasse.
 
+**A chave da Brevo expira sem uso:** a Brevo desativa sozinha uma chave de API que passa
+**90 dias sem nenhum envio**, independentemente da validade escolhida na criação. Aqui isso é
+um risco real, porque o único envio do sistema é a recuperação de senha: basta a associação
+passar três meses sem ninguém esquecer a senha. O aviso da Brevo (7 dias antes e no dia) vai
+para o e-mail do dono da conta, não para o sistema.
+
+O sintoma é o mesmo da falha de SMTP descrita abaixo: a tela responde "instruções enviadas"
+e nenhum e-mail chega. Não há erro visível para quem pede — de propósito, para a recuperação
+não revelar se um e-mail está cadastrado (ver `app/core/email.py::enviar_email`).
+
+Para diagnosticar:
+1. No log do serviço no Render, procure `Falha ao enviar e-mail para ... por brevo` no
+   horário do pedido. Se a linha não aparece e também não houve envio, o problema é outro
+   (limite de tentativas, e-mail não cadastrado).
+2. O log não traz o código HTTP. Confirme na Brevo, em **SMTP & API → API Keys**: a chave
+   em uso aparece desativada ou expirada. Uma chave apagada some da lista.
+3. Descarte a outra causa silenciosa, o IP não autorizado (parágrafo acima): ela deixa um
+   e-mail "Verificar um novo IP" na caixa do dono da conta.
+
+Para renovar: gere uma chave nova em **SMTP & API → API Keys**, substitua `BREVO_API_KEY`
+no painel do Render (**serviço → Environment**) e salve — o Render faz um redeploy com o
+valor novo. Teste pedindo a recuperação de senha para um usuário real. Depois, apague a
+chave antiga na Brevo. Enquanto isso, o caminho de contorno é o de sempre: um administrador
+define senha provisória em **Configurações → Usuários → Redefinir senha**.
+
+Para não depender de alguém ler o aviso da Brevo a tempo, basta um envio a cada menos de
+90 dias: pedir a recuperação de senha para a própria conta de administrador, por exemplo no
+primeiro dia de cada trimestre, mantém a chave ativa e testa o envio de ponta a ponta.
+
 **Por que não SMTP (nem o do Gmail):** o Render **bloqueia as portas 25, 465 e 587 nos
 serviços do plano gratuito** desde setembro de 2025, para conter spam. Lá, qualquer SMTP
 falha por timeout por mais correta que esteja a configuração — e foi o que aconteceu: o
