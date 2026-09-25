@@ -12,6 +12,7 @@ import { useToast } from '../../contexts/ToastContext';
 import { ApiError } from '../../services/apiClient';
 import { userManagementService, profileService } from '../../services/settingsService';
 import { SystemUser, SystemProfile, PessoaSemUsuario } from '../../types/settings';
+import { erroNomePessoa } from '../../utils/nomePessoa';
 
 function mensagemDeErro(err: unknown, fallback: string): string {
   return err instanceof Error ? err.message : fallback;
@@ -478,6 +479,7 @@ export const UsersManagement: React.FC = () => {
                   label="Nome"
                   name="nome-usuario"
                   required
+                  error={erroNomePessoa(formNome)}
                   value={formNome}
                   onChange={(e) => setFormNome(e.target.value)}
                 />
@@ -517,6 +519,7 @@ export const UsersManagement: React.FC = () => {
                     isLoading={salvandoDados}
                     disabled={
                       formNome.trim() === '' ||
+                      erroNomePessoa(formNome) !== undefined ||
                       formEmail.trim() === '' ||
                       (formNome.trim() === editUser.name &&
                         formEmail.trim() === editUser.email &&

@@ -4,6 +4,7 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, field_validator
 
+from app.schemas.nome_pessoa import normalizar_nome_pessoa
 from app.schemas.telefone import normalizar_numero_telefone
 
 # Status possíveis de uma inscrição. Concordam com "inscrição" (femininos) — o frontend
@@ -55,7 +56,7 @@ class InscricaoAvulsa(BaseModel):
     def validar_nome(cls, v: str) -> str:
         if not v.strip():
             raise ValueError("Informe o nome do participante")
-        return v.strip()
+        return normalizar_nome_pessoa(v, "O nome do participante")
 
 class InscricaoUpdate(BaseModel):
     pessoa_id: int | None = None

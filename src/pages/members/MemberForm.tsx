@@ -8,6 +8,7 @@ import { memberService, CargoOption } from '../../services/domainServices';
 import { buscarEnderecoPorCEP, CEPError } from '../../services/cepService';
 import { useToast } from '../../contexts/ToastContext';
 import { ehMenorDeIdade, idadeEmAnos } from '../../utils/idade';
+import { erroNomePessoa } from '../../utils/nomePessoa';
 import {
   apenasDigitos,
   cpfValido,
@@ -169,8 +170,20 @@ export const MemberForm: React.FC = () => {
     }
   };
 
+  const errosNome = {
+    name: erroNomePessoa(formData.name, 'O nome completo'),
+    motherName: erroNomePessoa(formData.motherName, 'O nome da mãe'),
+    fatherName: erroNomePessoa(formData.fatherName, 'O nome do pai'),
+    guardianName: erroNomePessoa(formData.guardianName, 'O nome do responsável')
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const erroNome = Object.values(errosNome).find(Boolean);
+    if (erroNome) {
+      addToast({ type: 'error', title: 'Confira os nomes', message: erroNome });
+      return;
+    }
     setLoading(true);
 
     // A mascara e so da exibicao: o banco guarda digitos, para que busca e comparacao nao
@@ -236,6 +249,7 @@ export const MemberForm: React.FC = () => {
               name="name"
               value={formData.name}
               onChange={handleChange}
+              error={errosNome.name}
               placeholder="Digite o nome completo"
               required
             />
@@ -311,12 +325,14 @@ export const MemberForm: React.FC = () => {
               name="motherName"
               value={formData.motherName}
               onChange={handleChange}
+              error={errosNome.motherName}
             />
             <Input
               label="Nome do pai"
               name="fatherName"
               value={formData.fatherName}
               onChange={handleChange}
+              error={errosNome.fatherName}
             />
           </div>
 
@@ -335,6 +351,7 @@ export const MemberForm: React.FC = () => {
                   name="guardianName"
                   value={formData.guardianName}
                   onChange={handleChange}
+                  error={errosNome.guardianName}
                   placeholder="Nome de quem responde pelo menor"
                 />
                 <Input

@@ -11,6 +11,7 @@ import { projectService } from '../../services/domainServices';
 import { Project } from '../../types/domain';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
+import { formatarMoeda } from '../../utils/dinheiro';
 
 export const ProjectsList: React.FC = () => {
   const navigate = useNavigate();
@@ -124,7 +125,7 @@ export const ProjectsList: React.FC = () => {
                     <DollarSign className="w-4 h-4 text-[#004922]" />
                     <div>
                       <span className="text-sm font-bold text-white block">
-                        R$ {p.totalExpenses.toFixed(2)}
+                        {formatarMoeda(p.totalExpenses)}
                       </span>
                       <span className="text-[10px] text-[#727A74]">Despesas</span>
                     </div>

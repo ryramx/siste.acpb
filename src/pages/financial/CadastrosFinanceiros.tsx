@@ -144,7 +144,7 @@ export const CadastrosFinanceiros: React.FC = () => {
         </p>
       </div>
 
-      <FinancialTabs />
+      <FinancialTabs comPeriodo={false} />
 
       {loading ? (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -225,6 +225,11 @@ export const CadastrosFinanceiros: React.FC = () => {
               <Wallet className="w-5 h-5 text-[#F8D800]" />
               Contas
             </h2>
+            <p className="text-xs text-[#AEB5B0]">
+              Contas são os lugares onde o dinheiro da associação fica guardado, como o caixa da
+              sede ou uma conta bancária. Cada lançamento diz de qual conta o dinheiro saiu ou em
+              qual entrou.
+            </p>
 
             {podeEditar && (
               <div className="space-y-2">

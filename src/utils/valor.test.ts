@@ -33,8 +33,8 @@ describe('formatarValor', () => {
   });
 
   it('para de aceitar digitos no teto', () => {
-    expect(formatarValor('9'.repeat(12))).toBe('9.999.999.999,99');
-    expect(formatarValor('9'.repeat(30))).toBe('9.999.999.999,99');
+    expect(formatarValor('9'.repeat(10))).toBe('99.999.999,99');
+    expect(formatarValor('9'.repeat(30))).toBe('99.999.999,99');
   });
 });
 

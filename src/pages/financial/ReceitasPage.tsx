@@ -15,10 +15,13 @@ import { useToast } from '../../contexts/ToastContext';
 import { FinancialTabs } from '../../components/common/FinancialTabs';
 import { AcoesLancamento } from '../../components/common/AcoesLancamento';
 import { AnexosLancamento } from '../../components/common/AnexosLancamento';
+import { formatarData, formatarMoeda, formatarMoedaComSinal, somarValores } from '../../utils/dinheiro';
+import { usePeriodoFinanceiro } from '../../hooks/usePeriodoFinanceiro';
 
 export const ReceitasPage: React.FC = () => {
   const { hasPermission, user } = useAuth();
   const { addToast } = useToast();
+  const [periodo] = usePeriodoFinanceiro();
 
   const [transactions, setTransactions] = useState<FinancialTransaction[]>([]);
   const [loading, setLoading] = useState(true);
@@ -43,13 +46,16 @@ export const ReceitasPage: React.FC = () => {
 
   const fetchData = async () => {
     setLoading(true);
-    const data = await financialService.getAll();
+    const data = await financialService.getAll(periodo);
     setTransactions(data.filter((t) => t.type === 'RECEITA'));
     setLoading(false);
   };
 
   useEffect(() => {
     fetchData();
+  }, [periodo.ano, periodo.mes]);
+
+  useEffect(() => {
     financialService.listarProjetos().then(setProjetos).catch(() => setProjetos([]));
     financialService.listarContas().then((lista) => {
       setContas(lista);
@@ -70,7 +76,7 @@ export const ReceitasPage: React.FC = () => {
     return matchSearch && matchStatus;
   });
 
-  const total = filtered.filter(t => t.status === 'CONFIRMADA').reduce((acc, t) => acc + t.amount, 0);
+  const total = somarValores(filtered.filter(t => t.status === 'CONFIRMADA').map((t) => t.amount));
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -117,7 +123,7 @@ export const ReceitasPage: React.FC = () => {
         <div>
           <span className="text-xs text-[#AEB5B0] uppercase tracking-wider font-semibold">Total de Receitas Confirmadas</span>
           <div className="text-2xl font-bold text-green-400 mt-1 font-heading">
-            R$ {total.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+            {formatarMoeda(total)}
           </div>
         </div>
         <TrendingUp className="w-10 h-10 text-green-500/30" />
@@ -164,7 +170,7 @@ export const ReceitasPage: React.FC = () => {
               <tbody className="divide-y divide-[#222824]">
                 {filtered.map((t) => (
                   <tr key={t.id} className="hover:bg-[#1e2521] transition-colors">
-                    <td className="py-3 px-4 text-xs text-[#AEB5B0]">{t.date}</td>
+                    <td className="py-3 px-4 text-xs text-[#AEB5B0]">{formatarData(t.date)}</td>
                     <td className="py-3 px-4 font-medium text-white">{t.description}</td>
                     <td className="py-3 px-4 text-xs text-[#F8D800]">{t.category}</td>
                     <td className="py-3 px-4 text-xs text-[#AEB5B0]">{t.accountName}</td>
@@ -172,7 +178,7 @@ export const ReceitasPage: React.FC = () => {
                     <td className="py-3 px-4 text-xs">
                       <AnexosLancamento transacao={t} onAlterado={fetchData} />
                     </td>
-                    <td className="py-3 px-4 font-bold text-green-400">+ R$ {t.amount.toFixed(2)}</td>
+                    <td className="py-3 px-4 font-bold text-green-400">{formatarMoedaComSinal(t.amount, true)}</td>
                     <td className="py-3 px-4">
                       <Badge variant={t.status === 'CONFIRMADA' ? 'success' : 'warning'}>{t.status}</Badge>
                     </td>

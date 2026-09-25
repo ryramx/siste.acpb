@@ -74,6 +74,8 @@ def relatorio_pessoas(
         Pessoa.estado,
         Pessoa.data_nascimento,
     )
+    # Contas técnicas operam o sistema e não são gente da associação (ver Pessoa.conta_tecnica).
+    query = query.filter(Pessoa.conta_tecnica.is_(False))
     if cidade is not None:
         query = query.filter(Pessoa.cidade.ilike(cidade))
     query = query.order_by(Pessoa.nome_completo)

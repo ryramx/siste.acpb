@@ -25,6 +25,7 @@ import {
 } from '../../utils/mascaras';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
+import { erroNomePessoa } from '../../utils/nomePessoa';
 
 const ROTULO_DO_VINCULO: Record<VinculoDePessoa, string> = {
   membro: 'Membro',
@@ -54,6 +55,16 @@ const VinculosDaPessoa: React.FC<{ pessoa: Pessoa; vinculosCompletos: boolean }>
       ))}
     </div>
   );
+
+/** Mensagens dos nomes de gente que não passam na regra (ver utils/nomePessoa). */
+function errosDeNome(f: DadosDePessoa): string[] {
+  return [
+    erroNomePessoa(f.nomeCompleto, 'O nome completo'),
+    erroNomePessoa(f.nomeMae, 'O nome da mãe'),
+    erroNomePessoa(f.nomePai, 'O nome do pai'),
+    erroNomePessoa(f.responsavelNome, 'O nome do responsável')
+  ].filter((e): e is string => e !== undefined);
+}
 
 function paraFormulario(pessoa: Pessoa): DadosDePessoa {
   return {
@@ -135,7 +146,8 @@ export const PeopleList: React.FC = () => {
       (digitos !== '' && (p.cpf ?? '').includes(digitos));
 
     const casaFiltro =
-      filtro === 'TODAS' ||
+      // Contas técnicas não são gente da associação: só aparecem no filtro próprio.
+      (filtro === 'TODAS' && !p.contaTecnica) ||
       (filtro === 'SEM_VINCULO' && p.vinculos.length === 0 && !p.contaTecnica) ||
       (filtro === 'TECNICAS' && p.contaTecnica);
 
@@ -156,6 +168,11 @@ export const PeopleList: React.FC = () => {
     if (!formulario) return;
     if (formulario.nomeCompleto.trim() === '') {
       addToast({ type: 'error', title: 'Informe o nome completo' });
+      return;
+    }
+    const erroNome = errosDeNome(formulario)[0];
+    if (erroNome) {
+      addToast({ type: 'error', title: 'Confira os nomes', message: erroNome });
       return;
     }
     // CPF é opcional, mas um CPF digitado errado é pior que nenhum: ele vira a chave pela qual
@@ -207,6 +224,7 @@ export const PeopleList: React.FC = () => {
   };
 
   const semVinculo = pessoas.filter((p) => p.vinculos.length === 0 && !p.contaTecnica).length;
+  const tecnicas = pessoas.filter((p) => p.contaTecnica).length;
 
   return (
     <div className="space-y-6 animate-fade-in pb-12">
@@ -247,9 +265,9 @@ export const PeopleList: React.FC = () => {
             value={filtro}
             onChange={(e) => setFiltro(e.target.value)}
             options={[
-              { value: 'TODAS', label: `Todas as pessoas (${pessoas.length})` },
+              { value: 'TODAS', label: `Todas as pessoas (${pessoas.length - tecnicas})` },
               { value: 'SEM_VINCULO', label: `Sem vínculo (${semVinculo})` },
-              { value: 'TECNICAS', label: 'Contas técnicas do sistema' }
+              { value: 'TECNICAS', label: `Contas técnicas do sistema (${tecnicas})` }
             ]}
           />
         </div>
@@ -369,6 +387,7 @@ export const PeopleList: React.FC = () => {
               label="Nome completo"
               value={formulario.nomeCompleto}
               onChange={(e) => setFormulario({ ...formulario, nomeCompleto: e.target.value })}
+              error={erroNomePessoa(formulario.nomeCompleto, 'O nome completo')}
               required
             />
 
@@ -434,11 +453,13 @@ export const PeopleList: React.FC = () => {
                 label="Nome da mãe"
                 value={formulario.nomeMae ?? ''}
                 onChange={(e) => setFormulario({ ...formulario, nomeMae: e.target.value })}
+                error={erroNomePessoa(formulario.nomeMae, 'O nome da mãe')}
               />
               <Input
                 label="Nome do pai"
                 value={formulario.nomePai ?? ''}
                 onChange={(e) => setFormulario({ ...formulario, nomePai: e.target.value })}
+                error={erroNomePessoa(formulario.nomePai, 'O nome do pai')}
               />
             </div>
 
@@ -447,6 +468,7 @@ export const PeopleList: React.FC = () => {
                 label="Responsável (se menor de idade)"
                 value={formulario.responsavelNome ?? ''}
                 onChange={(e) => setFormulario({ ...formulario, responsavelNome: e.target.value })}
+                error={erroNomePessoa(formulario.responsavelNome, 'O nome do responsável')}
               />
               <Input
                 label="Telefone do responsável"

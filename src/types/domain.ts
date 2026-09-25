@@ -41,6 +41,8 @@ export interface Volunteer {
   name: string;
   email: string;
   phone: string;
+  /** O telefone principal tem WhatsApp. */
+  whatsapp: boolean;
   // Área é texto livre no backend (Voluntario.area) — não um enum fechado.
   area: string;
   skills: string[];
