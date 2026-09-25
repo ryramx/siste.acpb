@@ -451,3 +451,33 @@ dono desativado por outro admin ficava sem caminho de volta.
 - A tela de usuários mostra o selo "CONTA PRINCIPAL" e esconde os botões que o backend recusaria.
 
 Backend: 194/194. Frontend: 218/218. `tsc --noEmit` e `npm run build` limpos.
+
+## Rodada de QA de 25/09/2026, itens restantes - "Concluído"
+
+Os demais itens do documento de requisitos do QA, um commit por item:
+
+- **RQ-01/02 Dinheiro e porcentagem:** um utilitário só (`src/utils/dinheiro.ts`) formata moeda
+  em pt-BR e datas como 25/09/2026; somas em centavos; porcentagem por categoria com duas casas,
+  "< 0,01%" e barra com largura mínima. Teto de um lançamento: R$ 99.999.999,99, validado no
+  schema (valor zero, negativo ou com três casas também é recusado).
+- **RQ-06 Nome de gente:** nome completo, da mãe, do pai, do responsável e do visitante avulso
+  só aceitam letras, espaço, hífen e apóstrofo, com ao menos 3 letras. A resposta da API não
+  valida, então nome antigo fora da regra não derruba a listagem.
+- **RQ-05 Upload:** tipo conferido pela assinatura do arquivo, leitura em partes e 413 acima do
+  limite, para comprovante e foto.
+- **RQ-03 Contas técnicas:** fora de "Todas as pessoas", da contagem do dashboard e do relatório
+  de pessoas; ficam no filtro próprio.
+- **RQ-08 Contas:** texto explicando o que é uma conta; a aba e a rota exigem `edit_financial`.
+- **RQ-10 Categorias no dashboard:** as 5 maiores, com "Ver todas (N)" e "Recolher".
+- **RQ-12 Categoria repetida:** mesmo nome e tipo, mudando só maiúsculas, acentos ou espaços,
+  responde 409. As categorias existentes não foram mexidas (a lista final depende do Leo).
+- **RQ-11 Contatar:** o botão do card de voluntário abre WhatsApp, ligação ou e-mail daquele
+  voluntário, com o que está no cadastro; sem contato, não aparece.
+- **RQ-07 Período:** seletor de ano e mês abaixo das abas do Financeiro, filtro no servidor
+  (`?ano=&mes=`, índice novo em `data_movimentacao`), período guardado na URL e levado pelas abas.
+- **RQ-09 Abuso:** limite de escrita (60/min) e de upload (10/min) por usuário, corpo até 6 MB,
+  cabeçalhos de segurança e HSTS em produção. O README lista o que depende da infraestrutura.
+
+RQ-13 (Super Admin) segue como melhoria futura; as travas do RQ-04 cobrem o risco imediato.
+
+Backend: 238/238. Frontend: 246/246. `tsc --noEmit` e `npm run build` limpos.
