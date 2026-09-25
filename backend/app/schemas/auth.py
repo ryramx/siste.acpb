@@ -1,5 +1,7 @@
 from pydantic import BaseModel, Field
 
+from app.core.security import SENHA_TAMANHO_MINIMO
+
 
 class LoginRequest(BaseModel):
     # Texto simples, não EmailStr: o e-mail institucional usa o domínio interno "acpb.local"
@@ -21,7 +23,7 @@ class SolicitarRecuperacaoSenhaRequest(BaseModel):
 
 class ConfirmarRecuperacaoSenhaRequest(BaseModel):
     token: str
-    senha_nova: str = Field(min_length=8)
+    senha_nova: str = Field(min_length=SENHA_TAMANHO_MINIMO)
 
 
 class AlterarSenhaRequest(BaseModel):
@@ -34,7 +36,7 @@ class AlterarSenhaRequest(BaseModel):
     senha_atual: str
     # Mesmo mínimo da redefinição por e-mail — não faria sentido a senha escolhida aqui poder
     # ser mais fraca do que a escolhida lá.
-    senha_nova: str = Field(min_length=8)
+    senha_nova: str = Field(min_length=SENHA_TAMANHO_MINIMO)
 
 
 class MeResponse(BaseModel):

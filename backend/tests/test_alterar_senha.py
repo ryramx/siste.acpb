@@ -106,9 +106,18 @@ def test_senha_nova_curta_e_recusada(usuario):
     resposta = client.post(
         "/auth/alterar-senha",
         headers=_headers(usuario),
-        json={"senha_atual": SENHA_ATUAL, "senha_nova": "curta"},
+        json={"senha_atual": SENHA_ATUAL, "senha_nova": "abcd"},
     )
     assert resposta.status_code == 422
+
+
+def test_senha_nova_com_o_minimo_de_5_caracteres_e_aceita(usuario):
+    resposta = client.post(
+        "/auth/alterar-senha",
+        headers=_headers(usuario),
+        json={"senha_atual": SENHA_ATUAL, "senha_nova": "abcde"},
+    )
+    assert resposta.status_code == 204
 
 
 def test_sem_token_e_recusado(usuario):

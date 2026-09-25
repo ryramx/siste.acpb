@@ -96,11 +96,11 @@ export const UsersManagement: React.FC = () => {
   };
 
   const handleCreateUser = async () => {
-    if (!novoPessoaId || !novoEmail || novaSenha.length < 8) {
+    if (!novoPessoaId || !novoEmail || novaSenha.length < 5) {
       addToast({
         type: 'warning',
         title: 'Preencha todos os campos',
-        message: 'Selecione a pessoa, informe o e-mail e uma senha com pelo menos 8 caracteres.'
+        message: 'Selecione a pessoa, informe o e-mail e uma senha com pelo menos 5 caracteres.'
       });
       return;
     }
@@ -429,7 +429,7 @@ export const UsersManagement: React.FC = () => {
           name="senha"
           type="password"
           required
-          helperText="Mínimo de 8 caracteres."
+          helperText="Mínimo de 5 caracteres."
           value={novaSenha}
           onChange={(e) => setNovaSenha(e.target.value)}
         />
@@ -560,8 +560,8 @@ export const UsersManagement: React.FC = () => {
                   label="Nova senha provisória"
                   name="senha-provisoria"
                   type="text"
-                  minLength={8}
-                  helperText="Mínimo de 8 caracteres. Deixe em branco para não alterar a senha."
+                  minLength={5}
+                  helperText="Mínimo de 5 caracteres. Deixe em branco para não alterar a senha."
                   value={novaSenhaReset}
                   onChange={(e) => setNovaSenhaReset(e.target.value)}
                 />
@@ -571,7 +571,7 @@ export const UsersManagement: React.FC = () => {
                     variant="outline"
                     size="sm"
                     isLoading={redefinindo}
-                    disabled={novaSenhaReset.length < 8}
+                    disabled={novaSenhaReset.length < 5}
                   >
                     Redefinir senha
                   </Button>

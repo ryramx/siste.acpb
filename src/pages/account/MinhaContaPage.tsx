@@ -8,7 +8,7 @@ import { authService } from '../../services/authService';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
 
-const MINIMO_DA_SENHA = 8;
+const MINIMO_DA_SENHA = 5;
 
 /** A própria conta: quem sou eu no sistema, minha foto e a troca da minha senha.
  *

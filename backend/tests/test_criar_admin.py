@@ -156,9 +156,9 @@ def test_exige_as_tres_variaveis(limpar_admin, variaveis):
 
 
 def test_recusa_senha_curta(limpar_admin):
-    resultado = _rodar(ADMIN_EMAIL=EMAIL, ADMIN_SENHA="curta12", ADMIN_NOME="X")
+    resultado = _rodar(ADMIN_EMAIL=EMAIL, ADMIN_SENHA="abcd", ADMIN_NOME="X")
     assert resultado.returncode == 1
-    assert "ao menos 8" in resultado.stderr
+    assert "ao menos 5" in resultado.stderr
 
 
 def test_recusa_email_ja_cadastrado(limpar_admin):

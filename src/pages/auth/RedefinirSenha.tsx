@@ -17,9 +17,9 @@ import { authService } from '../../services/authService';
  * justamente por não conseguir entrar que pediu a recuperação.
  */
 
-/** Mesmo mínimo exigido pelo backend (`senha_nova: str = Field(min_length=8)`). Validar aqui
+/** Mesmo mínimo exigido pelo backend (`SENHA_TAMANHO_MINIMO` em `app/core/security.py`). Validar aqui
  * evita uma ida ao servidor para ouvir o óbvio, mas quem manda continua sendo o backend. */
-const TAMANHO_MINIMO_SENHA = 8;
+const TAMANHO_MINIMO_SENHA = 5;
 
 export const RedefinirSenha: React.FC = () => {
   const [searchParams] = useSearchParams();
@@ -123,7 +123,7 @@ export const RedefinirSenha: React.FC = () => {
           value={senha}
           onChange={(e) => setSenha(e.target.value)}
           leftIcon={<Lock className="w-4 h-4" />}
-          placeholder="Mínimo de 8 caracteres"
+          placeholder="Mínimo de 5 caracteres"
           autoFocus
           required
         />
