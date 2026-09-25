@@ -2,7 +2,9 @@
 
 Plano para zerar os dados de teste do banco de produção (Neon) e dos arquivos (Storage) antes de a
 associação começar a usar o sistema de verdade. O script é `scripts/limpar_dados_de_teste.sql`.
-**Nada disto foi executado em produção**: o plano e o script estão aqui para aprovação.
+**Nada disto foi executado em produção.** A limpeza fica para o dia em que o sistema for
+apresentado à equipe da associação, e é feita por quem administra o sistema seguindo o passo a
+passo abaixo.
 
 ## O que fica e o que sai
 
@@ -78,12 +80,13 @@ cada uma das travas, gravação com e sem `manter_contas`, e uma segunda execuç
 5. **Conferir pela tela:** entrar com o administrador mantido, ver Pessoas com só ele, Financeiro
    zerado e a linha da limpeza em Auditoria.
 
-## Decisões para aprovar
+## Decisões
 
-- **Quem fica:** quais e-mails vão em `manter_emails`. A conta de desenvolvimento (marcada como
-  conta técnica) só fica se o e-mail dela estiver na lista.
-- **Contas financeiras:** apagar (padrão) ou manter.
-- **Backups antigos:** os dumps diários, semanais e mensais anteriores e o espelho de arquivos
-  continuam guardando os dados de teste pelo prazo de retenção (até 24 meses no mensal). Sugestão:
-  manter o backup do dia da limpeza como garantia e apagar os anteriores depois que a associação
-  aceitar a entrega.
+- **Quem fica (decidido em 25/09/2026):** somente o administrador. Em `manter_emails` vai apenas o
+  e-mail dele; a conta de desenvolvimento e todos os outros usuários de teste são apagados.
+- **Contas financeiras (ainda em aberto):** apagar (padrão) ou manter com `-v manter_contas=sim`,
+  se as contas cadastradas já forem as contas bancárias reais.
+- **Backups antigos (ainda em aberto):** os dumps diários, semanais e mensais anteriores e o
+  espelho de arquivos continuam guardando os dados de teste pelo prazo de retenção (até 24 meses
+  no mensal). Sugestão: manter o backup do dia da limpeza como garantia e apagar os anteriores
+  depois que a associação aceitar a entrega.
