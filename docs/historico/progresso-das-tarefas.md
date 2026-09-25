@@ -481,3 +481,98 @@ Os demais itens do documento de requisitos do QA, um commit por item:
 RQ-13 (Super Admin) segue como melhoria futura; as travas do RQ-04 cobrem o risco imediato.
 
 Backend: 238/238. Frontend: 246/246. `tsc --noEmit` e `npm run build` limpos.
+
+## Tarefas 43 a 45 — rodada de design - "Concluído"
+
+Três tarefas especificadas em `docs/tarefas/` e executadas uma a uma. Nasceram de uma pergunta
+sobre o que as habilidades de design acrescentariam ao projeto; a resposta veio de ler o código
+com essa lente, e dois dos achados eram defeitos, não melhorias.
+
+### 43 — Tokens de cor e contraste
+
+Duas medições de contraste WCAG reprovaram:
+
+- **`#004922` como cor de traço sobre o fundo escuro: 1,77:1.** O verde institucional é escuro, e
+  como cor de ícone sobre `#0F1210` o ícone praticamente sumia. Estava assim no título das telas
+  de Membros, Projetos e Beneficiários, no indicador do dashboard e no ícone de sucesso dos
+  avisos — nove ocorrências. O mesmo verde é ótimo como **fundo** de botão com texto branco
+  (10,63:1), que é o uso para o qual foi escolhido; o erro foi reaproveitá-lo como primeiro
+  plano. Agora são dois tokens: `acpb-green` preenche, `acpb-green-fg` (`#2E9E5B`, 5,01:1)
+  escreve.
+- **`#727A74` nos textos pequenos de apoio: 3,86:1**, abaixo do piso de 4,5:1 — e é justamente a
+  cor dos textos que explicam cada tela para quem a abre pela primeira vez. Clareado para
+  `#8A928B` (5,34:1).
+
+**A causa de fundo era outra, e mais interessante:** o `@theme` de `src/index.css` definia a
+paleta inteira desde o início e os componentes a ignoravam, escrevendo hexadecimal direto na
+classe — **855 ocorrências**. O efeito prático era que clarear um cinza deixava de ser uma linha
+e virava 53 edições espalhadas, com risco de sobrar uma variação esquecida. Todas migraram para
+os tokens.
+
+**Como a migração foi conferida sem navegador:** comparando o conjunto de cores presentes no CSS
+**gerado pelo build** antes e depois. A única diferença são as duas cores corrigidas de
+propósito — prova de que 855 substituições não mudaram nenhuma aparência sem intenção. Um caso
+precisou de token próprio no caminho: `#2C332E` era o *hover* de um botão cujo fundo é `#222824`;
+mapear os dois para o mesmo token teria matado a resposta visual do botão.
+
+Paleta, papel de cada cor e contrastes medidos ficaram na seção 1.1 de
+`docs/produto/descricao-da-ui.md`.
+
+### 44 — Gráficos do dashboard financeiro
+
+O backend calcula quatro agregações desde a tarefa 22 e a interface consumia **uma**. O dashboard
+somava os lançamentos no navegador e desenhava barras de percentual com `div` e `width`, o que só
+funciona enquanto a lista inteira couber na memória da aba e não respeita filtro de período
+nenhum.
+
+Entraram dois gráficos em SVG, sem biblioteca — uma dependência custaria ~100 KB num bundle que
+já avisa sobre tamanho, para três formas simples.
+
+**Decisões (detalhadas na seção 19 de `descricao-da-ui.md`):**
+
+- **Colunas agrupadas, não linhas**, na evolução mensal: a pergunta da diretoria é "neste mês
+  entrou mais do que saiu?", uma comparação dentro do mês.
+- **Barra, não pizza**, na composição por categoria: comparar comprimento é mais preciso que
+  comparar ângulo, e as categorias passam de meia dúzia.
+- **Uma cor por gráfico de categoria**, não uma por categoria: o nome já está escrito ao lado e o
+  comprimento já diz o tamanho.
+- **O par de cores foi validado, não escolhido a olho.** Verde e vermelho puros — o óbvio para
+  entrada e saída — ficam a ΔE 1,6 sob deuteranopia: lado a lado na mesma barra, seriam a mesma
+  cor para parte dos leitores. O par em uso fica em ΔE 6,9, dentro da banda que a regra permite
+  **apenas com codificação secundária**, e ela está presente: legenda, posição fixa no par
+  (receita sempre à esquerda), dica ao passar o mouse e tabela equivalente. Os valores em texto
+  do resto do sistema continuam verde e vermelho tradicionais — eles nunca se encostam, então o
+  problema não existe lá.
+- **Todo número existe fora do gráfico:** rótulo acessível por mês e botão "ver os mesmos dados em
+  tabela". Gráfico que só entrega o valor no hover exclui quem usa teclado, leitor de tela ou
+  celular.
+- **Um filtro de período só**, acima dos três gráficos, que recarregam juntos — números que
+  discordam entre si por causa de filtros separados são pior que número nenhum.
+- **O SVG é desenhado na largura real**, medida por `ResizeObserver`, em vez de escalado por
+  `viewBox`: escalando, o texto encolheria junto e ficaria ilegível no celular.
+
+Os testes verificam a ausência de `NaN` nos caminhos do SVG — um `NaN` faz a barra sumir sem erro
+no console, que é o tipo de falha que só aparece em produção.
+
+### 45 — Diagramas da documentação
+
+Três diagramas em `docs/diagramas/`, citados de dentro de `DEPLOY.md`,
+`BACKUP_E_RESTAURACAO.md` e `AUTENTICACAO.md`: arquitetura de produção, ciclo de backup e caminho
+de uma requisição autenticada.
+
+**SVG escrito à mão, não PNG** como o DER existente: é texto, aparece no `git diff` e se corrige
+com um editor comum. Sem Mermaid nem plugin — o GitHub renderiza o arquivo direto. Cada diagrama
+carrega o próprio fundo escuro em vez de herdar a cor do texto da página, porque o GitHub
+renderiza o arquivo isolado e em tema claro um traço claro sobre fundo transparente sumiria.
+
+O conteúdo foi conferido contra o código e os workflows — prefixos do bucket, retenções, limites
+de tentativa, ordem das dependências do FastAPI. A geometria foi verificada por script: XML
+válido e nenhum texto estourando a área, que é o defeito clássico de SVG feito à mão. O script
+apontou, de quebra, que a seta do backup apontava para a caixa da Brevo em vez da do Storage.
+
+### Estado ao fim da rodada
+
+Frontend: 238/238 (eram 211). Backend: 186/186, intocado. `tsc --noEmit` e `npm run build`
+limpos. **Sem navegador neste ambiente:** o contraste e a geometria foram medidos por cálculo e
+por script, não vistos; os gráficos foram exercitados em jsdom. Conferir no navegador continua
+pendente.
