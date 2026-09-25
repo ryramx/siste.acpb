@@ -27,7 +27,11 @@ interface CategoriaBreakdownProps {
   textColor: string;
 }
 
-const CategoriaBreakdown: React.FC<CategoriaBreakdownProps> = ({
+/** Quantas categorias aparecem antes de "Ver todas". Despesas tem 15 no cadastro padrão, e a
+ * lista inteira empurrava o resto do dashboard para baixo. */
+const CATEGORIAS_VISIVEIS = 5;
+
+export const CategoriaBreakdown: React.FC<CategoriaBreakdownProps> = ({
   titulo,
   icon,
   transactions,
@@ -42,6 +46,8 @@ const CategoriaBreakdown: React.FC<CategoriaBreakdownProps> = ({
   const linhas = Array.from(porCategoria.entries())
     .map(([categoria, valores]) => [categoria, somarValores(valores)] as const)
     .sort((a, b) => b[1] - a[1]);
+  const [expandido, setExpandido] = useState(false);
+  const visiveis = expandido ? linhas : linhas.slice(0, CATEGORIAS_VISIVEIS);
 
   return (
     <div className="bg-[#181D1A] border border-[#222824] p-6 rounded-2xl space-y-4">
@@ -53,7 +59,7 @@ const CategoriaBreakdown: React.FC<CategoriaBreakdownProps> = ({
         <p className="text-xs text-[#727A74] pt-2">Nenhum lançamento confirmado ainda.</p>
       ) : (
         <div className="space-y-3 pt-2">
-          {linhas.map(([categoria, total]) => {
+          {visiveis.map(([categoria, total]) => {
             const { texto, largura } = participacao(total, totalGeral);
             return (
               <div key={categoria}>
@@ -73,6 +79,15 @@ const CategoriaBreakdown: React.FC<CategoriaBreakdownProps> = ({
               </div>
             );
           })}
+          {linhas.length > CATEGORIAS_VISIVEIS && (
+            <button
+              type="button"
+              onClick={() => setExpandido(!expandido)}
+              className="text-xs font-semibold text-[#F8D800] hover:underline"
+            >
+              {expandido ? 'Recolher' : `Ver todas (${linhas.length})`}
+            </button>
+          )}
         </div>
       )}
     </div>
