@@ -19,8 +19,8 @@ export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
     return (
       <div className="w-full flex flex-col gap-1.5">
         {label && (
-          <label htmlFor={selectId} className="text-xs font-medium text-[#AEB5B0]">
-            {label} {props.required && <span className="text-[#F8D800]">*</span>}
+          <label htmlFor={selectId} className="text-xs font-medium text-text-secondary">
+            {label} {props.required && <span className="text-acpb-yellow">*</span>}
           </label>
         )}
         <select
@@ -28,7 +28,7 @@ export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
           ref={ref}
           className={twMerge(
             clsx(
-              'w-full bg-[#151917] border border-[#222824] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-[#004922] focus:ring-1 focus:ring-[#004922] transition-colors disabled:opacity-50 disabled:cursor-not-allowed',
+              'w-full bg-surface-input border border-surface-border rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-acpb-green focus:ring-1 focus:ring-acpb-green transition-colors disabled:opacity-50 disabled:cursor-not-allowed',
               error && 'border-red-600 focus:border-red-600 focus:ring-red-600',
               className
             )
@@ -36,7 +36,7 @@ export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
           {...props}
         >
           {options.map((opt) => (
-            <option key={opt.value} value={opt.value} className="bg-[#181D1A] text-white">
+            <option key={opt.value} value={opt.value} className="bg-surface-card text-white">
               {opt.label}
             </option>
           ))}

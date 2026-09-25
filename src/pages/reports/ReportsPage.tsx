@@ -36,7 +36,7 @@ const RELATORIOS: ReportDef[] = [
     key: 'financeiro',
     title: 'Financeiro',
     description: 'Movimentações com conta, categoria, valor e status.',
-    icon: <DollarSign className="w-5 h-5 text-[#F8D800]" />,
+    icon: <DollarSign className="w-5 h-5 text-acpb-yellow" />,
     permission: 'view_financial',
     filters: [
       { name: 'data_inicio', label: 'Data inicial', kind: 'date' },
@@ -58,7 +58,7 @@ const RELATORIOS: ReportDef[] = [
     key: 'pessoas',
     title: 'Pessoas',
     description: 'Cadastro geral com contato, cidade e data de nascimento.',
-    icon: <Users className="w-5 h-5 text-[#F8D800]" />,
+    icon: <Users className="w-5 h-5 text-acpb-yellow" />,
     permission: 'view_people',
     filters: [{ name: 'cidade', label: 'Cidade', kind: 'text', placeholder: 'Todas as cidades' }]
   },
@@ -66,7 +66,7 @@ const RELATORIOS: ReportDef[] = [
     key: 'projetos',
     title: 'Projetos',
     description: 'Projetos com período, orçamento, local e status.',
-    icon: <FolderKanban className="w-5 h-5 text-[#F8D800]" />,
+    icon: <FolderKanban className="w-5 h-5 text-acpb-yellow" />,
     permission: 'view_projects',
     filters: [
       {
@@ -84,7 +84,7 @@ const RELATORIOS: ReportDef[] = [
     key: 'eventos',
     title: 'Eventos',
     description: 'Eventos com data, local e limite de participantes.',
-    icon: <CalendarDays className="w-5 h-5 text-[#F8D800]" />,
+    icon: <CalendarDays className="w-5 h-5 text-acpb-yellow" />,
     permission: 'view_events',
     filters: [
       { name: 'data_inicio', label: 'Data inicial', kind: 'date' },
@@ -127,14 +127,14 @@ const ReportCard: React.FC<{ def: ReportDef }> = ({ def }) => {
   };
 
   return (
-    <div className="bg-[#181D1A] border border-[#222824] rounded-xl p-5 flex flex-col gap-4">
+    <div className="bg-surface-card border border-surface-border rounded-xl p-5 flex flex-col gap-4">
       <div className="flex items-start gap-3">
-        <div className="p-2 bg-[#0F1210] rounded-lg border border-[#222824] shrink-0">
+        <div className="p-2 bg-surface-bg rounded-lg border border-surface-border shrink-0">
           {def.icon}
         </div>
         <div>
           <h2 className="text-white font-semibold font-heading">{def.title}</h2>
-          <p className="text-xs text-[#AEB5B0] mt-0.5">{def.description}</p>
+          <p className="text-xs text-text-secondary mt-0.5">{def.description}</p>
         </div>
       </div>
 
@@ -197,10 +197,10 @@ export const ReportsPage: React.FC = () => {
     <div className="space-y-6 animate-fade-in pb-12">
       <div>
         <h1 className="text-2xl font-bold text-white font-heading flex items-center gap-2">
-          <FileText className="w-6 h-6 text-[#F8D800]" />
+          <FileText className="w-6 h-6 text-acpb-yellow" />
           Relatórios
         </h1>
-        <p className="text-sm text-[#AEB5B0]">
+        <p className="text-sm text-text-secondary">
           Exporte os dados da associação em CSV, Excel ou PDF.
         </p>
       </div>

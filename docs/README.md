@@ -59,6 +59,18 @@ vale saber o que a motivou.
 > cada uma entregou está registrado em `progresso-das-tarefas.md`, e os arquivos
 > em si continuam no histórico do git.
 
+## 🛠 Tarefas em aberto
+
+Trabalho especificado e ainda não entregue, uma tarefa por arquivo — a mesma convenção das 42
+tarefas do plano original. Quando uma é concluída, o que ela entregou vai para
+[`historico/progresso-das-tarefas.md`](historico/progresso-das-tarefas.md).
+
+| Tarefa | Conteúdo |
+| ------ | -------- |
+| [`tarefas/43-tokens-de-cor-e-contraste.md`](tarefas/43-tokens-de-cor-e-contraste.md) | ✅ Concluída — paleta e contrastes em [`produto/descricao-da-ui.md`](produto/descricao-da-ui.md) |
+| [`tarefas/44-graficos-do-dashboard-financeiro.md`](tarefas/44-graficos-do-dashboard-financeiro.md) | Desenhar as agregações financeiras que a API já calcula e ninguém mostra |
+| [`tarefas/45-diagramas-da-documentacao.md`](tarefas/45-diagramas-da-documentacao.md) | Arquitetura, backup e autenticação como SVG versionado |
+
 ## 🔮 Futuro
 
 Previsto, especificado, **não implementado**. Continua aqui porque é a

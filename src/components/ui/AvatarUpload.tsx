@@ -117,7 +117,7 @@ export const AvatarUpload: React.FC<AvatarUploadProps> = ({
             disabled={enviando}
             aria-label="Enviar foto"
             title="Enviar foto"
-            className="p-1.5 rounded-full bg-[#004922] text-white hover:bg-[#00632e] transition-colors disabled:opacity-50"
+            className="p-1.5 rounded-full bg-acpb-green text-white hover:bg-acpb-green-hover transition-colors disabled:opacity-50"
           >
             <Camera className="w-3.5 h-3.5" />
           </button>

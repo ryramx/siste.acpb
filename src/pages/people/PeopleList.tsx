@@ -41,7 +41,7 @@ const VinculosDaPessoa: React.FC<{ pessoa: Pessoa; vinculosCompletos: boolean }>
   vinculosCompletos
 }) =>
   pessoa.vinculos.length === 0 ? (
-    <span className="text-xs text-[#727A74]">{vinculosCompletos ? 'Sem vínculo' : '—'}</span>
+    <span className="text-xs text-text-muted">{vinculosCompletos ? 'Sem vínculo' : '—'}</span>
   ) : (
     <div className="flex flex-wrap gap-1">
       {pessoa.vinculos.map((v) => (
@@ -231,10 +231,10 @@ export const PeopleList: React.FC = () => {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold text-white font-heading flex items-center gap-2">
-            <IdCard className="w-6 h-6 text-[#F8D800]" />
+            <IdCard className="w-6 h-6 text-acpb-yellow" />
             Pessoas
           </h1>
-          <p className="text-sm text-[#AEB5B0]">
+          <p className="text-sm text-text-secondary">
             O cadastro base da associação. Uma pessoa pode ser membro, voluntário e beneficiário
             ao mesmo tempo — ou nenhum deles.
           </p>
@@ -251,7 +251,7 @@ export const PeopleList: React.FC = () => {
         )}
       </div>
 
-      <div className="bg-[#181D1A] border border-[#222824] p-4 rounded-xl flex flex-col md:flex-row gap-3">
+      <div className="bg-surface-card border border-surface-border p-4 rounded-xl flex flex-col md:flex-row gap-3">
         <div className="flex-1">
           <Input
             placeholder="Buscar por nome, CPF ou e-mail..."
@@ -274,7 +274,7 @@ export const PeopleList: React.FC = () => {
       </div>
 
       {!vinculosCompletos && (
-        <p className="text-xs text-[#727A74]">
+        <p className="text-xs text-text-muted">
           Seu perfil não alcança todas as listas de vínculo, então a coluna de vínculos mostra
           apenas o que você pode ver — uma pessoa sem nenhuma etiqueta aqui pode ter vínculos que
           o seu perfil não enxerga.
@@ -295,10 +295,10 @@ export const PeopleList: React.FC = () => {
           onAction={abrirNova}
         />
       ) : (
-        <div className="bg-[#181D1A] border border-[#222824] rounded-xl overflow-hidden">
+        <div className="bg-surface-card border border-surface-border rounded-xl overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
-              <thead className="bg-[#0F1210] border-b border-[#222824] text-[#AEB5B0] font-medium">
+              <thead className="bg-surface-bg border-b border-surface-border text-text-secondary font-medium">
                 <tr>
                   <th className="py-3 px-4">Nome</th>
                   <th className="py-3 px-4 hidden md:table-cell">CPF</th>
@@ -307,16 +307,16 @@ export const PeopleList: React.FC = () => {
                   {(podeEditar || podeExcluir) && <th className="py-3 px-4 text-right">Ações</th>}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[#222824]">
+              <tbody className="divide-y divide-surface-border">
                 {filtradas.map((p) => (
-                  <tr key={p.id} className="hover:bg-[#1e2521] transition-colors">
+                  <tr key={p.id} className="hover:bg-surface-card-hover transition-colors">
                     <td className="py-3 px-4">
                       <div className="flex items-center gap-3">
                         <Avatar pessoaId={p.id} nome={p.nomeCompleto} temFoto={p.temFoto} size="sm" />
                         <div>
                           <div className="font-medium text-white">{p.nomeCompleto}</div>
                           {p.contaTecnica && (
-                            <div className="text-xs text-[#727A74]">Conta técnica do sistema</div>
+                            <div className="text-xs text-text-muted">Conta técnica do sistema</div>
                           )}
                           {/* No celular a coluna de vínculos some e eles vêm aqui: com a coluna, a
                               tabela passava da largura da tela e empurrava as ações para fora. */}
@@ -326,10 +326,10 @@ export const PeopleList: React.FC = () => {
                         </div>
                       </div>
                     </td>
-                    <td className="py-3 px-4 text-xs text-[#AEB5B0] hidden md:table-cell whitespace-nowrap">
+                    <td className="py-3 px-4 text-xs text-text-secondary hidden md:table-cell whitespace-nowrap">
                       {p.cpf ? exibirCPF(p.cpf) : '—'}
                     </td>
-                    <td className="py-3 px-4 text-xs text-[#AEB5B0] hidden lg:table-cell">
+                    <td className="py-3 px-4 text-xs text-text-secondary hidden lg:table-cell">
                       {p.email ?? '—'}
                     </td>
                     <td className="py-3 px-4 hidden sm:table-cell">
@@ -515,7 +515,7 @@ export const PeopleList: React.FC = () => {
               />
             </div>
 
-            <p className="text-xs text-[#727A74]">
+            <p className="text-xs text-text-muted">
               Só o nome é obrigatório. Cadastrar a pessoa aqui não a torna membro, voluntário nem
               beneficiário — o vínculo é criado na tela do respectivo módulo, apontando para este
               cadastro.
@@ -544,7 +544,7 @@ export const PeopleList: React.FC = () => {
         title="Excluir pessoa do cadastro"
       >
         <div className="space-y-4">
-          <p className="text-sm text-[#AEB5B0]">
+          <p className="text-sm text-text-secondary">
             Excluir <strong className="text-white">{excluindo?.nomeCompleto}</strong> apaga o
             cadastro em definitivo, com CPF, endereço e histórico pessoal.
           </p>
@@ -558,7 +558,7 @@ export const PeopleList: React.FC = () => {
             </p>
           )}
 
-          <p className="text-xs text-[#727A74]">
+          <p className="text-xs text-text-muted">
             A exclusão física existe para atender a pedido de exclusão do titular (LGPD) e para
             desfazer um cadastro duplicado. Para quem apenas deixou a associação, o caminho é
             encerrar o vínculo — que preserva o histórico de atendimentos, inscrições e
@@ -577,7 +577,7 @@ export const PeopleList: React.FC = () => {
       </Modal>
 
       {podeEditar && filtradas.length > 0 && (
-        <p className="text-xs text-[#727A74] flex items-center gap-1">
+        <p className="text-xs text-text-muted flex items-center gap-1">
           <UserPlus className="w-3 h-3" />
           Para transformar uma pessoa em membro, voluntário ou beneficiário, use a tela do módulo
           correspondente e escolha este cadastro — evita criar a mesma pessoa duas vezes.

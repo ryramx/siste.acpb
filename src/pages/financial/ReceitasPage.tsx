@@ -109,7 +109,7 @@ export const ReceitasPage: React.FC = () => {
             <ArrowUpRight className="w-6 h-6 text-green-400" />
             Receitas
           </h1>
-          <p className="text-sm text-[#AEB5B0]">Doações, contribuições, patrocínios e demais entradas financeiras.</p>
+          <p className="text-sm text-text-secondary">Doações, contribuições, patrocínios e demais entradas financeiras.</p>
         </div>
         {hasPermission('edit_financial') && (
           <Button variant="primary" leftIcon={<Plus className="w-4 h-4" />} onClick={() => setModalOpen(true)}>
@@ -119,9 +119,9 @@ export const ReceitasPage: React.FC = () => {
       </div>
 
       {/* Summary Card */}
-      <div className="bg-[#181D1A] border border-[#004922]/40 border-l-4 border-l-green-500 p-5 rounded-xl flex items-center justify-between">
+      <div className="bg-surface-card border border-acpb-green/40 border-l-4 border-l-green-500 p-5 rounded-xl flex items-center justify-between">
         <div>
-          <span className="text-xs text-[#AEB5B0] uppercase tracking-wider font-semibold">Total de Receitas Confirmadas</span>
+          <span className="text-xs text-text-secondary uppercase tracking-wider font-semibold">Total de Receitas Confirmadas</span>
           <div className="text-2xl font-bold text-green-400 mt-1 font-heading">
             {formatarMoeda(total)}
           </div>
@@ -130,7 +130,7 @@ export const ReceitasPage: React.FC = () => {
       </div>
 
       {/* Filtros */}
-      <div className="bg-[#181D1A] border border-[#222824] p-4 rounded-xl flex flex-col md:flex-row gap-3">
+      <div className="bg-surface-card border border-surface-border p-4 rounded-xl flex flex-col md:flex-row gap-3">
         <div className="flex-1">
           <Input placeholder="Buscar por descrição ou categoria..." value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)} leftIcon={<Search className="w-4 h-4" />} />
@@ -151,10 +151,10 @@ export const ReceitasPage: React.FC = () => {
           actionLabel={hasPermission('edit_financial') ? 'Registrar receita' : undefined}
           onAction={() => setModalOpen(true)} />
       ) : (
-        <div className="bg-[#181D1A] border border-[#222824] rounded-xl overflow-hidden">
+        <div className="bg-surface-card border border-surface-border rounded-xl overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
-              <thead className="bg-[#0F1210] border-b border-[#222824] text-[#AEB5B0] font-medium">
+              <thead className="bg-surface-bg border-b border-surface-border text-text-secondary font-medium">
                 <tr>
                   <th className="py-3 px-4">Data</th>
                   <th className="py-3 px-4">Descrição</th>
@@ -167,14 +167,14 @@ export const ReceitasPage: React.FC = () => {
                   <th className="py-3 px-4 text-right">Ações</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[#222824]">
+              <tbody className="divide-y divide-surface-border">
                 {filtered.map((t) => (
-                  <tr key={t.id} className="hover:bg-[#1e2521] transition-colors">
-                    <td className="py-3 px-4 text-xs text-[#AEB5B0]">{formatarData(t.date)}</td>
+                  <tr key={t.id} className="hover:bg-surface-card-hover transition-colors">
+                    <td className="py-3 px-4 text-xs text-text-secondary">{formatarData(t.date)}</td>
                     <td className="py-3 px-4 font-medium text-white">{t.description}</td>
-                    <td className="py-3 px-4 text-xs text-[#F8D800]">{t.category}</td>
-                    <td className="py-3 px-4 text-xs text-[#AEB5B0]">{t.accountName}</td>
-                    <td className="py-3 px-4 text-xs text-[#AEB5B0]">{t.paymentMethod}</td>
+                    <td className="py-3 px-4 text-xs text-acpb-yellow">{t.category}</td>
+                    <td className="py-3 px-4 text-xs text-text-secondary">{t.accountName}</td>
+                    <td className="py-3 px-4 text-xs text-text-secondary">{t.paymentMethod}</td>
                     <td className="py-3 px-4 text-xs">
                       <AnexosLancamento transacao={t} onAlterado={fetchData} />
                     </td>

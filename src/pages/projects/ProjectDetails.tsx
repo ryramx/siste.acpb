@@ -247,12 +247,12 @@ export const ProjectDetails: React.FC = () => {
     setBeneficiaries((atuais) => atuais.filter((b) => b.id !== link.id));
   };
 
-  if (loading) return <div className="p-8 text-center text-[#AEB5B0]">Carregando detalhes do projeto...</div>;
+  if (loading) return <div className="p-8 text-center text-text-secondary">Carregando detalhes do projeto...</div>;
   if (erroCarregamento) {
     return (
       <div className="p-8 text-center space-y-4">
         <p className="text-white">Não foi possível carregar este projeto.</p>
-        <p className="text-xs text-[#AEB5B0]">{erroCarregamento}</p>
+        <p className="text-xs text-text-secondary">{erroCarregamento}</p>
         <div className="flex items-center justify-center gap-2">
           <Button variant="outline" onClick={() => navigate('/projetos')}>
             Voltar para projetos
@@ -267,22 +267,22 @@ export const ProjectDetails: React.FC = () => {
   return (
     <div className="space-y-6 animate-fade-in pb-12">
       {/* Breadcrumbs */}
-      <nav className="flex items-center gap-2 text-xs text-[#AEB5B0]">
+      <nav className="flex items-center gap-2 text-xs text-text-secondary">
         <Link to="/projetos" className="hover:text-white transition-colors">
           Projetos
         </Link>
         <ChevronRight className="w-3.5 h-3.5" />
-        <span className="text-[#F8D800] font-semibold">{project.name}</span>
+        <span className="text-acpb-yellow font-semibold">{project.name}</span>
       </nav>
 
       {/* Header do Projeto */}
-      <div className="bg-[#181D1A] border border-[#222824] p-6 rounded-2xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+      <div className="bg-surface-card border border-surface-border p-6 rounded-2xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-3">
             <h1 className="text-2xl font-bold text-white font-heading">{project.name}</h1>
             <Badge variant="success">● {project.status}</Badge>
           </div>
-          <p className="text-xs text-[#AEB5B0] mt-1">
+          <p className="text-xs text-text-secondary mt-1">
             Responsável Técnico: {project.responsibleName ?? 'Não definido'}
           </p>
         </div>
@@ -328,7 +328,7 @@ export const ProjectDetails: React.FC = () => {
       </div>
 
       {/* Navegação por Abas */}
-      <div className="border-b border-[#222824] flex gap-2 overflow-x-auto pb-0">
+      <div className="border-b border-surface-border flex gap-2 overflow-x-auto pb-0">
         {[
           { key: 'overview', label: 'Visão Geral' },
           { key: 'beneficiaries', label: `Beneficiários (${beneficiaries.length})` },
@@ -341,8 +341,8 @@ export const ProjectDetails: React.FC = () => {
             onClick={() => setActiveTab(tab.key as any)}
             className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
               activeTab === tab.key
-                ? 'border-[#004922] text-[#F8D800] font-semibold bg-[#004922]/10 rounded-t-lg'
-                : 'border-transparent text-[#AEB5B0] hover:text-white'
+                ? 'border-acpb-green text-acpb-yellow font-semibold bg-acpb-green/10 rounded-t-lg'
+                : 'border-transparent text-text-secondary hover:text-white'
             }`}
           >
             {tab.label}
@@ -351,10 +351,10 @@ export const ProjectDetails: React.FC = () => {
       </div>
 
       {/* Conteúdo das Abas */}
-      <div className="bg-[#181D1A] border border-[#222824] p-6 rounded-2xl">
+      <div className="bg-surface-card border border-surface-border p-6 rounded-2xl">
         {activeTab === 'overview' && (
           <div className="space-y-4">
-            <h3 className="text-sm font-semibold text-[#F8D800] uppercase tracking-wider">
+            <h3 className="text-sm font-semibold text-acpb-yellow uppercase tracking-wider">
               Descrição do Projeto
             </h3>
             <p className="text-sm text-white leading-relaxed">{project.description}</p>
@@ -385,16 +385,16 @@ export const ProjectDetails: React.FC = () => {
                 {beneficiaries.map((b) => (
                   <div
                     key={b.id}
-                    className="p-3 bg-[#0F1210] border border-[#222824] rounded-xl flex justify-between items-center gap-3"
+                    className="p-3 bg-surface-bg border border-surface-border rounded-xl flex justify-between items-center gap-3"
                   >
                     <div className="min-w-0">
                       <p className="text-sm font-medium text-white truncate">{b.personName}</p>
-                      {b.role && <p className="text-xs text-[#AEB5B0]">{b.role}</p>}
+                      {b.role && <p className="text-xs text-text-secondary">{b.role}</p>}
                     </div>
                     <button
                       onClick={() => handleRemoveBeneficiary(b)}
                       aria-label={`Remover ${b.personName} do projeto`}
-                      className="text-[#AEB5B0] hover:text-red-400 transition-colors p-1.5 rounded-lg hover:bg-[#222824] shrink-0"
+                      className="text-text-secondary hover:text-red-400 transition-colors p-1.5 rounded-lg hover:bg-surface-border shrink-0"
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
@@ -429,19 +429,19 @@ export const ProjectDetails: React.FC = () => {
                 {volunteers.map((v) => (
                   <div
                     key={v.id}
-                    className="p-3 bg-[#0F1210] border border-[#222824] rounded-xl flex justify-between items-center gap-3"
+                    className="p-3 bg-surface-bg border border-surface-border rounded-xl flex justify-between items-center gap-3"
                   >
                     <div className="min-w-0">
                       <p className="text-sm font-medium text-white truncate">{v.personName}</p>
-                      <p className="text-xs text-[#AEB5B0]">
+                      <p className="text-xs text-text-secondary">
                         {v.role || 'Sem função definida'}
-                        {v.area && <span className="text-[#F8D800]"> · {v.area}</span>}
+                        {v.area && <span className="text-acpb-yellow"> · {v.area}</span>}
                       </p>
                     </div>
                     <button
                       onClick={() => handleRemoveVolunteer(v)}
                       aria-label={`Remover ${v.personName} do projeto`}
-                      className="text-[#AEB5B0] hover:text-red-400 transition-colors p-1.5 rounded-lg hover:bg-[#222824] shrink-0"
+                      className="text-text-secondary hover:text-red-400 transition-colors p-1.5 rounded-lg hover:bg-surface-border shrink-0"
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
@@ -455,17 +455,17 @@ export const ProjectDetails: React.FC = () => {
         {activeTab === 'events' && (
           <div className="space-y-3">
             {events.length === 0 ? (
-              <p className="text-sm text-[#AEB5B0]">
+              <p className="text-sm text-text-secondary">
                 Nenhum evento diretamente associado a este projeto no momento.
               </p>
             ) : (
               events.map((e) => (
                 <div
                   key={e.id}
-                  className="p-3 bg-[#0F1210] border border-[#222824] rounded-xl flex justify-between items-center"
+                  className="p-3 bg-surface-bg border border-surface-border rounded-xl flex justify-between items-center"
                 >
                   <span className="text-sm font-medium text-white">{e.title}</span>
-                  <span className="text-xs text-[#AEB5B0]">{formatarData(e.date)}</span>
+                  <span className="text-xs text-text-secondary">{formatarData(e.date)}</span>
                 </div>
               ))
             )}
@@ -475,7 +475,7 @@ export const ProjectDetails: React.FC = () => {
         {activeTab === 'financial' && (
           <div className="space-y-3">
             {financials.map((f) => (
-              <div key={f.id} className="p-3 bg-[#0F1210] border border-[#222824] rounded-xl flex justify-between items-center text-xs">
+              <div key={f.id} className="p-3 bg-surface-bg border border-surface-border rounded-xl flex justify-between items-center text-xs">
                 <span className="text-white font-medium">{f.description}</span>
                 <span className="text-red-400 font-bold">{formatarMoeda(f.amount)}</span>
               </div>
@@ -523,7 +523,7 @@ export const ProjectDetails: React.FC = () => {
           onChange={(e) => setVolunteerForm({ ...volunteerForm, entryDate: e.target.value })}
         />
         {volunteerOptions.length === 0 && (
-          <p className="text-xs text-[#AEB5B0]">
+          <p className="text-xs text-text-secondary">
             Todos os voluntários cadastrados já estão neste projeto.
           </p>
         )}
@@ -573,7 +573,7 @@ export const ProjectDetails: React.FC = () => {
           onChange={(e) => setBeneficiaryForm({ ...beneficiaryForm, entryDate: e.target.value })}
         />
         {beneficiaryOptions.length === 0 && (
-          <p className="text-xs text-[#AEB5B0]">
+          <p className="text-xs text-text-secondary">
             Todos os beneficiários cadastrados já estão neste projeto.
           </p>
         )}

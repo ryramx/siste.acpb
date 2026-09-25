@@ -128,7 +128,7 @@ export const ProfilesManagement: React.FC = () => {
 
   return (
     <div className="space-y-4">
-      <div className="bg-[#181D1A] border border-[#222824] rounded-xl overflow-hidden shadow-sm">
+      <div className="bg-surface-card border border-surface-border rounded-xl overflow-hidden shadow-sm">
         {loading ? (
           <TableSkeleton rows={6} />
         ) : error ? (
@@ -146,7 +146,7 @@ export const ProfilesManagement: React.FC = () => {
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
-              <thead className="bg-[#0F1210] border-b border-[#222824] text-[#AEB5B0] font-medium">
+              <thead className="bg-surface-bg border-b border-surface-border text-text-secondary font-medium">
                 <tr>
                   <th className="py-3.5 px-4">Perfil</th>
                   <th className="py-3.5 px-4 hidden md:table-cell">Descrição</th>
@@ -154,20 +154,20 @@ export const ProfilesManagement: React.FC = () => {
                   <th className="py-3.5 px-4 text-right">Ações</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[#222824]">
+              <tbody className="divide-y divide-surface-border">
                 {profiles.map((p) => {
                   const protegido = p.nome === PERFIL_ADMINISTRADOR;
                   return (
-                    <tr key={p.id} className="hover:bg-[#1e2521] transition-colors">
+                    <tr key={p.id} className="hover:bg-surface-card-hover transition-colors">
                       <td className="py-3.5 px-4">
                         <div className="font-semibold text-white flex items-center gap-1.5">
                           {p.nome}
                           {protegido && (
-                            <Lock className="w-3.5 h-3.5 text-[#F8D800]" aria-label="Perfil protegido" />
+                            <Lock className="w-3.5 h-3.5 text-acpb-yellow" aria-label="Perfil protegido" />
                           )}
                         </div>
                       </td>
-                      <td className="py-3.5 px-4 hidden md:table-cell text-[#AEB5B0] text-xs">
+                      <td className="py-3.5 px-4 hidden md:table-cell text-text-secondary text-xs">
                         {p.descricao || 'Sem descrição'}
                       </td>
                       <td className="py-3.5 px-4">
@@ -220,7 +220,7 @@ export const ProfilesManagement: React.FC = () => {
         maxWidth="lg"
       >
         {permissionsModalProfile?.nome === PERFIL_ADMINISTRADOR && (
-          <p className="text-xs text-[#F8D800] flex items-center gap-1.5">
+          <p className="text-xs text-acpb-yellow flex items-center gap-1.5">
             <Lock className="w-3.5 h-3.5" />
             Perfil protegido: o Administrador sempre tem todas as permissões e elas não podem ser
             removidas por aqui.
@@ -229,7 +229,7 @@ export const ProfilesManagement: React.FC = () => {
         <div className="space-y-4">
           {Object.entries(permissoesPorModulo).map(([modulo, permissoes]) => (
             <div key={modulo}>
-              <h4 className="text-xs font-bold text-[#AEB5B0] uppercase tracking-wider mb-1.5">
+              <h4 className="text-xs font-bold text-text-secondary uppercase tracking-wider mb-1.5">
                 {modulo}
               </h4>
               <div className="space-y-1.5">
@@ -239,7 +239,7 @@ export const ProfilesManagement: React.FC = () => {
                   return (
                     <label
                       key={permissao.id}
-                      className="flex items-center justify-between gap-3 p-2.5 bg-[#0F1210] border border-[#222824] rounded-lg cursor-pointer"
+                      className="flex items-center justify-between gap-3 p-2.5 bg-surface-bg border border-surface-border rounded-lg cursor-pointer"
                     >
                       <div className="flex items-center gap-2">
                         <input
@@ -249,7 +249,7 @@ export const ProfilesManagement: React.FC = () => {
                             togglingPermissionId === permissao.id || protegida || !permissao.ativo
                           }
                           onChange={() => handleTogglePermission(permissao)}
-                          className="w-4 h-4 accent-[#004922]"
+                          className="w-4 h-4 accent-acpb-green"
                         />
                         <span className="text-sm text-white">{permissao.acao}</span>
                       </div>

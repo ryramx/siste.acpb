@@ -281,7 +281,7 @@ export const UsersManagement: React.FC = () => {
         )}
       </div>
 
-      <div className="bg-[#181D1A] border border-[#222824] rounded-xl overflow-hidden shadow-sm">
+      <div className="bg-surface-card border border-surface-border rounded-xl overflow-hidden shadow-sm">
         {loading ? (
           <TableSkeleton rows={4} />
         ) : error ? (
@@ -303,7 +303,7 @@ export const UsersManagement: React.FC = () => {
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
-              <thead className="bg-[#0F1210] border-b border-[#222824] text-[#AEB5B0] font-medium">
+              <thead className="bg-surface-bg border-b border-surface-border text-text-secondary font-medium">
                 <tr>
                   <th className="py-3.5 px-4">Nome / E-mail</th>
                   <th className="py-3.5 px-4 hidden sm:table-cell">Perfil(is)</th>
@@ -311,9 +311,9 @@ export const UsersManagement: React.FC = () => {
                   <th className="py-3.5 px-4 text-right">Ações</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[#222824]">
+              <tbody className="divide-y divide-surface-border">
                 {filteredUsers.map((u) => (
-                  <tr key={u.id} className="hover:bg-[#1e2521] transition-colors">
+                  <tr key={u.id} className="hover:bg-surface-card-hover transition-colors">
                     <td className="py-3.5 px-4">
                       <div className="font-semibold text-white">
                         {u.name}
@@ -323,7 +323,7 @@ export const UsersManagement: React.FC = () => {
                           </span>
                         )}
                       </div>
-                      <div className="text-xs text-[#727A74]">{u.email}</div>
+                      <div className="text-xs text-text-muted">{u.email}</div>
                       {/* Em tela estreita as colunas de perfil e status saem da tabela para
                           não empurrar as ações para fora da largura do celular; a mesma
                           informação reaparece aqui embaixo do nome. */}
@@ -334,7 +334,7 @@ export const UsersManagement: React.FC = () => {
                         {u.perfis.map((p) => (
                           <span
                             key={p.perfilId}
-                            className="text-[10px] font-bold text-[#F8D800] bg-[#0F1210] px-1.5 py-0.5 rounded border border-[#222824]"
+                            className="text-[10px] font-bold text-acpb-yellow bg-surface-bg px-1.5 py-0.5 rounded border border-surface-border"
                           >
                             {p.nome}
                           </span>
@@ -344,12 +344,12 @@ export const UsersManagement: React.FC = () => {
                     <td className="py-3.5 px-4 hidden sm:table-cell">
                       <div className="flex flex-wrap gap-1">
                         {u.perfis.length === 0 ? (
-                          <span className="text-xs text-[#727A74]">Sem perfil</span>
+                          <span className="text-xs text-text-muted">Sem perfil</span>
                         ) : (
                           u.perfis.map((p) => (
                             <span
                               key={p.perfilId}
-                              className="text-xs font-bold text-[#F8D800] bg-[#0F1210] px-2 py-1 rounded border border-[#222824]"
+                              className="text-xs font-bold text-acpb-yellow bg-surface-bg px-2 py-1 rounded border border-surface-border"
                             >
                               {p.nome}
                             </span>
@@ -408,7 +408,7 @@ export const UsersManagement: React.FC = () => {
             handleCreateUser();
           }}
         >
-        <p className="text-xs text-[#727A74]">
+        <p className="text-xs text-text-muted">
           Um usuário (login) só pode ser criado para uma Pessoa já cadastrada que ainda não tenha
           um usuário vinculado.
         </p>
@@ -424,7 +424,7 @@ export const UsersManagement: React.FC = () => {
           ]}
         />
         {pessoasDisponiveis.length === 0 && (
-          <p className="text-xs text-[#F8D800]">
+          <p className="text-xs text-acpb-yellow">
             Nenhuma pessoa disponível — todas as pessoas cadastradas já possuem um usuário, ou
             nenhuma pessoa foi cadastrada ainda.
           </p>
@@ -458,14 +458,14 @@ export const UsersManagement: React.FC = () => {
         {editUser && (
           <div className="space-y-6">
             {contaDeOutroTitular && (
-              <p className="text-xs text-[#F8D800] p-3 bg-[#0F1210] border border-[#222824] rounded-lg">
+              <p className="text-xs text-acpb-yellow p-3 bg-surface-bg border border-surface-border rounded-lg">
                 Esta é a conta principal do sistema. Só o próprio titular pode trocar o e-mail e
                 a senha, remover o perfil de Administrador ou desativá-la.
               </p>
             )}
             {/* ---------- Dados ---------- */}
             <section className="space-y-3">
-              <h4 className="text-xs font-semibold text-[#F8D800] uppercase tracking-wider">
+              <h4 className="text-xs font-semibold text-acpb-yellow uppercase tracking-wider">
                 Dados
               </h4>
               <form
@@ -492,14 +492,14 @@ export const UsersManagement: React.FC = () => {
                   value={formEmail}
                   onChange={(e) => setFormEmail(e.target.value)}
                 />
-                <label className="flex items-start gap-2 p-3 bg-[#0F1210] border border-[#222824] rounded-lg cursor-pointer">
+                <label className="flex items-start gap-2 p-3 bg-surface-bg border border-surface-border rounded-lg cursor-pointer">
                   <input
                     type="checkbox"
                     checked={contaTecnica}
                     onChange={(e) => setContaTecnica(e.target.checked)}
-                    className="w-4 h-4 mt-0.5 accent-[#004922]"
+                    className="w-4 h-4 mt-0.5 accent-acpb-green"
                   />
-                  <span className="text-xs text-[#AEB5B0]">
+                  <span className="text-xs text-text-secondary">
                     <span className="text-white font-medium">Conta técnica</span> — existe para
                     operar o sistema, não é alguém da associação. Fica fora das listas de escolher
                     pessoa (inscrever em evento, vincular a projeto, responsável por bem), para
@@ -507,7 +507,7 @@ export const UsersManagement: React.FC = () => {
                   </span>
                 </label>
                 {papeisDaPessoa.length > 0 && (
-                  <p className="text-xs text-[#F8D800]">
+                  <p className="text-xs text-acpb-yellow">
                     Esta pessoa também está cadastrada como {papeisDaPessoa.join(', ')}. O nome
                     é o mesmo nos dois lugares, então alterá-lo aqui muda também esse cadastro.
                   </p>
@@ -533,11 +533,11 @@ export const UsersManagement: React.FC = () => {
             </section>
 
             {/* ---------- Perfis ---------- */}
-            <section className="space-y-3 border-t border-[#222824] pt-5">
-              <h4 className="text-xs font-semibold text-[#F8D800] uppercase tracking-wider">
+            <section className="space-y-3 border-t border-surface-border pt-5">
+              <h4 className="text-xs font-semibold text-acpb-yellow uppercase tracking-wider">
                 Perfis de acesso
               </h4>
-              <p className="text-xs text-[#727A74]">
+              <p className="text-xs text-text-muted">
                 Marque os perfis que este usuário deve ter. Alterações são aplicadas
                 imediatamente.
               </p>
@@ -552,7 +552,7 @@ export const UsersManagement: React.FC = () => {
                   return (
                     <label
                       key={perfil.id}
-                      className="flex items-center justify-between gap-3 p-3 bg-[#0F1210] border border-[#222824] rounded-lg cursor-pointer"
+                      className="flex items-center justify-between gap-3 p-3 bg-surface-bg border border-surface-border rounded-lg cursor-pointer"
                     >
                       <div className="flex items-center gap-2">
                         <input
@@ -562,7 +562,7 @@ export const UsersManagement: React.FC = () => {
                             togglingProfileId === perfil.id || !perfil.ativo || adminTravado
                           }
                           onChange={() => handleToggleProfile(perfil, vinculado)}
-                          className="w-4 h-4 accent-[#004922]"
+                          className="w-4 h-4 accent-acpb-green"
                         />
                         <span className="text-sm text-white">{perfil.nome}</span>
                       </div>
@@ -574,8 +574,8 @@ export const UsersManagement: React.FC = () => {
             </section>
 
             {/* ---------- Acesso ---------- */}
-            <section className="space-y-3 border-t border-[#222824] pt-5">
-              <h4 className="text-xs font-semibold text-[#F8D800] uppercase tracking-wider">
+            <section className="space-y-3 border-t border-surface-border pt-5">
+              <h4 className="text-xs font-semibold text-acpb-yellow uppercase tracking-wider">
                 Acesso
               </h4>
               <form
@@ -597,7 +597,7 @@ export const UsersManagement: React.FC = () => {
                   />
                 )}
                 {editUser.ativo && ehVoceMesmo && (
-                  <p className="text-xs text-[#727A74]">
+                  <p className="text-xs text-text-muted">
                     Você não pode desativar a sua própria conta nem remover o seu perfil de
                     Administrador.
                   </p>

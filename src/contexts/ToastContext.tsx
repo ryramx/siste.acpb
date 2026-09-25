@@ -43,27 +43,27 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             key={toast.id}
             className={`pointer-events-auto flex items-start p-4 rounded-lg shadow-lg border transition-all transform ease-out duration-300 animate-slide-in ${
               toast.type === 'success'
-                ? 'bg-[#181D1A] border-[#004922] text-white'
+                ? 'bg-surface-card border-acpb-green text-white'
                 : toast.type === 'error'
-                ? 'bg-[#181D1A] border-red-800 text-white'
+                ? 'bg-surface-card border-red-800 text-white'
                 : toast.type === 'warning'
-                ? 'bg-[#181D1A] border-[#F8D800]/40 text-white'
-                : 'bg-[#181D1A] border-blue-800 text-white'
+                ? 'bg-surface-card border-acpb-yellow/40 text-white'
+                : 'bg-surface-card border-blue-800 text-white'
             }`}
           >
             <div className="mr-3 mt-0.5 shrink-0">
-              {toast.type === 'success' && <CheckCircle className="w-5 h-5 text-[#004922]" />}
+              {toast.type === 'success' && <CheckCircle className="w-5 h-5 text-acpb-green-fg" />}
               {toast.type === 'error' && <AlertCircle className="w-5 h-5 text-red-500" />}
-              {toast.type === 'warning' && <AlertTriangle className="w-5 h-5 text-[#F8D800]" />}
+              {toast.type === 'warning' && <AlertTriangle className="w-5 h-5 text-acpb-yellow" />}
               {toast.type === 'info' && <Info className="w-5 h-5 text-blue-400" />}
             </div>
             <div className="flex-1">
               <h4 className="text-sm font-semibold">{toast.title}</h4>
-              {toast.message && <p className="text-xs text-[#AEB5B0] mt-1">{toast.message}</p>}
+              {toast.message && <p className="text-xs text-text-secondary mt-1">{toast.message}</p>}
             </div>
             <button
               onClick={() => removeToast(toast.id)}
-              className="ml-2 text-[#AEB5B0] hover:text-white transition-colors"
+              className="ml-2 text-text-secondary hover:text-white transition-colors"
             >
               <X className="w-4 h-4" />
             </button>

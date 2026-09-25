@@ -52,13 +52,13 @@ export const CategoriaBreakdown: React.FC<CategoriaBreakdownProps> = ({
   const visiveis = expandido ? linhas : linhas.slice(0, CATEGORIAS_VISIVEIS);
 
   return (
-    <div className="bg-[#181D1A] border border-[#222824] p-6 rounded-2xl space-y-4">
+    <div className="bg-surface-card border border-surface-border p-6 rounded-2xl space-y-4">
       <h3 className="text-base font-bold text-white font-heading flex items-center gap-2">
         {icon}
         {titulo}
       </h3>
       {linhas.length === 0 ? (
-        <p className="text-xs text-[#727A74] pt-2">Nenhum lançamento confirmado ainda.</p>
+        <p className="text-xs text-text-muted pt-2">Nenhum lançamento confirmado ainda.</p>
       ) : (
         <div className="space-y-3 pt-2">
           {visiveis.map(([categoria, total]) => {
@@ -71,7 +71,7 @@ export const CategoriaBreakdown: React.FC<CategoriaBreakdownProps> = ({
                     {formatarMoeda(total)} ({texto})
                   </span>
                 </div>
-                <div className="w-full bg-[#0F1210] h-2.5 rounded-full overflow-hidden border border-[#222824]">
+                <div className="w-full bg-surface-bg h-2.5 rounded-full overflow-hidden border border-surface-border">
                   {/* Largura mínima: sem ela uma categoria pequena ao lado de uma enorme some. */}
                   <div
                     className={`${barColor} h-full`}
@@ -85,7 +85,7 @@ export const CategoriaBreakdown: React.FC<CategoriaBreakdownProps> = ({
             <button
               type="button"
               onClick={() => setExpandido(!expandido)}
-              className="text-xs font-semibold text-[#F8D800] hover:underline"
+              className="text-xs font-semibold text-acpb-yellow hover:underline"
             >
               {expandido ? 'Recolher' : `Ver todas (${linhas.length})`}
             </button>
@@ -214,13 +214,13 @@ export const FinancialDashboard: React.FC = () => {
       <FinancialTabs />
 
       {/* Header com Identidade Própria Financeira */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-[#181D1A] border-l-4 border-l-[#F8D800] border border-[#222824] p-6 rounded-2xl">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-surface-card border-l-4 border-l-acpb-yellow border border-surface-border p-6 rounded-2xl">
         <div>
           <h1 className="text-2xl font-bold text-white font-heading flex items-center gap-2">
-            <DollarSign className="w-6 h-6 text-[#F8D800]" />
+            <DollarSign className="w-6 h-6 text-acpb-yellow" />
             Módulo Financeiro & Prestação de Contas
           </h1>
-          <p className="text-sm text-[#AEB5B0]">
+          <p className="text-sm text-text-secondary">
             Controle institucional rigoroso de receitas, despesas operacionais e movimentações.
           </p>
         </div>
@@ -232,7 +232,7 @@ export const FinancialDashboard: React.FC = () => {
               onClick={() => {
                 abrirLancamento('RECEITA');
               }}
-              leftIcon={<Plus className="w-4 h-4 text-[#40C075]" />}
+              leftIcon={<Plus className="w-4 h-4 text-valor-positivo" />}
             >
               Nova Receita
             </Button>
@@ -254,7 +254,7 @@ export const FinancialDashboard: React.FC = () => {
         <StatCard
           title="Receitas Totais"
           value={formatarMoeda(totalReceitas)}
-          icon={<ArrowUpRight className="w-5 h-5 text-[#40C075]" />}
+          icon={<ArrowUpRight className="w-5 h-5 text-valor-positivo" />}
           subtitle="Doações, contribuições e convênios"
           accentColor="green"
         />
@@ -268,7 +268,7 @@ export const FinancialDashboard: React.FC = () => {
         <StatCard
           title="Saldo do Período"
           value={formatarMoeda(saldo)}
-          icon={<TrendingUp className="w-5 h-5 text-[#F8D800]" />}
+          icon={<TrendingUp className="w-5 h-5 text-acpb-yellow" />}
           subtitle={`Receitas menos despesas em ${descreverPeriodo(periodo)}`}
           accentColor="yellow"
         />
@@ -278,11 +278,11 @@ export const FinancialDashboard: React.FC = () => {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <CategoriaBreakdown
           titulo="Receitas por Categoria"
-          icon={<PieChart className="w-5 h-5 text-[#004922]" />}
+          icon={<PieChart className="w-5 h-5 text-acpb-green-fg" />}
           transactions={transactions}
           type="RECEITA"
-          barColor="bg-[#004922]"
-          textColor="text-[#40C075]"
+          barColor="bg-acpb-green"
+          textColor="text-valor-positivo"
         />
         <CategoriaBreakdown
           titulo="Despesas por Categoria"
@@ -295,14 +295,14 @@ export const FinancialDashboard: React.FC = () => {
       </div>
 
       {/* Tabela de Lançamentos Recentes com Anexo de Comprovante */}
-      <div className="bg-[#181D1A] border border-[#222824] rounded-xl overflow-hidden shadow-sm">
-        <div className="p-4 border-b border-[#222824] flex items-center justify-between">
+      <div className="bg-surface-card border border-surface-border rounded-xl overflow-hidden shadow-sm">
+        <div className="p-4 border-b border-surface-border flex items-center justify-between">
           <h3 className="text-base font-bold text-white font-heading">Últimas Movimentações Financeiras</h3>
         </div>
 
         <div className="overflow-x-auto">
         <table className="w-full text-left text-sm">
-          <thead className="bg-[#0F1210] border-b border-[#222824] text-[#AEB5B0] font-medium">
+          <thead className="bg-surface-bg border-b border-surface-border text-text-secondary font-medium">
             <tr>
               <th className="py-3.5 px-4">Data</th>
               <th className="py-3.5 px-4">Descrição & Categoria</th>
@@ -313,19 +313,19 @@ export const FinancialDashboard: React.FC = () => {
               <th className="py-3.5 px-4 text-right">Ações</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-[#222824]">
+          <tbody className="divide-y divide-surface-border">
             {transactions.map((t) => (
-              <tr key={t.id} className="hover:bg-[#1e2521] transition-colors">
-                <td className="py-3.5 px-4 text-[#AEB5B0] text-xs">{formatarData(t.date)}</td>
+              <tr key={t.id} className="hover:bg-surface-card-hover transition-colors">
+                <td className="py-3.5 px-4 text-text-secondary text-xs">{formatarData(t.date)}</td>
                 <td className="py-3.5 px-4">
                   <div className="font-semibold text-white">{t.description}</div>
-                  <div className="text-xs text-[#F8D800]">{t.category}</div>
+                  <div className="text-xs text-acpb-yellow">{t.category}</div>
                 </td>
-                <td className="py-3.5 px-4 text-xs text-[#AEB5B0]">{t.paymentMethod}</td>
+                <td className="py-3.5 px-4 text-xs text-text-secondary">{t.paymentMethod}</td>
                 <td className="py-3.5 px-4 text-xs">
                   <AnexosLancamento transacao={t} onAlterado={fetchTransactions} />
                 </td>
-                <td className={`py-3.5 px-4 font-bold text-sm ${t.type === 'RECEITA' ? 'text-[#40C075]' : 'text-red-400'}`}>
+                <td className={`py-3.5 px-4 font-bold text-sm ${t.type === 'RECEITA' ? 'text-valor-positivo' : 'text-red-400'}`}>
                   {formatarMoedaComSinal(t.amount, t.type === 'RECEITA')}
                 </td>
                 <td className="py-3.5 px-4">
@@ -374,7 +374,7 @@ export const FinancialDashboard: React.FC = () => {
             />
           </div>
           {(contas.length === 0 || categorias.length === 0) && (
-            <p className="text-xs text-[#F8D800] bg-[#0F1210] border border-[#222824] rounded-lg p-3">
+            <p className="text-xs text-acpb-yellow bg-surface-bg border border-surface-border rounded-lg p-3">
               {contas.length === 0
                 ? 'Nenhuma conta cadastrada — sem uma conta ativa o lançamento não pode ser salvo. '
                 : 'Nenhuma categoria cadastrada para este tipo. '}
@@ -426,7 +426,7 @@ export const FinancialDashboard: React.FC = () => {
               options={opcoesStatus(txType)}
             />
           </div>
-          <p className="text-xs text-[#AEB5B0]">
+          <p className="text-xs text-text-secondary">
             Comprovantes podem ser anexados após salvar o lançamento, na tela de detalhes.
           </p>
           <div className="flex items-center justify-end gap-2 pt-2">

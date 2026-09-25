@@ -218,7 +218,7 @@ export const MemberForm: React.FC = () => {
   };
 
   if (loadingInitialData) {
-    return <div className="p-8 text-center text-[#AEB5B0]">Carregando dados do membro...</div>;
+    return <div className="p-8 text-center text-text-secondary">Carregando dados do membro...</div>;
   }
 
   return (
@@ -227,7 +227,7 @@ export const MemberForm: React.FC = () => {
       <div className="flex items-center justify-between">
         <button
           onClick={() => navigate('/membros')}
-          className="flex items-center gap-2 text-sm text-[#AEB5B0] hover:text-white transition-colors"
+          className="flex items-center gap-2 text-sm text-text-secondary hover:text-white transition-colors"
         >
           <ArrowLeft className="w-4 h-4" /> Voltar para lista
         </button>
@@ -238,8 +238,8 @@ export const MemberForm: React.FC = () => {
 
       <form onSubmit={handleSubmit} className="space-y-8">
         {/* SEÇÃO 1: INFORMAÇÕES PESSOAIS */}
-        <div className="bg-[#181D1A] border border-[#222824] p-6 rounded-2xl space-y-4">
-          <h2 className="text-base font-semibold text-[#F8D800] uppercase tracking-wider text-xs border-b border-[#222824] pb-3">
+        <div className="bg-surface-card border border-surface-border p-6 rounded-2xl space-y-4">
+          <h2 className="text-base font-semibold text-acpb-yellow uppercase tracking-wider text-xs border-b border-surface-border pb-3">
             1. Informações Pessoais
           </h2>
 
@@ -340,8 +340,8 @@ export const MemberForm: React.FC = () => {
               a seção aparecer. Mostrá-la sempre poluiria o cadastro da maioria, que é
               adulta; omiti-la deixaria sem contato as crianças atendidas nos projetos. */}
           {ehMenorDeIdade(formData.birthDate) && (
-            <div className="bg-[#0F1210] border border-[#F8D800]/30 rounded-xl p-4 space-y-3">
-              <p className="text-xs text-[#F8D800]">
+            <div className="bg-surface-bg border border-acpb-yellow/30 rounded-xl p-4 space-y-3">
+              <p className="text-xs text-acpb-yellow">
                 Pessoa com {idadeEmAnos(formData.birthDate)} anos — informe quem responde por
                 ela.
               </p>
@@ -369,8 +369,8 @@ export const MemberForm: React.FC = () => {
         </div>
 
         {/* SEÇÃO 2: CONTATO */}
-        <div className="bg-[#181D1A] border border-[#222824] p-6 rounded-2xl space-y-4">
-          <h2 className="text-base font-semibold text-[#F8D800] uppercase tracking-wider text-xs border-b border-[#222824] pb-3">
+        <div className="bg-surface-card border border-surface-border p-6 rounded-2xl space-y-4">
+          <h2 className="text-base font-semibold text-acpb-yellow uppercase tracking-wider text-xs border-b border-surface-border pb-3">
             2. Contato
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -403,8 +403,8 @@ export const MemberForm: React.FC = () => {
         </div>
 
         {/* SEÇÃO 3: ENDEREÇO */}
-        <div className="bg-[#181D1A] border border-[#222824] p-6 rounded-2xl space-y-4">
-          <h2 className="text-base font-semibold text-[#F8D800] uppercase tracking-wider text-xs border-b border-[#222824] pb-3">
+        <div className="bg-surface-card border border-surface-border p-6 rounded-2xl space-y-4">
+          <h2 className="text-base font-semibold text-acpb-yellow uppercase tracking-wider text-xs border-b border-surface-border pb-3">
             3. Endereço
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -440,8 +440,8 @@ export const MemberForm: React.FC = () => {
         </div>
 
         {/* SEÇÃO 4: ASSOCIAÇÃO */}
-        <div className="bg-[#181D1A] border border-[#222824] p-6 rounded-2xl space-y-4">
-          <h2 className="text-base font-semibold text-[#F8D800] uppercase tracking-wider text-xs border-b border-[#222824] pb-3">
+        <div className="bg-surface-card border border-surface-border p-6 rounded-2xl space-y-4">
+          <h2 className="text-base font-semibold text-acpb-yellow uppercase tracking-wider text-xs border-b border-surface-border pb-3">
             4. Dados da Associação
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -479,7 +479,7 @@ export const MemberForm: React.FC = () => {
           <div className="mt-4 w-full flex flex-col gap-1.5">
             <label
               htmlFor="notes"
-              className="text-xs font-medium text-[#AEB5B0]"
+              className="text-xs font-medium text-text-secondary"
             >
               Observações Institucionais
             </label>
@@ -490,7 +490,7 @@ export const MemberForm: React.FC = () => {
               value={formData.notes}
               onChange={handleChange}
               placeholder="Anotações internas sobre o membro (opcional)"
-              className="w-full bg-[#151917] border border-[#222824] rounded-lg px-3 py-2 text-sm text-white placeholder-[#727A74] focus:outline-none focus:border-[#004922] focus:ring-1 focus:ring-[#004922] transition-colors"
+              className="w-full bg-surface-input border border-surface-border rounded-lg px-3 py-2 text-sm text-white placeholder-text-muted focus:outline-none focus:border-acpb-green focus:ring-1 focus:ring-acpb-green transition-colors"
             />
           </div>
         </div>

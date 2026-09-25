@@ -177,7 +177,7 @@ export const ImageCropModal: React.FC<ImageCropModalProps> = ({
           role="application"
           aria-label="Área de recorte da foto"
           style={{ width: VIEWPORT, height: VIEWPORT }}
-          className="relative overflow-hidden rounded-full bg-[#0F1210] border border-[#222824] touch-none cursor-grab active:cursor-grabbing select-none"
+          className="relative overflow-hidden rounded-full bg-surface-bg border border-surface-border touch-none cursor-grab active:cursor-grabbing select-none"
           onPointerDown={(e) => {
             e.currentTarget.setPointerCapture(e.pointerId);
             iniciarArrasto(e.clientX, e.clientY);
@@ -220,7 +220,7 @@ export const ImageCropModal: React.FC<ImageCropModalProps> = ({
           value={zoom}
           disabled={!imagem || ocupado}
           onChange={(e) => handleZoom(Number(e.target.value))}
-          className="w-full accent-[#004922]"
+          className="w-full accent-acpb-green"
         />
       </div>
     </Modal>

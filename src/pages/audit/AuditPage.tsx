@@ -55,11 +55,11 @@ const PainelDados: React.FC<{ titulo: string; dados: Record<string, unknown> | n
   dados
 }) => (
   <div className="flex-1 min-w-0">
-    <h4 className="text-xs font-semibold text-[#AEB5B0] mb-2">{titulo}</h4>
+    <h4 className="text-xs font-semibold text-text-secondary mb-2">{titulo}</h4>
     {dados === null ? (
-      <p className="text-xs text-[#727A74] italic">Não registrado</p>
+      <p className="text-xs text-text-muted italic">Não registrado</p>
     ) : (
-      <pre className="text-[11px] text-white bg-[#0F1210] border border-[#222824] rounded-lg p-3 overflow-x-auto whitespace-pre-wrap break-words">
+      <pre className="text-[11px] text-white bg-surface-bg border border-surface-border rounded-lg p-3 overflow-x-auto whitespace-pre-wrap break-words">
         {JSON.stringify(dados, null, 2)}
       </pre>
     )}
@@ -137,15 +137,15 @@ export const AuditPage: React.FC = () => {
     <div className="space-y-6 animate-fade-in pb-12">
       <div>
         <h1 className="text-2xl font-bold text-white font-heading flex items-center gap-2">
-          <ScrollText className="w-6 h-6 text-[#F8D800]" />
+          <ScrollText className="w-6 h-6 text-acpb-yellow" />
           Auditoria
         </h1>
-        <p className="text-sm text-[#AEB5B0]">
+        <p className="text-sm text-text-secondary">
           Histórico de operações sensíveis: quem fez, o que mudou, quando e de qual IP.
         </p>
       </div>
 
-      <div className="bg-[#181D1A] border border-[#222824] p-4 rounded-xl grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+      <div className="bg-surface-card border border-surface-border p-4 rounded-xl grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
         <Select
           id="filtro-usuario"
           label="Usuário"
@@ -187,7 +187,7 @@ export const AuditPage: React.FC = () => {
       </div>
 
       <div className="flex items-center justify-between gap-3 flex-wrap">
-        <span className="text-xs text-[#AEB5B0]">
+        <span className="text-xs text-text-secondary">
           {loading ? 'Carregando...' : `${registros.length} registro(s) nesta página`}
         </span>
         <Button variant="outline" size="sm" onClick={limparFiltros} leftIcon={<Search className="w-4 h-4" />}>
@@ -210,10 +210,10 @@ export const AuditPage: React.FC = () => {
           description="Nenhuma operação auditada corresponde aos filtros selecionados."
         />
       ) : (
-        <div className="bg-[#181D1A] border border-[#222824] rounded-xl overflow-hidden">
+        <div className="bg-surface-card border border-surface-border rounded-xl overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
-              <thead className="bg-[#0F1210] border-b border-[#222824] text-[#AEB5B0] font-medium">
+              <thead className="bg-surface-bg border-b border-surface-border text-text-secondary font-medium">
                 <tr>
                   <th className="py-3 px-4">Data/hora</th>
                   <th className="py-3 px-4">Usuário</th>
@@ -224,10 +224,10 @@ export const AuditPage: React.FC = () => {
                   <th className="py-3 px-4 text-right">Detalhes</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[#222824]">
+              <tbody className="divide-y divide-surface-border">
                 {registros.map((r) => (
-                  <tr key={r.id} className="hover:bg-[#1e2521] transition-colors">
-                    <td className="py-3 px-4 text-[#AEB5B0] whitespace-nowrap">
+                  <tr key={r.id} className="hover:bg-surface-card-hover transition-colors">
+                    <td className="py-3 px-4 text-text-secondary whitespace-nowrap">
                       {formatarDataHora(r.createdAt)}
                     </td>
                     <td className="py-3 px-4 text-white">{r.usuarioNome}</td>
@@ -236,13 +236,13 @@ export const AuditPage: React.FC = () => {
                         {r.acao}
                       </Badge>
                     </td>
-                    <td className="py-3 px-4 text-[#AEB5B0] hidden md:table-cell">
+                    <td className="py-3 px-4 text-text-secondary hidden md:table-cell">
                       {r.tabela ?? '—'}
                     </td>
-                    <td className="py-3 px-4 text-[#AEB5B0] hidden lg:table-cell">
+                    <td className="py-3 px-4 text-text-secondary hidden lg:table-cell">
                       {r.registroId ?? '—'}
                     </td>
-                    <td className="py-3 px-4 text-[#AEB5B0] hidden lg:table-cell">{r.ip ?? '—'}</td>
+                    <td className="py-3 px-4 text-text-secondary hidden lg:table-cell">{r.ip ?? '—'}</td>
                     <td className="py-3 px-4 text-right">
                       <Button
                         variant="ghost"
@@ -272,7 +272,7 @@ export const AuditPage: React.FC = () => {
         >
           Anterior
         </Button>
-        <span className="text-xs text-[#AEB5B0]">Página {pagina + 1}</span>
+        <span className="text-xs text-text-secondary">Página {pagina + 1}</span>
         <Button
           variant="outline"
           size="sm"
@@ -293,25 +293,25 @@ export const AuditPage: React.FC = () => {
           <div className="space-y-4">
             <dl className="grid grid-cols-2 gap-3 text-xs">
               <div>
-                <dt className="text-[#AEB5B0]">Usuário</dt>
+                <dt className="text-text-secondary">Usuário</dt>
                 <dd className="text-white">{detalhe.usuarioNome}</dd>
               </div>
               <div>
-                <dt className="text-[#AEB5B0]">Data/hora</dt>
+                <dt className="text-text-secondary">Data/hora</dt>
                 <dd className="text-white">{formatarDataHora(detalhe.createdAt)}</dd>
               </div>
               <div>
-                <dt className="text-[#AEB5B0]">Registro</dt>
+                <dt className="text-text-secondary">Registro</dt>
                 <dd className="text-white">{detalhe.registroId ?? '—'}</dd>
               </div>
               <div>
-                <dt className="text-[#AEB5B0]">IP</dt>
+                <dt className="text-text-secondary">IP</dt>
                 <dd className="text-white">{detalhe.ip ?? '—'}</dd>
               </div>
             </dl>
 
             {detalhe.descricao && (
-              <p className="text-xs text-[#AEB5B0]">{detalhe.descricao}</p>
+              <p className="text-xs text-text-secondary">{detalhe.descricao}</p>
             )}
 
             <div className="flex flex-col md:flex-row gap-4">

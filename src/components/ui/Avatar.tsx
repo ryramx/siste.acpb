@@ -68,7 +68,7 @@ export const Avatar: React.FC<AvatarProps> = ({ pessoaId, nome, temFoto, size = 
       <img
         src={fotoUrl}
         alt={nome}
-        className={`${classesTamanho} rounded-full object-cover border border-[#004922]/50 shrink-0 ${className}`}
+        className={`${classesTamanho} rounded-full object-cover border border-acpb-green/50 shrink-0 ${className}`}
       />
     );
   }
@@ -78,7 +78,7 @@ export const Avatar: React.FC<AvatarProps> = ({ pessoaId, nome, temFoto, size = 
       role="img"
       aria-label={nome}
       style={{ backgroundColor: corDeFundo(nome) }}
-      className={`${classesTamanho} rounded-full flex items-center justify-center font-bold text-white border border-[#004922]/50 shrink-0 ${className}`}
+      className={`${classesTamanho} rounded-full flex items-center justify-center font-bold text-white border border-acpb-green/50 shrink-0 ${className}`}
     >
       {iniciais(nome) || '?'}
     </div>

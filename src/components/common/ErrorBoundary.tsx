@@ -55,21 +55,21 @@ export class ErrorBoundary extends React.Component<Props, State> {
     if (!this.state.erro) return this.props.children;
 
     return (
-      <div className="min-h-screen bg-[#0F1210] flex items-center justify-center p-4">
-        <div className="max-w-md w-full bg-[#181D1A] border border-[#222824] rounded-xl p-6 space-y-4">
-          <div className="flex items-center gap-2 text-[#F8D800]">
+      <div className="min-h-screen bg-surface-bg flex items-center justify-center p-4">
+        <div className="max-w-md w-full bg-surface-card border border-surface-border rounded-xl p-6 space-y-4">
+          <div className="flex items-center gap-2 text-acpb-yellow">
             <AlertTriangle className="w-6 h-6" />
             <h1 className="text-lg font-bold text-white font-heading">
               Algo quebrou nesta tela
             </h1>
           </div>
 
-          <p className="text-sm text-[#AEB5B0]">
+          <p className="text-sm text-text-secondary">
             O erro foi registrado para quem mantém o sistema. Nada do que você tinha salvo se
             perdeu — o problema é na exibição desta tela.
           </p>
 
-          <p className="text-xs text-[#727A74]">
+          <p className="text-xs text-text-muted">
             Recarregar costuma resolver. Se acontecer de novo no mesmo lugar, avise quem
             administra o sistema e diga o que você estava fazendo.
           </p>
@@ -78,7 +78,7 @@ export class ErrorBoundary extends React.Component<Props, State> {
             <button
               type="button"
               onClick={() => window.location.reload()}
-              className="flex-1 px-4 py-2 rounded-lg bg-[#004922] hover:bg-[#00632e] text-white text-sm font-medium cursor-pointer"
+              className="flex-1 px-4 py-2 rounded-lg bg-acpb-green hover:bg-acpb-green-hover text-white text-sm font-medium cursor-pointer"
             >
               Recarregar a tela
             </button>
@@ -88,7 +88,7 @@ export class ErrorBoundary extends React.Component<Props, State> {
                 // `assign` e não `reload`: o objetivo é sair da tela que quebra, não repeti-la.
                 window.location.assign('/dashboard');
               }}
-              className="flex-1 px-4 py-2 rounded-lg border border-[#222824] bg-[#181D1A] hover:bg-[#222824] text-white text-sm font-medium cursor-pointer"
+              className="flex-1 px-4 py-2 rounded-lg border border-surface-border bg-surface-card hover:bg-surface-border text-white text-sm font-medium cursor-pointer"
             >
               Voltar ao início
             </button>

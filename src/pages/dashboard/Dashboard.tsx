@@ -75,10 +75,10 @@ export const Dashboard: React.FC = () => {
   if (loading) {
     return (
       <div className="space-y-6 animate-pulse">
-        <div className="h-10 bg-[#181D1A] rounded-lg w-1/3" />
+        <div className="h-10 bg-surface-card rounded-lg w-1/3" />
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="h-32 bg-[#181D1A] rounded-xl" />
+            <div key={i} className="h-32 bg-surface-card rounded-xl" />
           ))}
         </div>
       </div>
@@ -103,12 +103,12 @@ export const Dashboard: React.FC = () => {
   return (
     <div className="space-y-6 animate-fade-in">
       {/* Header Saudação */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-[#181D1A] border border-[#222824] p-6 rounded-2xl relative overflow-hidden">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-surface-card border border-surface-border p-6 rounded-2xl relative overflow-hidden">
         <div className="z-10">
           <h1 className="text-2xl md:text-3xl font-bold text-white font-heading">
             {saudacao()}, {user?.name.split(' ')[0]}!
           </h1>
-          <p className="text-sm text-[#AEB5B0] mt-1">
+          <p className="text-sm text-text-secondary mt-1">
             {frase}
           </p>
         </div>
@@ -120,7 +120,7 @@ export const Dashboard: React.FC = () => {
             Gestão Financeira
           </Button>
         </div>
-        <div className="absolute right-0 top-0 bottom-0 w-64 bg-gradient-to-l from-[#004922]/20 to-transparent pointer-events-none" />
+        <div className="absolute right-0 top-0 bottom-0 w-64 bg-gradient-to-l from-acpb-green/20 to-transparent pointer-events-none" />
       </div>
 
       {/* 4 KPIs Principais */}
@@ -158,11 +158,11 @@ export const Dashboard: React.FC = () => {
       {/* Seção do Meio: Próximos Eventos + Situação Financeira */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Próximos Eventos */}
-        <div className="bg-[#181D1A] border border-[#222824] rounded-2xl p-6 flex flex-col justify-between">
+        <div className="bg-surface-card border border-surface-border rounded-2xl p-6 flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-white font-heading flex items-center gap-2">
-                <Calendar className="w-5 h-5 text-[#F8D800]" />
+                <Calendar className="w-5 h-5 text-acpb-yellow" />
                 Próximos eventos
               </h3>
               <Button
@@ -176,7 +176,7 @@ export const Dashboard: React.FC = () => {
             </div>
 
             {proximosEventos.length === 0 ? (
-              <p className="text-xs text-[#727A74] py-4 text-center">
+              <p className="text-xs text-text-muted py-4 text-center">
                 Nenhum evento futuro agendado.
               </p>
             ) : (
@@ -185,19 +185,19 @@ export const Dashboard: React.FC = () => {
                   <div
                     key={evt.id}
                     onClick={() => navigate(`/eventos/${evt.id}`)}
-                    className="p-3.5 bg-[#0F1210] border border-[#222824] rounded-xl flex items-center justify-between hover:border-[#004922]/50 transition-colors cursor-pointer"
+                    className="p-3.5 bg-surface-bg border border-surface-border rounded-xl flex items-center justify-between hover:border-acpb-green/50 transition-colors cursor-pointer"
                   >
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-lg bg-[#004922]/30 border border-[#004922] flex flex-col items-center justify-center text-white shrink-0">
+                      <div className="w-10 h-10 rounded-lg bg-acpb-green/30 border border-acpb-green flex flex-col items-center justify-center text-white shrink-0">
                         <span className="text-[10px] font-bold uppercase">
                           {evt.date.split('-')[1]}/{evt.date.split('-')[0].slice(2)}
                         </span>
-                        <span className="text-xs font-bold text-[#F8D800]">{evt.date.split('-')[2]}</span>
+                        <span className="text-xs font-bold text-acpb-yellow">{evt.date.split('-')[2]}</span>
                       </div>
                       <div>
                         <h4 className="text-sm font-semibold text-white">{evt.title}</h4>
-                        <p className="text-xs text-[#AEB5B0] flex items-center gap-1.5 mt-0.5">
-                          <Clock className="w-3 h-3 text-[#F8D800]" />
+                        <p className="text-xs text-text-secondary flex items-center gap-1.5 mt-0.5">
+                          <Clock className="w-3 h-3 text-acpb-yellow" />
                           {evt.time ?? 'Horário a definir'} • {evt.location}
                         </p>
                       </div>
@@ -211,11 +211,11 @@ export const Dashboard: React.FC = () => {
         </div>
 
         {/* Situação Financeira */}
-        <div className="bg-[#181D1A] border border-[#222824] rounded-2xl p-6 flex flex-col justify-between">
+        <div className="bg-surface-card border border-surface-border rounded-2xl p-6 flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-white font-heading flex items-center gap-2">
-                <TrendingUp className="w-5 h-5 text-[#004922]" />
+                <TrendingUp className="w-5 h-5 text-acpb-green-fg" />
                 Situação financeira (confirmada)
               </h3>
               <Button
@@ -229,21 +229,21 @@ export const Dashboard: React.FC = () => {
             </div>
 
             <div className="grid grid-cols-3 gap-3 mb-4">
-              <div className="p-3 bg-[#0F1210] border border-[#222824] rounded-xl">
-                <span className="text-xs text-[#AEB5B0] block">Receitas</span>
-                <span className="text-base font-bold text-[#40C075] mt-1 block">
+              <div className="p-3 bg-surface-bg border border-surface-border rounded-xl">
+                <span className="text-xs text-text-secondary block">Receitas</span>
+                <span className="text-base font-bold text-valor-positivo mt-1 block">
                   {formatarMoeda(resumo.receitas_confirmadas)}
                 </span>
               </div>
-              <div className="p-3 bg-[#0F1210] border border-[#222824] rounded-xl">
-                <span className="text-xs text-[#AEB5B0] block">Despesas</span>
+              <div className="p-3 bg-surface-bg border border-surface-border rounded-xl">
+                <span className="text-xs text-text-secondary block">Despesas</span>
                 <span className="text-base font-bold text-red-400 mt-1 block">
                   {formatarMoeda(resumo.despesas_confirmadas)}
                 </span>
               </div>
-              <div className="p-3 bg-[#0F1210] border border-[#004922] rounded-xl bg-[#004922]/10">
-                <span className="text-xs text-[#AEB5B0] block">Saldo</span>
-                <span className={`text-base font-bold mt-1 block ${saldoPositivo ? 'text-[#F8D800]' : 'text-red-400'}`}>
+              <div className="p-3 bg-surface-bg border border-acpb-green rounded-xl bg-acpb-green/10">
+                <span className="text-xs text-text-secondary block">Saldo</span>
+                <span className={`text-base font-bold mt-1 block ${saldoPositivo ? 'text-acpb-yellow' : 'text-red-400'}`}>
                   {formatarMoeda(resumo.saldo_financeiro)}
                 </span>
               </div>
@@ -251,11 +251,11 @@ export const Dashboard: React.FC = () => {
 
             {totalMovimentado > 0 && (
               <>
-                <div className="w-full bg-[#0F1210] rounded-full h-3 overflow-hidden flex border border-[#222824]">
-                  <div className="bg-[#004922] h-full" style={{ width: `${percReceitas}%` }} title="Receitas" />
+                <div className="w-full bg-surface-bg rounded-full h-3 overflow-hidden flex border border-surface-border">
+                  <div className="bg-acpb-green h-full" style={{ width: `${percReceitas}%` }} title="Receitas" />
                   <div className="bg-red-800 h-full" style={{ width: `${100 - percReceitas}%` }} title="Despesas" />
                 </div>
-                <div className="flex justify-between text-[11px] text-[#727A74] mt-2">
+                <div className="flex justify-between text-[11px] text-text-muted mt-2">
                   <span>● Receitas confirmadas</span>
                   <span>● Despesas confirmadas</span>
                 </div>

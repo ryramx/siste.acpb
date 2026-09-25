@@ -55,29 +55,29 @@ export const Modal: React.FC<ModalProps> = ({
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
-        className={`bg-[#181D1A] border border-[#222824] rounded-xl w-full ${widthClasses[maxWidth]} shadow-2xl flex flex-col max-h-[90vh] my-auto overflow-hidden`}
+        className={`bg-surface-card border border-surface-border rounded-xl w-full ${widthClasses[maxWidth]} shadow-2xl flex flex-col max-h-[90vh] my-auto overflow-hidden`}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-[#222824]">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-surface-border">
           <h3 id={titleId} className="text-lg font-semibold text-white font-heading">{title}</h3>
           <button
             onClick={onClose}
             aria-label="Fechar"
-            className="text-[#AEB5B0] hover:text-white transition-colors p-1 rounded-lg hover:bg-[#222824]"
+            className="text-text-secondary hover:text-white transition-colors p-1 rounded-lg hover:bg-surface-border"
           >
             ✕
           </button>
         </div>
 
         {/* Body */}
-        <div className="p-6 overflow-y-auto space-y-4 flex-1 text-sm text-[#AEB5B0]">
+        <div className="p-6 overflow-y-auto space-y-4 flex-1 text-sm text-text-secondary">
           {children}
         </div>
 
         {/* Footer */}
         {footer && (
-          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-[#222824] bg-[#0F1210]/50">
+          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-surface-border bg-surface-bg/50">
             {footer}
           </div>
         )}

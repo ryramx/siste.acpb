@@ -52,15 +52,15 @@ export const Login: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#0F1210] flex items-center justify-center p-4 relative overflow-hidden">
+    <div className="min-h-screen bg-surface-bg flex items-center justify-center p-4 relative overflow-hidden">
       {/* Elementos visuais sutis de fundo */}
-      <div className="absolute top-0 left-1/4 w-96 h-96 bg-[#004922]/15 rounded-full filter blur-3xl pointer-events-none" />
-      <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-[#F8D800]/5 rounded-full filter blur-3xl pointer-events-none" />
+      <div className="absolute top-0 left-1/4 w-96 h-96 bg-acpb-green/15 rounded-full filter blur-3xl pointer-events-none" />
+      <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-acpb-yellow/5 rounded-full filter blur-3xl pointer-events-none" />
 
-      <div className="w-full max-w-md bg-[#181D1A] border border-[#222824] rounded-2xl p-8 shadow-2xl relative z-10 animate-fade-in">
+      <div className="w-full max-w-md bg-surface-card border border-surface-border rounded-2xl p-8 shadow-2xl relative z-10 animate-fade-in">
         {/* Institutional Branding */}
         <div className="flex flex-col items-center text-center mb-8">
-          <div className="p-3 bg-[#0F1210] rounded-2xl border border-[#004922]/50 shadow-inner mb-4">
+          <div className="p-3 bg-surface-bg rounded-2xl border border-acpb-green/50 shadow-inner mb-4">
             <img
               src="/logo-acpb.png"
               alt="Logo ACPB"
@@ -70,7 +70,7 @@ export const Login: React.FC = () => {
           <h1 className="text-xl font-bold text-white font-heading tracking-wide">
             Associação Cristã Pau-Brasil
           </h1>
-          <p className="text-xs text-[#F8D800] uppercase tracking-widest font-semibold mt-1">
+          <p className="text-xs text-acpb-yellow uppercase tracking-widest font-semibold mt-1">
             Sistema de Gestão Integrada
           </p>
         </div>
@@ -83,7 +83,7 @@ export const Login: React.FC = () => {
           </div>
         )}
         {recoveryMessage && (
-          <div className="mb-6 p-3 bg-[#004922]/20 border border-[#004922] rounded-lg text-xs text-[#F8D800] flex items-center gap-2">
+          <div className="mb-6 p-3 bg-acpb-green/20 border border-acpb-green rounded-lg text-xs text-acpb-yellow flex items-center gap-2">
             <ShieldCheck className="w-4 h-4 shrink-0" />
             <span>{recoveryMessage}</span>
           </div>
@@ -113,7 +113,7 @@ export const Login: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="text-[#AEB5B0] hover:text-white transition-colors"
+                  className="text-text-secondary hover:text-white transition-colors"
                 >
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
@@ -127,7 +127,7 @@ export const Login: React.FC = () => {
                   e.preventDefault();
                   handleForgotPassword();
                 }}
-                className="text-xs text-[#AEB5B0] hover:text-[#F8D800] transition-colors"
+                className="text-xs text-text-secondary hover:text-acpb-yellow transition-colors"
               >
                 Esqueci minha senha
               </a>

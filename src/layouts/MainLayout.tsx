@@ -8,7 +8,7 @@ export const MainLayout: React.FC = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
-    <div className="min-h-screen bg-[#0F1210] flex text-white font-sans antialiased">
+    <div className="min-h-screen bg-surface-bg flex text-white font-sans antialiased">
       {/* Sidebar */}
       <Sidebar
         isOpen={sidebarOpen}

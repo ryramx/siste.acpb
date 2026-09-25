@@ -162,8 +162,8 @@ export const AnexosLancamento: React.FC<AnexosLancamentoProps> = ({ transacao, o
         aria-label={`Comprovantes de ${transacao.description}`}
         className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded border transition-colors cursor-pointer ${
           quantidade > 0
-            ? 'text-[#F8D800] bg-[#0F1210] border-[#222824] hover:border-[#F8D800]'
-            : 'text-[#727A74] border-transparent hover:text-white hover:border-[#222824]'
+            ? 'text-acpb-yellow bg-surface-bg border-surface-border hover:border-acpb-yellow'
+            : 'text-text-muted border-transparent hover:text-white hover:border-surface-border'
         }`}
       >
         <Paperclip className="w-3 h-3" />
@@ -172,28 +172,28 @@ export const AnexosLancamento: React.FC<AnexosLancamentoProps> = ({ transacao, o
 
       <Modal isOpen={aberto} onClose={fechar} title="Comprovantes do lançamento" maxWidth="lg">
         <div className="space-y-4">
-          <div className="text-sm text-[#AEB5B0]">
+          <div className="text-sm text-text-secondary">
             <strong className="text-white">{transacao.description}</strong> —{' '}
             {formatarMoeda(transacao.amount)} em {formatarData(transacao.date)}
           </div>
 
           {carregando ? (
-            <p className="text-sm text-[#727A74]">Carregando comprovantes...</p>
+            <p className="text-sm text-text-muted">Carregando comprovantes...</p>
           ) : anexos.length === 0 ? (
-            <p className="text-sm text-[#727A74]">
+            <p className="text-sm text-text-muted">
               Nenhum comprovante anexado. O comprovante é o que sustenta o lançamento na
               prestação de contas — vale anexar já, enquanto o arquivo está à mão.
             </p>
           ) : (
-            <ul className="divide-y divide-[#222824] border border-[#222824] rounded-lg overflow-hidden">
+            <ul className="divide-y divide-surface-border border border-surface-border rounded-lg overflow-hidden">
               {anexos.map((anexo) => (
                 <li
                   key={anexo.id}
-                  className="flex items-center justify-between gap-3 px-3 py-2 bg-[#0F1210]"
+                  className="flex items-center justify-between gap-3 px-3 py-2 bg-surface-bg"
                 >
                   <div className="min-w-0">
                     <p className="text-sm text-white truncate">{anexo.nomeOriginal}</p>
-                    <p className="text-xs text-[#727A74]">
+                    <p className="text-xs text-text-muted">
                       {formatarTamanho(anexo.tamanhoBytes)} · enviado em{' '}
                       {new Date(anexo.enviadoEm).toLocaleDateString('pt-BR')}
                     </p>
@@ -232,9 +232,9 @@ export const AnexosLancamento: React.FC<AnexosLancamentoProps> = ({ transacao, o
           )}
 
           {visualizando && (
-            <div className="border border-[#222824] rounded-lg overflow-hidden">
-              <div className="flex items-center justify-between px-3 py-2 bg-[#0F1210] border-b border-[#222824]">
-                <span className="text-xs text-[#AEB5B0] truncate">
+            <div className="border border-surface-border rounded-lg overflow-hidden">
+              <div className="flex items-center justify-between px-3 py-2 bg-surface-bg border-b border-surface-border">
+                <span className="text-xs text-text-secondary truncate">
                   {visualizando.anexo.nomeOriginal}
                 </span>
                 <Button
@@ -265,7 +265,7 @@ export const AnexosLancamento: React.FC<AnexosLancamentoProps> = ({ transacao, o
           )}
 
           {podeEditar && (
-            <div className="flex flex-col gap-2 pt-2 border-t border-[#222824]">
+            <div className="flex flex-col gap-2 pt-2 border-t border-surface-border">
               <input
                 ref={inputRef}
                 type="file"
@@ -283,7 +283,7 @@ export const AnexosLancamento: React.FC<AnexosLancamentoProps> = ({ transacao, o
                   {enviando ? 'Enviando...' : 'Anexar comprovante'}
                 </Button>
               </div>
-              <p className="text-xs text-[#727A74]">
+              <p className="text-xs text-text-muted">
                 PDF, PNG ou JPEG, até {TAMANHO_MAXIMO_MB}MB. Foto do recibo serve — o que
                 importa é dar para ler o valor e a data.
               </p>
@@ -298,12 +298,12 @@ export const AnexosLancamento: React.FC<AnexosLancamentoProps> = ({ transacao, o
         title="Remover comprovante"
       >
         <div className="space-y-4">
-          <p className="text-sm text-[#AEB5B0]">
+          <p className="text-sm text-text-secondary">
             Remover <strong className="text-white">{removendo?.nomeOriginal}</strong>? O arquivo
             é apagado do armazenamento e não há como recuperá-lo — o lançamento continua como
             está, sem o comprovante.
           </p>
-          <p className="text-xs text-[#727A74]">
+          <p className="text-xs text-text-muted">
             A remoção fica registrada na auditoria, com o nome do arquivo e quem removeu.
           </p>
           <div className="flex justify-end gap-2">

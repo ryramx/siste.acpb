@@ -45,7 +45,7 @@ export const SeletorDisponibilidade: React.FC<SeletorDisponibilidadeProps> = ({
 
   return (
     <div className="w-full flex flex-col gap-1.5">
-      <span className="text-xs font-medium text-[#AEB5B0]">Disponibilidade</span>
+      <span className="text-xs font-medium text-text-secondary">Disponibilidade</span>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
         {opcoes.map((opcao) => {
@@ -55,8 +55,8 @@ export const SeletorDisponibilidade: React.FC<SeletorDisponibilidadeProps> = ({
               key={opcao}
               className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-xs cursor-pointer transition-colors ${
                 marcada
-                  ? 'bg-[#004922]/20 border-[#004922] text-white'
-                  : 'bg-[#151917] border-[#222824] text-[#AEB5B0] hover:border-[#004922]/60'
+                  ? 'bg-acpb-green/20 border-acpb-green text-white'
+                  : 'bg-surface-input border-surface-border text-text-secondary hover:border-acpb-green/60'
               } ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
             >
               <input
@@ -64,7 +64,7 @@ export const SeletorDisponibilidade: React.FC<SeletorDisponibilidadeProps> = ({
                 checked={marcada}
                 disabled={disabled}
                 onChange={() => onChange(alternarOpcao(opcao, selecionadas))}
-                className="accent-[#004922] shrink-0"
+                className="accent-acpb-green shrink-0"
               />
               <span>{opcao}</span>
             </label>
@@ -88,20 +88,20 @@ export const SeletorDisponibilidade: React.FC<SeletorDisponibilidadeProps> = ({
           }}
           placeholder="Outra disponibilidade..."
           aria-label="Criar outra opção de disponibilidade"
-          className="flex-1 bg-[#151917] border border-[#222824] rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-[#004922] focus:ring-1 focus:ring-[#004922] transition-colors disabled:opacity-50"
+          className="flex-1 bg-surface-input border border-surface-border rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-acpb-green focus:ring-1 focus:ring-acpb-green transition-colors disabled:opacity-50"
         />
         <button
           type="button"
           onClick={adicionar}
           disabled={disabled || !nova.trim()}
           aria-label="Adicionar opção"
-          className="px-3 rounded-lg bg-[#222824] text-white hover:bg-[#2c332e] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+          className="px-3 rounded-lg bg-surface-border text-white hover:bg-surface-border-hover transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
         >
           <Plus className="w-4 h-4" />
         </button>
       </div>
 
-      <span className="text-xs text-[#727A74]">
+      <span className="text-xs text-text-muted">
         Marque quantas quiser. Uma opção criada aqui fica disponível para os outros
         voluntários.
       </span>

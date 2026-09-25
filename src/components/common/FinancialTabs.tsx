@@ -37,8 +37,8 @@ const SeletorPeriodo: React.FC = () => {
 
   return (
     <div className="flex flex-col sm:flex-row sm:items-center gap-2">
-      <span className="text-xs font-medium text-[#AEB5B0] flex items-center gap-1.5">
-        <CalendarRange className="w-4 h-4 text-[#F8D800]" />
+      <span className="text-xs font-medium text-text-secondary flex items-center gap-1.5">
+        <CalendarRange className="w-4 h-4 text-acpb-yellow" />
         Período
       </span>
       <div className="flex gap-2">
@@ -76,7 +76,7 @@ export const FinancialTabs: React.FC<{ comPeriodo?: boolean }> = ({ comPeriodo =
 
   return (
     <div className="space-y-3">
-      <div className="flex items-center gap-1 bg-[#181D1A] border border-[#222824] p-1.5 rounded-xl overflow-x-auto">
+      <div className="flex items-center gap-1 bg-surface-card border border-surface-border p-1.5 rounded-xl overflow-x-auto">
         {financialTabs
           .filter((tab) => !tab.permissao || hasPermission(tab.permissao))
           .map((tab) => {
@@ -90,8 +90,8 @@ export const FinancialTabs: React.FC<{ comPeriodo?: boolean }> = ({ comPeriodo =
                 to={`${tab.to}${sufixo}`}
                 className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
                   isActive
-                    ? 'bg-[#004922] text-white font-semibold'
-                    : 'text-[#AEB5B0] hover:text-white hover:bg-[#222824]'
+                    ? 'bg-acpb-green text-white font-semibold'
+                    : 'text-text-secondary hover:text-white hover:bg-surface-border'
                 }`}
               >
                 {tab.label}

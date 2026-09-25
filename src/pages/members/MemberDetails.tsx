@@ -20,8 +20,8 @@ function exibirSexo(valor: string): string {
 
 const LinhaOpcional: React.FC<{ rotulo: string; valor: string }> = ({ rotulo, valor }) =>
   valor ? (
-    <div className="flex justify-between py-1 border-b border-[#222824]/50 gap-4">
-      <span className="text-[#AEB5B0] shrink-0">{rotulo}</span>
+    <div className="flex justify-between py-1 border-b border-surface-border/50 gap-4">
+      <span className="text-text-secondary shrink-0">{rotulo}</span>
       <span className="text-white font-medium text-right">{valor}</span>
     </div>
   ) : null;
@@ -44,7 +44,7 @@ export const MemberDetails: React.FC = () => {
   }, [id]);
 
   if (loading) {
-    return <div className="p-8 text-center text-[#AEB5B0]">Carregando detalhes do membro...</div>;
+    return <div className="p-8 text-center text-text-secondary">Carregando detalhes do membro...</div>;
   }
 
   if (!member) {
@@ -59,7 +59,7 @@ export const MemberDetails: React.FC = () => {
   return (
     <div className="space-y-6 animate-fade-in pb-12">
       {/* Breadcrumb Navigation */}
-      <nav className="flex items-center gap-2 text-xs text-[#AEB5B0]">
+      <nav className="flex items-center gap-2 text-xs text-text-secondary">
         <Link to="/membros" className="hover:text-white transition-colors">
           Pessoas
         </Link>
@@ -67,12 +67,12 @@ export const MemberDetails: React.FC = () => {
         <Link to="/membros" className="hover:text-white transition-colors">
           Membros
         </Link>
-        <ChevronRight className="w-3.5 h-3.5 text-[#222824]" />
-        <span className="text-[#F8D800] font-semibold">{member.name}</span>
+        <ChevronRight className="w-3.5 h-3.5 text-surface-border" />
+        <span className="text-acpb-yellow font-semibold">{member.name}</span>
       </nav>
 
       {/* Header Profile Card */}
-      <div className="bg-[#181D1A] border border-[#222824] p-6 rounded-2xl flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+      <div className="bg-surface-card border border-surface-border p-6 rounded-2xl flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
         <div className="flex items-center gap-5">
           {hasPermission('edit_members') ? (
             <AvatarUpload
@@ -97,8 +97,8 @@ export const MemberDetails: React.FC = () => {
                 {member.status}
               </Badge>
             </div>
-            <p className="text-xs text-[#AEB5B0] mt-1">CPF: {exibirCPF(member.cpf)}</p>
-            <p className="text-xs text-[#F8D800] font-medium mt-0.5">
+            <p className="text-xs text-text-secondary mt-1">CPF: {exibirCPF(member.cpf)}</p>
+            <p className="text-xs text-acpb-yellow font-medium mt-0.5">
               Cargo: {member.cargoName || 'Sem cargo associado'}
             </p>
           </div>
@@ -118,14 +118,14 @@ export const MemberDetails: React.FC = () => {
       {/* Detalhes Divididos em Seções */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Informações Pessoais & Contato */}
-        <div className="bg-[#181D1A] border border-[#222824] p-6 rounded-2xl space-y-4">
-          <h3 className="text-sm font-semibold text-[#F8D800] uppercase tracking-wider border-b border-[#222824] pb-2">
+        <div className="bg-surface-card border border-surface-border p-6 rounded-2xl space-y-4">
+          <h3 className="text-sm font-semibold text-acpb-yellow uppercase tracking-wider border-b border-surface-border pb-2">
             Informações Pessoais e Contato
           </h3>
 
           <div className="space-y-3 text-sm">
-            <div className="flex justify-between py-1 border-b border-[#222824]/50">
-              <span className="text-[#AEB5B0]">Data de Nascimento</span>
+            <div className="flex justify-between py-1 border-b border-surface-border/50">
+              <span className="text-text-secondary">Data de Nascimento</span>
               <span className="text-white font-medium">{member.birthDate}</span>
             </div>
             {/* Só aparecem quando preenchidos: a maioria dos cadastros antigos não os tem,
@@ -142,20 +142,20 @@ export const MemberDetails: React.FC = () => {
               rotulo="Telefone do responsável"
               valor={exibirTelefone(member.guardianPhone)}
             />
-            <div className="flex justify-between py-1 border-b border-[#222824]/50">
-              <span className="text-[#AEB5B0]">Telefone Principal</span>
+            <div className="flex justify-between py-1 border-b border-surface-border/50">
+              <span className="text-text-secondary">Telefone Principal</span>
               <span className="text-white font-medium flex items-center gap-1.5">
-                <Phone className="w-3.5 h-3.5 text-[#F8D800]" /> {exibirTelefone(member.phone)}
+                <Phone className="w-3.5 h-3.5 text-acpb-yellow" /> {exibirTelefone(member.phone)}
               </span>
             </div>
-            <div className="flex justify-between py-1 border-b border-[#222824]/50">
-              <span className="text-[#AEB5B0]">E-mail</span>
+            <div className="flex justify-between py-1 border-b border-surface-border/50">
+              <span className="text-text-secondary">E-mail</span>
               <span className="text-white font-medium flex items-center gap-1.5">
-                <Mail className="w-3.5 h-3.5 text-[#F8D800]" /> {member.email}
+                <Mail className="w-3.5 h-3.5 text-acpb-yellow" /> {member.email}
               </span>
             </div>
-            <div className="flex justify-between py-1 border-b border-[#222824]/50">
-              <span className="text-[#AEB5B0]">Data de Entrada</span>
+            <div className="flex justify-between py-1 border-b border-surface-border/50">
+              <span className="text-text-secondary">Data de Entrada</span>
               <span className="text-white font-medium">{member.entryDate}</span>
             </div>
           </div>
@@ -163,34 +163,34 @@ export const MemberDetails: React.FC = () => {
         </div>
 
         {/* Endereço & Observações */}
-        <div className="bg-[#181D1A] border border-[#222824] p-6 rounded-2xl space-y-4">
-          <h3 className="text-sm font-semibold text-[#F8D800] uppercase tracking-wider border-b border-[#222824] pb-2">
+        <div className="bg-surface-card border border-surface-border p-6 rounded-2xl space-y-4">
+          <h3 className="text-sm font-semibold text-acpb-yellow uppercase tracking-wider border-b border-surface-border pb-2">
             Endereço e Observações
           </h3>
 
           <div className="space-y-3 text-sm">
-            <div className="flex items-start gap-2.5 text-[#AEB5B0]">
-              <MapPin className="w-4 h-4 text-[#F8D800] shrink-0 mt-0.5" />
+            <div className="flex items-start gap-2.5 text-text-secondary">
+              <MapPin className="w-4 h-4 text-acpb-yellow shrink-0 mt-0.5" />
               <div>
                 <p className="text-white font-medium">
                   {member.address}, {member.number} {member.complement ? `- ${member.complement}` : ''}
                 </p>
-                <p className="text-xs text-[#727A74]">
+                <p className="text-xs text-text-muted">
                   {[member.neighborhood, [member.city, member.state].filter(Boolean).join(' / ')]
                     .filter(Boolean)
                     .join(' - ')}
                 </p>
                 {member.cep && (
-                  <p className="text-xs text-[#727A74]">CEP: {exibirCEP(member.cep)}</p>
+                  <p className="text-xs text-text-muted">CEP: {exibirCEP(member.cep)}</p>
                 )}
               </div>
             </div>
 
-            <div className="pt-4 border-t border-[#222824]">
-              <span className="text-xs font-semibold text-[#AEB5B0] block mb-1">
+            <div className="pt-4 border-t border-surface-border">
+              <span className="text-xs font-semibold text-text-secondary block mb-1">
                 Observações Institucionais:
               </span>
-              <p className="text-xs text-white bg-[#0F1210] p-3 rounded-lg border border-[#222824]">
+              <p className="text-xs text-white bg-surface-bg p-3 rounded-lg border border-surface-border">
                 {member.notes || 'Nenhuma observação informada.'}
               </p>
             </div>

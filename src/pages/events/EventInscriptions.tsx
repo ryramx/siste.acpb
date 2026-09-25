@@ -129,13 +129,13 @@ export const EventInscriptions: React.FC = () => {
     setInscriptions((atuais) => atuais.filter((i) => i.id !== inscricao.id));
   };
 
-  if (loading) return <div className="p-8 text-center text-[#AEB5B0]">Carregando inscrições...</div>;
+  if (loading) return <div className="p-8 text-center text-text-secondary">Carregando inscrições...</div>;
 
   if (erroCarregamento) {
     return (
       <div className="p-8 text-center space-y-4">
         <p className="text-white">Não foi possível carregar as inscrições deste evento.</p>
-        <p className="text-xs text-[#AEB5B0]">{erroCarregamento}</p>
+        <p className="text-xs text-text-secondary">{erroCarregamento}</p>
         <div className="flex items-center justify-center gap-2">
           <Link to="/eventos">
             <Button variant="outline">Voltar para a agenda</Button>
@@ -152,12 +152,12 @@ export const EventInscriptions: React.FC = () => {
 
   return (
     <div className="space-y-6 animate-fade-in pb-12">
-      <nav className="flex items-center gap-2 text-xs text-[#AEB5B0]">
+      <nav className="flex items-center gap-2 text-xs text-text-secondary">
         <Link to="/eventos" className="hover:text-white transition-colors">Eventos</Link>
         <ChevronRight className="w-3.5 h-3.5" />
         <Link to={`/eventos/${event.id}`} className="hover:text-white transition-colors">{event.title}</Link>
-        <ChevronRight className="w-3.5 h-3.5 text-[#222824]" />
-        <span className="text-[#F8D800] font-semibold">Inscrições</span>
+        <ChevronRight className="w-3.5 h-3.5 text-surface-border" />
+        <span className="text-acpb-yellow font-semibold">Inscrições</span>
       </nav>
 
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -165,7 +165,7 @@ export const EventInscriptions: React.FC = () => {
           <h1 className="text-2xl font-bold text-white font-heading">
             Inscrições: {event.title}
           </h1>
-          <p className="text-sm text-[#AEB5B0]">
+          <p className="text-sm text-text-secondary">
             Controle de presenças e confirmação de participantes do evento.
           </p>
         </div>
@@ -201,10 +201,10 @@ export const EventInscriptions: React.FC = () => {
           icon={<UserPlus className="w-8 h-8" />}
         />
       ) : (
-        <div className="bg-[#181D1A] border border-[#222824] rounded-xl overflow-hidden shadow-sm">
+        <div className="bg-surface-card border border-surface-border rounded-xl overflow-hidden shadow-sm">
           <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
-            <thead className="bg-[#0F1210] border-b border-[#222824] text-[#AEB5B0] font-medium">
+            <thead className="bg-surface-bg border-b border-surface-border text-text-secondary font-medium">
               <tr>
                 <th className="py-3.5 px-4">Participante</th>
                 <th className="py-3.5 px-4">Data da Inscrição</th>
@@ -212,14 +212,14 @@ export const EventInscriptions: React.FC = () => {
                 <th className="py-3.5 px-4 text-right">Ações</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#222824]">
+            <tbody className="divide-y divide-surface-border">
               {inscriptions.map((ins) => (
-                <tr key={ins.id} className="hover:bg-[#1e2521] transition-colors">
+                <tr key={ins.id} className="hover:bg-surface-card-hover transition-colors">
                   <td className="py-3.5 px-4 font-semibold text-white">
                     <div>{ins.participantName}</div>
-                    <div className="text-xs text-[#727A74]">{exibirTelefone(ins.participantPhone)}</div>
+                    <div className="text-xs text-text-muted">{exibirTelefone(ins.participantPhone)}</div>
                   </td>
-                  <td className="py-3.5 px-4 text-[#AEB5B0] text-xs">
+                  <td className="py-3.5 px-4 text-text-secondary text-xs">
                     {new Date(ins.inscriptionDate).toLocaleDateString('pt-BR')}
                   </td>
                   <td className="py-3.5 px-4">
@@ -293,7 +293,7 @@ export const EventInscriptions: React.FC = () => {
             handleInscrever();
           }}
         >
-        <div className="flex gap-2 p-1 bg-[#0F1210] border border-[#222824] rounded-lg">
+        <div className="flex gap-2 p-1 bg-surface-bg border border-surface-border rounded-lg">
           {(
             [
               ['cadastrada', 'Pessoa cadastrada'],
@@ -308,7 +308,7 @@ export const EventInscriptions: React.FC = () => {
                 setFormError(null);
               }}
               className={`flex-1 px-3 py-2 text-xs font-semibold rounded-md transition-colors ${
-                origem === valor ? 'bg-[#F8D800] text-[#0F1210]' : 'text-[#AEB5B0] hover:text-white'
+                origem === valor ? 'bg-acpb-yellow text-surface-bg' : 'text-text-secondary hover:text-white'
               }`}
             >
               {rotulo}
@@ -329,7 +329,7 @@ export const EventInscriptions: React.FC = () => {
               ]}
             />
             {pessoaOptions.length === 0 && (
-              <p className="text-xs text-[#AEB5B0]">
+              <p className="text-xs text-text-secondary">
                 Todas as pessoas cadastradas já estão inscritas neste evento. Use a aba
                 "Visitante avulso" para registrar alguém novo.
               </p>
@@ -337,7 +337,7 @@ export const EventInscriptions: React.FC = () => {
           </>
         ) : (
           <>
-            <p className="text-xs text-[#AEB5B0]">
+            <p className="text-xs text-text-secondary">
               O visitante entra no cadastro de pessoas sem virar membro, voluntário ou
               beneficiário — só o nome é obrigatório.
             </p>

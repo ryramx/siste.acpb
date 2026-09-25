@@ -227,7 +227,7 @@ export const AcoesLancamento: React.FC<AcoesLancamentoProps> = ({ transacao, onA
               />
             </div>
 
-            <p className="text-xs text-[#727A74]">
+            <p className="text-xs text-text-muted">
               Trocar a categoria move o lançamento de um lado para o outro nos relatórios por
               categoria, inclusive em meses já prestados. A alteração fica registrada na
               auditoria, com o valor anterior.
@@ -251,7 +251,7 @@ export const AcoesLancamento: React.FC<AcoesLancamentoProps> = ({ transacao, onA
         title="Excluir lançamento"
       >
         <div className="space-y-4">
-          <p className="text-sm text-[#AEB5B0]">
+          <p className="text-sm text-text-secondary">
             Excluir <strong className="text-white">{transacao.description}</strong> de{' '}
             {formatarMoeda(transacao.amount)}? O lançamento some das telas e dos totais.
           </p>
@@ -265,7 +265,7 @@ export const AcoesLancamento: React.FC<AcoesLancamentoProps> = ({ transacao, onA
             </p>
           )}
 
-          <p className="text-xs text-[#727A74]">
+          <p className="text-xs text-text-muted">
             Se o lançamento existiu mas não se confirmou, prefira corrigir o status para
             &quot;{ehReceita ? 'A receber' : 'A pagar'}&quot;. Excluir é para o que não deveria
             ter sido lançado — digitação duplicada, por exemplo. Em qualquer caso a exclusão

@@ -177,10 +177,10 @@ export const AssetsList: React.FC = () => {
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
           <h1 className="text-2xl font-bold text-white font-heading flex items-center gap-2">
-            <Building2 className="w-6 h-6 text-[#F8D800]" />
+            <Building2 className="w-6 h-6 text-acpb-yellow" />
             Patrimônio
           </h1>
-          <p className="text-sm text-[#AEB5B0]">
+          <p className="text-sm text-text-secondary">
             Bens da associação: equipamentos, mobiliário, instrumentos e ferramentas.
           </p>
         </div>
@@ -192,17 +192,17 @@ export const AssetsList: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div className="bg-[#181D1A] border border-[#222824] border-l-4 border-l-[#004922] p-4 rounded-xl">
-          <span className="text-xs text-[#AEB5B0]">Bens listados</span>
+        <div className="bg-surface-card border border-surface-border border-l-4 border-l-acpb-green p-4 rounded-xl">
+          <span className="text-xs text-text-secondary">Bens listados</span>
           <div className="text-xl font-bold text-white mt-1">{filtrados.length}</div>
         </div>
-        <div className="bg-[#181D1A] border border-[#222824] border-l-4 border-l-[#F8D800] p-4 rounded-xl">
-          <span className="text-xs text-[#AEB5B0]">Valor de aquisição somado</span>
-          <div className="text-xl font-bold text-[#F8D800] mt-1">{formatarMoedaOuTraco(valorTotal)}</div>
+        <div className="bg-surface-card border border-surface-border border-l-4 border-l-acpb-yellow p-4 rounded-xl">
+          <span className="text-xs text-text-secondary">Valor de aquisição somado</span>
+          <div className="text-xl font-bold text-acpb-yellow mt-1">{formatarMoedaOuTraco(valorTotal)}</div>
         </div>
       </div>
 
-      <div className="bg-[#181D1A] border border-[#222824] p-4 rounded-xl flex flex-col md:flex-row gap-3">
+      <div className="bg-surface-card border border-surface-border p-4 rounded-xl flex flex-col md:flex-row gap-3">
         <div className="flex-1">
           <Input
             placeholder="Buscar por código, nome, categoria ou local..."
@@ -243,10 +243,10 @@ export const AssetsList: React.FC = () => {
           onAction={podeEditar ? abrirCriacao : undefined}
         />
       ) : (
-        <div className="bg-[#181D1A] border border-[#222824] rounded-xl overflow-hidden">
+        <div className="bg-surface-card border border-surface-border rounded-xl overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
-              <thead className="bg-[#0F1210] border-b border-[#222824] text-[#AEB5B0] font-medium">
+              <thead className="bg-surface-bg border-b border-surface-border text-text-secondary font-medium">
                 <tr>
                   <th className="py-3 px-4">Código</th>
                   <th className="py-3 px-4">Bem</th>
@@ -259,19 +259,19 @@ export const AssetsList: React.FC = () => {
                   {podeEditar && <th className="py-3 px-4 text-right">Ações</th>}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[#222824]">
+              <tbody className="divide-y divide-surface-border">
                 {filtrados.map((b) => (
-                  <tr key={b.id} className="hover:bg-[#1e2521] transition-colors">
-                    <td className="py-3 px-4 text-[#F8D800] font-mono text-xs">{b.codigo}</td>
+                  <tr key={b.id} className="hover:bg-surface-card-hover transition-colors">
+                    <td className="py-3 px-4 text-acpb-yellow font-mono text-xs">{b.codigo}</td>
                     <td className="py-3 px-4 text-white">{b.nome}</td>
-                    <td className="py-3 px-4 text-[#AEB5B0] hidden md:table-cell">{b.categoria}</td>
-                    <td className="py-3 px-4 text-[#AEB5B0] hidden lg:table-cell">
+                    <td className="py-3 px-4 text-text-secondary hidden md:table-cell">{b.categoria}</td>
+                    <td className="py-3 px-4 text-text-secondary hidden lg:table-cell">
                       {b.local ?? '—'}
                     </td>
-                    <td className="py-3 px-4 text-[#AEB5B0] hidden lg:table-cell">
+                    <td className="py-3 px-4 text-text-secondary hidden lg:table-cell">
                       {b.responsavelNome ?? '—'}
                     </td>
-                    <td className="py-3 px-4 text-[#AEB5B0] hidden sm:table-cell">
+                    <td className="py-3 px-4 text-text-secondary hidden sm:table-cell">
                       {formatarData(b.dataAquisicao)}
                     </td>
                     <td className="py-3 px-4 text-white">{formatarMoedaOuTraco(b.valorAquisicao)}</td>
@@ -405,11 +405,11 @@ export const AssetsList: React.FC = () => {
         title="Excluir bem do patrimônio"
       >
         <div className="space-y-4">
-          <p className="text-sm text-[#AEB5B0]">
+          <p className="text-sm text-text-secondary">
             Excluir <strong className="text-white">{paraExcluir?.nome}</strong> (
             {paraExcluir?.codigo})? Esta ação não pode ser desfeita.
           </p>
-          <p className="text-xs text-[#727A74]">
+          <p className="text-xs text-text-muted">
             Se o bem apenas saiu de uso, prefira alterar o status para "Baixado" — assim o histórico
             é preservado.
           </p>

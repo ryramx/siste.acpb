@@ -21,17 +21,17 @@ export const StatCard: React.FC<StatCardProps> = ({
   accentColor = 'green'
 }) => {
   const accentBorder = {
-    green: 'border-l-4 border-l-[#004922]',
-    yellow: 'border-l-4 border-l-[#F8D800]',
+    green: 'border-l-4 border-l-acpb-green',
+    yellow: 'border-l-4 border-l-acpb-yellow',
     blue: 'border-l-4 border-l-blue-600',
-    neutral: 'border-l-4 border-l-[#222824]'
+    neutral: 'border-l-4 border-l-surface-border'
   };
 
   return (
-    <div className={`bg-[#181D1A] border border-[#222824] rounded-xl p-5 shadow-sm hover:border-[#004922]/40 transition-colors ${accentBorder[accentColor]}`}>
+    <div className={`bg-surface-card border border-surface-border rounded-xl p-5 shadow-sm hover:border-acpb-green/40 transition-colors ${accentBorder[accentColor]}`}>
       <div className="flex items-center justify-between">
-        <span className="text-xs font-medium uppercase tracking-wider text-[#AEB5B0]">{title}</span>
-        <div className="p-2.5 bg-[#0F1210] rounded-lg text-[#F8D800] border border-[#222824]">
+        <span className="text-xs font-medium uppercase tracking-wider text-text-secondary">{title}</span>
+        <div className="p-2.5 bg-surface-bg rounded-lg text-acpb-yellow border border-surface-border">
           {icon}
         </div>
       </div>
@@ -40,11 +40,11 @@ export const StatCard: React.FC<StatCardProps> = ({
         {(subtitle || trend) && (
           <div className="mt-2 flex items-center gap-2 text-xs">
             {trend && (
-              <span className={trend.isPositive ? 'text-[#40C075]' : 'text-red-400'}>
+              <span className={trend.isPositive ? 'text-valor-positivo' : 'text-red-400'}>
                 {trend.isPositive ? '↑' : '↓'} {trend.value}
               </span>
             )}
-            {subtitle && <span className="text-[#727A74]">{subtitle}</span>}
+            {subtitle && <span className="text-text-muted">{subtitle}</span>}
           </div>
         )}
       </div>

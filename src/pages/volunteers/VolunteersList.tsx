@@ -61,10 +61,10 @@ export const VolunteersList: React.FC = () => {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-white font-heading flex items-center gap-2">
-            <Users className="w-6 h-6 text-[#F8D800]" />
+            <Users className="w-6 h-6 text-acpb-yellow" />
             Voluntários da ACPB
           </h1>
-          <p className="text-sm text-[#AEB5B0]">
+          <p className="text-sm text-text-secondary">
             Encontre voluntários por habilidades, área de atuação e dias disponíveis.
           </p>
         </div>
@@ -95,7 +95,7 @@ export const VolunteersList: React.FC = () => {
       />
 
       {/* Filtros e Busca */}
-      <div className="bg-[#181D1A] border border-[#222824] p-4 rounded-xl flex flex-col md:flex-row gap-4 items-center justify-between">
+      <div className="bg-surface-card border border-surface-border p-4 rounded-xl flex flex-col md:flex-row gap-4 items-center justify-between">
         <div className="w-full md:w-80">
           <Input
             placeholder="Buscar por nome ou habilidade (ex: Pedagogia)..."
@@ -142,7 +142,7 @@ export const VolunteersList: React.FC = () => {
           {filteredVolunteers.map((v) => (
             <div
               key={v.id}
-              className="bg-[#181D1A] border border-[#222824] rounded-2xl p-5 hover:border-[#004922]/60 transition-all flex flex-col justify-between"
+              className="bg-surface-card border border-surface-border rounded-2xl p-5 hover:border-acpb-green/60 transition-all flex flex-col justify-between"
             >
               <div>
                 <div className="flex items-start justify-between gap-3 mb-4">
@@ -150,7 +150,7 @@ export const VolunteersList: React.FC = () => {
                     <Avatar pessoaId={v.pessoaId} nome={v.name} temFoto={v.temFoto} size="lg" />
                     <div>
                       <h3 className="text-base font-bold text-white font-heading">{v.name}</h3>
-                      <span className="text-xs text-[#F8D800] font-medium">{v.area}</span>
+                      <span className="text-xs text-acpb-yellow font-medium">{v.area}</span>
                     </div>
                   </div>
                   <Badge variant={v.status === 'ATIVO' ? 'success' : 'neutral'}>{v.status}</Badge>
@@ -158,7 +158,7 @@ export const VolunteersList: React.FC = () => {
 
                 {/* Habilidades Badges */}
                 <div className="mb-4">
-                  <span className="text-[11px] text-[#727A74] uppercase tracking-wider font-semibold block mb-1.5">
+                  <span className="text-[11px] text-text-muted uppercase tracking-wider font-semibold block mb-1.5">
                     Habilidades & Competências:
                   </span>
                   <div className="flex flex-wrap gap-1">
@@ -166,7 +166,7 @@ export const VolunteersList: React.FC = () => {
                       v.skills.map((s, idx) => (
                         <span
                           key={idx}
-                          className="bg-[#0F1210] border border-[#222824] text-xs text-[#AEB5B0] px-2 py-0.5 rounded-md"
+                          className="bg-surface-bg border border-surface-border text-xs text-text-secondary px-2 py-0.5 rounded-md"
                         >
                           {s}
                         </span>
@@ -174,24 +174,24 @@ export const VolunteersList: React.FC = () => {
                     ) : (
                       // Sem isto o rotulo "Habilidades" ficava sozinho, colado na caixa de
                       // disponibilidade logo abaixo, e parecia que o relogio era dali.
-                      <span className="text-xs text-[#727A74] italic">Nenhuma informada</span>
+                      <span className="text-xs text-text-muted italic">Nenhuma informada</span>
                     )}
                   </div>
                 </div>
 
                 {/* Disponibilidade */}
-                <div className="space-y-1.5 text-xs text-[#AEB5B0] bg-[#0F1210] p-3 rounded-xl border border-[#222824] mb-4">
+                <div className="space-y-1.5 text-xs text-text-secondary bg-surface-bg p-3 rounded-xl border border-surface-border mb-4">
                   <div className="flex items-center gap-1.5">
-                    <Clock className="w-3.5 h-3.5 text-[#F8D800] shrink-0" />
+                    <Clock className="w-3.5 h-3.5 text-acpb-yellow shrink-0" />
                     <span>
-                      <span className="text-[#727A74]">Disponibilidade: </span>
+                      <span className="text-text-muted">Disponibilidade: </span>
                       {v.availability}
                     </span>
                   </div>
                 </div>
               </div>
 
-              <div className="flex items-center justify-end gap-2 pt-3 border-t border-[#222824]">
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-surface-border">
                 {hasPermission('update_volunteers') && (
                   <Button
                     variant="outline"
@@ -210,7 +210,7 @@ export const VolunteersList: React.FC = () => {
                     target={opcao.href.startsWith('http') ? '_blank' : undefined}
                     rel="noopener noreferrer"
                     aria-label={`${opcao.rotulo} de ${v.name}`}
-                    className="inline-flex items-center justify-center font-medium rounded-lg transition-all duration-200 border border-[#222824] bg-[#181D1A] hover:bg-[#222824] text-white px-3 py-1.5 text-xs"
+                    className="inline-flex items-center justify-center font-medium rounded-lg transition-all duration-200 border border-surface-border bg-surface-card hover:bg-surface-border text-white px-3 py-1.5 text-xs"
                   >
                     {opcao.rotulo}
                   </a>

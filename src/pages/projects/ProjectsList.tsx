@@ -61,10 +61,10 @@ export const ProjectsList: React.FC = () => {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-white font-heading flex items-center gap-2">
-            <FolderKanban className="w-6 h-6 text-[#004922]" />
+            <FolderKanban className="w-6 h-6 text-acpb-green-fg" />
             Projetos Sociais e Institucionais
           </h1>
-          <p className="text-sm text-[#AEB5B0]">
+          <p className="text-sm text-text-secondary">
             Centralização de iniciativas, voluntários, beneficiários e custos associados.
           </p>
         </div>
@@ -99,7 +99,7 @@ export const ProjectsList: React.FC = () => {
           {projects.map((p) => (
             <div
               key={p.id}
-              className="bg-[#181D1A] border border-[#222824] rounded-2xl p-6 hover:border-[#004922]/60 transition-all flex flex-col justify-between"
+              className="bg-surface-card border border-surface-border rounded-2xl p-6 hover:border-acpb-green/60 transition-all flex flex-col justify-between"
             >
               <div>
                 <div className="flex items-start justify-between gap-3 mb-3">
@@ -109,32 +109,32 @@ export const ProjectsList: React.FC = () => {
                   </Badge>
                 </div>
 
-                <p className="text-xs text-[#AEB5B0] line-clamp-3 mb-6">{p.description}</p>
+                <p className="text-xs text-text-secondary line-clamp-3 mb-6">{p.description}</p>
 
                 {/* Estatísticas de Relação */}
-                <div className="grid grid-cols-2 gap-3 mb-6 bg-[#0F1210] p-3 rounded-xl border border-[#222824]">
+                <div className="grid grid-cols-2 gap-3 mb-6 bg-surface-bg p-3 rounded-xl border border-surface-border">
                   <div className="flex items-center gap-2">
-                    <Calendar className="w-4 h-4 text-[#F8D800]" />
+                    <Calendar className="w-4 h-4 text-acpb-yellow" />
                     <div>
                       <span className="text-sm font-bold text-white block">{p.eventsCount}</span>
-                      <span className="text-[10px] text-[#727A74]">Eventos</span>
+                      <span className="text-[10px] text-text-muted">Eventos</span>
                     </div>
                   </div>
 
                   <div className="flex items-center gap-2">
-                    <DollarSign className="w-4 h-4 text-[#004922]" />
+                    <DollarSign className="w-4 h-4 text-acpb-green-fg" />
                     <div>
                       <span className="text-sm font-bold text-white block">
                         {formatarMoeda(p.totalExpenses)}
                       </span>
-                      <span className="text-[10px] text-[#727A74]">Despesas</span>
+                      <span className="text-[10px] text-text-muted">Despesas</span>
                     </div>
                   </div>
                 </div>
               </div>
 
-              <div className="pt-4 border-t border-[#222824] flex items-center justify-between">
-                <span className="text-xs text-[#AEB5B0]">
+              <div className="pt-4 border-t border-surface-border flex items-center justify-between">
+                <span className="text-xs text-text-secondary">
                   Resp: <strong className="text-white">{p.responsibleName ?? 'Não definido'}</strong>
                 </span>
 
@@ -162,12 +162,12 @@ export const ProjectsList: React.FC = () => {
             required
           />
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-medium text-[#AEB5B0]">Descrição do Projeto</label>
+            <label className="text-xs font-medium text-text-secondary">Descrição do Projeto</label>
             <textarea
               rows={3}
               value={newProject.description}
               onChange={(e) => setNewProject({ ...newProject, description: e.target.value })}
-              className="w-full bg-[#151917] border border-[#222824] rounded-lg p-3 text-sm text-white focus:outline-none"
+              className="w-full bg-surface-input border border-surface-border rounded-lg p-3 text-sm text-white focus:outline-none"
               required
             />
           </div>

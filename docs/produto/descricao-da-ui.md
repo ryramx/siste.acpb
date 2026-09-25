@@ -29,6 +29,82 @@ O sistema será utilizado principalmente por pessoas responsáveis pela gestão 
 
 ---
 
+# 1.1 Paleta e tokens de cor
+
+> Esta seção descreve o que está **implementado**. A fonte da verdade é o bloco `@theme` de
+> [`src/index.css`](../../src/index.css); aqui ficam o papel de cada cor e os números que
+> justificam os valores. Componente nenhum deve escrever cor em hexadecimal: use o token, e
+> acrescente um novo ao `@theme` quando faltar.
+
+O tema é escuro, com duas superfícies (fundo e cartão), o verde institucional da associação e o
+amarelo como cor de destaque.
+
+| Token | Valor | Papel |
+| --- | --- | --- |
+| `surface-bg` | `#0F1210` | Fundo da aplicação |
+| `surface-card` | `#181D1A` | Cartões, modais, cabeçalho de tabela |
+| `surface-card-hover` | `#1E2521` | Linha de tabela sob o cursor |
+| `surface-border` | `#222824` | Bordas e divisores |
+| `surface-border-hover` | `#2C332E` | Realce de borda/superfície no hover |
+| `surface-input` | `#151917` | Fundo de campo de formulário |
+| `acpb-green` | `#004922` | Marca. **Preenchimento**: botão primário, borda, faixa |
+| `acpb-green-hover` / `acpb-green-dark` | `#00632E` / `#003318` | Estados do botão primário |
+| `acpb-green-fg` | `#2E9E5B` | Marca em **primeiro plano**: ícone e texto sobre o escuro |
+| `acpb-yellow` | `#F8D800` | Destaque, ícone de título, botão secundário |
+| `acpb-yellow-hover` / `acpb-yellow-dark` | `#E0C300` / `#B8A000` | Estados do botão secundário |
+| `valor-positivo` | `#40C075` | Dinheiro que entra, nas telas financeiras |
+| `text-primary` | `#FFFFFF` | Texto principal |
+| `text-secondary` | `#AEB5B0` | Texto de apoio, rótulos, células secundárias |
+| `text-muted` | `#8A928B` | Textos pequenos explicativos, placeholders |
+
+## Contraste medido
+
+Os valores foram calculados pela fórmula de contraste da WCAG 2.1 contra as duas superfícies do
+tema. O piso adotado é **4,5:1**, que é o exigido para texto pequeno — mais rígido do que os 3:1
+que bastariam para ícones, para que a mesma cor possa ser usada nos dois casos sem recalcular.
+
+| Cor | Sobre `surface-card` | Sobre `surface-bg` |
+| --- | --- | --- |
+| `text-primary` | 17,08:1 | 18,85:1 |
+| `acpb-yellow` | 12,05:1 | 13,29:1 |
+| `text-secondary` | 8,16:1 | 9,01:1 |
+| `valor-positivo` | 7,33:1 | 8,09:1 |
+| `text-muted` | 5,34:1 | 5,89:1 |
+| `acpb-green-fg` | 5,01:1 | 5,53:1 |
+| `text-primary` sobre `acpb-green` (botão) | 10,63:1 | — |
+
+## Duas correções, e o motivo de cada uma
+
+**O verde institucional não serve como primeiro plano.** `#004922` sobre o fundo do sistema dá
+**1,77:1** — um ícone desenhado com ele praticamente desaparece. Era o que acontecia nos títulos
+de Membros, Projetos e Beneficiários, no indicador do dashboard e no ícone de sucesso dos avisos.
+O mesmo verde é ótimo como **fundo** de botão com texto branco (10,63:1), que é o uso para o qual
+ele foi escolhido. Daí a separação em dois tokens: `acpb-green` preenche, `acpb-green-fg`
+escreve.
+
+**O cinza auxiliar estava abaixo do piso.** `#727A74` dava **3,86:1** sobre o cartão, e é
+justamente a cor dos textos pequenos que explicam o que cada tela faz — quem mais precisa deles
+é quem está usando o sistema pela primeira vez. Clareado para `#8A928B`, chega a 5,34:1 mantendo
+a hierarquia visual em relação ao `text-secondary`.
+
+## Por que tokens, e não hexadecimal nos componentes
+
+O `@theme` já existia desde o início, mas os componentes escreviam a cor direto na classe
+(`text-[#AEB5B0]`) — 855 ocorrências. O efeito prático era que clarear um cinza deixava de ser
+uma linha e virava 53 edições espalhadas, com risco de esquecer alguma e produzir duas variações
+do mesmo cinza na mesma tela.
+
+A migração foi conferida comparando as cores presentes no CSS **gerado pelo build** antes e
+depois: a única diferença é a entrada das duas cores corrigidas acima. Nenhuma tela mudou de
+aparência sem intenção.
+
+Duas exceções continuam em hexadecimal, com motivo: as cores de fundo do avatar sem foto
+(`Avatar.tsx`), que são escolhidas em JavaScript a partir do nome da pessoa e por isso não podem
+ser classes utilitárias; e o branco do recorte de imagem em canvas (`utils/imagem.ts`), que é
+argumento de API do navegador, não estilo.
+
+---
+
 # 2. Estrutura geral da aplicação
 
 Após o login, o sistema deverá apresentar uma estrutura composta por:

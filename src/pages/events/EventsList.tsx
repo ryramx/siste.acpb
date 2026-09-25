@@ -143,8 +143,8 @@ export const EventsList: React.FC = () => {
     const hojeStr = formatarDataLocal(new Date());
 
     return (
-      <div className="bg-[#181D1A] border border-[#222824] rounded-2xl p-6 space-y-4">
-        <div className="flex items-center justify-between border-b border-[#222824] pb-4">
+      <div className="bg-surface-card border border-surface-border rounded-2xl p-6 space-y-4">
+        <div className="flex items-center justify-between border-b border-surface-border pb-4">
           <div className="flex items-center gap-2">
             <h2 className="text-lg font-bold text-white font-heading">
               {NOMES_MES[mes]} {ano}
@@ -159,7 +159,7 @@ export const EventsList: React.FC = () => {
 
         <div className="overflow-x-auto pb-2 -mx-2 px-2 sm:mx-0 sm:px-0">
           <div className="min-w-[600px]">
-            <div className="grid grid-cols-7 gap-2 text-center text-xs font-semibold text-[#AEB5B0] mb-2">
+            <div className="grid grid-cols-7 gap-2 text-center text-xs font-semibold text-text-secondary mb-2">
               {DIAS_SEMANA.map((d) => <div key={d}>{d}</div>)}
             </div>
             <div className="grid grid-cols-7 gap-2">
@@ -171,11 +171,11 @@ export const EventsList: React.FC = () => {
                 return (
                   <div
                     key={dataStr}
-                    className={`min-h-[90px] bg-[#0F1210] border rounded-xl p-2 flex flex-col justify-between hover:border-[#004922] transition-colors ${
-                      matchedEvents.length > 0 ? 'bg-[#004922]/10 border-[#004922]/40' : 'border-[#222824]'
-                    } ${ehHoje ? 'ring-1 ring-[#F8D800]' : ''}`}
+                    className={`min-h-[90px] bg-surface-bg border rounded-xl p-2 flex flex-col justify-between hover:border-acpb-green transition-colors ${
+                      matchedEvents.length > 0 ? 'bg-acpb-green/10 border-acpb-green/40' : 'border-surface-border'
+                    } ${ehHoje ? 'ring-1 ring-acpb-yellow' : ''}`}
                   >
-                    <span className={`text-xs font-bold ${matchedEvents.length > 0 ? 'text-[#F8D800]' : 'text-[#727A74]'}`}>
+                    <span className={`text-xs font-bold ${matchedEvents.length > 0 ? 'text-acpb-yellow' : 'text-text-muted'}`}>
                       {dia.getDate()}
                     </span>
                     <div className="space-y-1 mt-1">
@@ -183,7 +183,7 @@ export const EventsList: React.FC = () => {
                         <div
                           key={evt.id}
                           onClick={() => navigate(`/eventos/${evt.id}`)}
-                          className="bg-[#004922] text-white p-1 rounded text-[10px] font-semibold truncate cursor-pointer hover:bg-[#00632e]"
+                          className="bg-acpb-green text-white p-1 rounded text-[10px] font-semibold truncate cursor-pointer hover:bg-acpb-green-hover"
                           title={evt.title}
                         >
                           {evt.time ?? ''} {evt.title}
@@ -210,8 +210,8 @@ export const EventsList: React.FC = () => {
     const hojeStr = formatarDataLocal(new Date());
 
     return (
-      <div className="bg-[#181D1A] border border-[#222824] rounded-2xl p-6 space-y-4">
-        <div className="flex items-center justify-between border-b border-[#222824] pb-4">
+      <div className="bg-surface-card border border-surface-border rounded-2xl p-6 space-y-4">
+        <div className="flex items-center justify-between border-b border-surface-border pb-4">
           <h2 className="text-lg font-bold text-white font-heading">
             Semana de {dias[0].getDate()}/{dias[0].getMonth() + 1} a {dias[6].getDate()}/{dias[6].getMonth() + 1}
           </h2>
@@ -227,8 +227,8 @@ export const EventsList: React.FC = () => {
             const matchedEvents = eventosPorData.get(dataStr) ?? [];
             const ehHoje = dataStr === hojeStr;
             return (
-              <div key={dataStr} className={`bg-[#0F1210] border rounded-xl p-2 min-h-[120px] ${ehHoje ? 'ring-1 ring-[#F8D800]' : 'border-[#222824]'}`}>
-                <div className="text-[10px] font-semibold text-[#AEB5B0] mb-1">
+              <div key={dataStr} className={`bg-surface-bg border rounded-xl p-2 min-h-[120px] ${ehHoje ? 'ring-1 ring-acpb-yellow' : 'border-surface-border'}`}>
+                <div className="text-[10px] font-semibold text-text-secondary mb-1">
                   {DIAS_SEMANA[dia.getDay()]} {dia.getDate()}
                 </div>
                 <div className="space-y-1">
@@ -236,7 +236,7 @@ export const EventsList: React.FC = () => {
                     <div
                       key={evt.id}
                       onClick={() => navigate(`/eventos/${evt.id}`)}
-                      className="bg-[#004922] text-white p-1 rounded text-[10px] font-semibold truncate cursor-pointer hover:bg-[#00632e]"
+                      className="bg-acpb-green text-white p-1 rounded text-[10px] font-semibold truncate cursor-pointer hover:bg-acpb-green-hover"
                       title={evt.title}
                     >
                       {evt.time ?? ''} {evt.title}
@@ -255,8 +255,8 @@ export const EventsList: React.FC = () => {
     const dataStr = formatarDataLocal(dataReferencia);
     const matchedEvents = eventosPorData.get(dataStr) ?? [];
     return (
-      <div className="bg-[#181D1A] border border-[#222824] rounded-2xl p-6 space-y-4">
-        <div className="flex items-center justify-between border-b border-[#222824] pb-4">
+      <div className="bg-surface-card border border-surface-border rounded-2xl p-6 space-y-4">
+        <div className="flex items-center justify-between border-b border-surface-border pb-4">
           <h2 className="text-lg font-bold text-white font-heading">
             {DIAS_SEMANA[dataReferencia.getDay()]}, {dataReferencia.getDate()} de {NOMES_MES[dataReferencia.getMonth()]}
           </h2>
@@ -267,20 +267,20 @@ export const EventsList: React.FC = () => {
           </div>
         </div>
         {matchedEvents.length === 0 ? (
-          <p className="text-xs text-[#727A74] text-center py-8">Nenhum evento neste dia.</p>
+          <p className="text-xs text-text-muted text-center py-8">Nenhum evento neste dia.</p>
         ) : (
           <div className="space-y-3">
             {matchedEvents.map((evt) => (
               <div
                 key={evt.id}
                 onClick={() => navigate(`/eventos/${evt.id}`)}
-                className="bg-[#0F1210] border border-[#222824] p-4 rounded-xl flex items-center justify-between hover:border-[#004922]/50 transition-colors cursor-pointer"
+                className="bg-surface-bg border border-surface-border p-4 rounded-xl flex items-center justify-between hover:border-acpb-green/50 transition-colors cursor-pointer"
               >
                 <div>
                   <h3 className="text-sm font-bold text-white">{evt.title}</h3>
-                  <div className="flex items-center gap-3 text-xs text-[#AEB5B0] mt-1">
-                    <span className="flex items-center gap-1"><Clock className="w-3.5 h-3.5 text-[#F8D800]" /> {evt.time ?? 'Sem horário'}</span>
-                    <span className="flex items-center gap-1"><MapPin className="w-3.5 h-3.5 text-[#F8D800]" /> {evt.location}</span>
+                  <div className="flex items-center gap-3 text-xs text-text-secondary mt-1">
+                    <span className="flex items-center gap-1"><Clock className="w-3.5 h-3.5 text-acpb-yellow" /> {evt.time ?? 'Sem horário'}</span>
+                    <span className="flex items-center gap-1"><MapPin className="w-3.5 h-3.5 text-acpb-yellow" /> {evt.location}</span>
                   </div>
                 </div>
                 <Badge variant="success">{evt.status}</Badge>
@@ -297,19 +297,19 @@ export const EventsList: React.FC = () => {
       {events.map((evt) => (
         <div
           key={evt.id}
-          className="bg-[#181D1A] border border-[#222824] p-5 rounded-2xl flex items-center justify-between gap-4 hover:border-[#004922]/50 transition-colors"
+          className="bg-surface-card border border-surface-border p-5 rounded-2xl flex items-center justify-between gap-4 hover:border-acpb-green/50 transition-colors"
         >
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-xl bg-[#004922]/30 border border-[#004922] flex flex-col items-center justify-center text-white shrink-0">
+            <div className="w-12 h-12 rounded-xl bg-acpb-green/30 border border-acpb-green flex flex-col items-center justify-center text-white shrink-0">
               <span className="text-[10px] font-bold uppercase">{NOMES_MES[Number(evt.date.split('-')[1]) - 1]?.slice(0, 3)}</span>
-              <span className="text-sm font-bold text-[#F8D800]">{evt.date.split('-')[2]}</span>
+              <span className="text-sm font-bold text-acpb-yellow">{evt.date.split('-')[2]}</span>
             </div>
 
             <div>
               <h3 className="text-base font-bold text-white font-heading">{evt.title}</h3>
-              <div className="flex items-center gap-4 text-xs text-[#AEB5B0] mt-1">
-                <span className="flex items-center gap-1"><Clock className="w-3.5 h-3.5 text-[#F8D800]" /> {evt.time ?? 'Sem horário'}</span>
-                <span className="flex items-center gap-1"><MapPin className="w-3.5 h-3.5 text-[#F8D800]" /> {evt.location}</span>
+              <div className="flex items-center gap-4 text-xs text-text-secondary mt-1">
+                <span className="flex items-center gap-1"><Clock className="w-3.5 h-3.5 text-acpb-yellow" /> {evt.time ?? 'Sem horário'}</span>
+                <span className="flex items-center gap-1"><MapPin className="w-3.5 h-3.5 text-acpb-yellow" /> {evt.location}</span>
                 <span className="flex items-center gap-1"><Users className="w-3.5 h-3.5" /> {evt.filledSlots}{evt.maxSlots !== null ? `/${evt.maxSlots}` : ''} vagas</span>
               </div>
             </div>
@@ -344,16 +344,16 @@ export const EventsList: React.FC = () => {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-white font-heading flex items-center gap-2">
-            <CalendarDays className="w-6 h-6 text-[#F8D800]" />
+            <CalendarDays className="w-6 h-6 text-acpb-yellow" />
             Agenda e Eventos ACPB
           </h1>
-          <p className="text-sm text-[#AEB5B0]">
+          <p className="text-sm text-text-secondary">
             Calendário de atividades, mutirões, reuniões e gestão de inscrições.
           </p>
         </div>
 
         <div className="flex items-center gap-3">
-          <div className="flex bg-[#0F1210] p-1 border border-[#222824] rounded-lg overflow-x-auto">
+          <div className="flex bg-surface-bg p-1 border border-surface-border rounded-lg overflow-x-auto">
             {([
               ['mes', 'Mês'],
               ['semana', 'Semana'],
@@ -364,7 +364,7 @@ export const EventsList: React.FC = () => {
                 key={modo}
                 onClick={() => setViewMode(modo)}
                 className={`px-3 py-1 text-xs font-medium rounded whitespace-nowrap ${
-                  viewMode === modo ? 'bg-[#004922] text-white' : 'text-[#AEB5B0]'
+                  viewMode === modo ? 'bg-acpb-green text-white' : 'text-text-secondary'
                 }`}
               >
                 {label}
@@ -385,7 +385,7 @@ export const EventsList: React.FC = () => {
       </div>
 
       {loading ? (
-        <div className="h-64 bg-[#181D1A] rounded-2xl animate-pulse" />
+        <div className="h-64 bg-surface-card rounded-2xl animate-pulse" />
       ) : viewMode === 'mes' ? (
         renderMes()
       ) : viewMode === 'semana' ? (
@@ -414,7 +414,7 @@ export const EventsList: React.FC = () => {
         title="Excluir evento"
       >
         <div className="space-y-4">
-          <p className="text-sm text-[#AEB5B0]">
+          <p className="text-sm text-text-secondary">
             Excluir <strong className="text-white">{paraExcluir?.title}</strong> de{' '}
             {paraExcluir?.date}? Esta ação não pode ser desfeita.
           </p>

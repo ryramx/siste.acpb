@@ -4,19 +4,33 @@
   --color-acpb-green: #004922;
   --color-acpb-green-hover: #00632e;
   --color-acpb-green-dark: #003318;
+  /* Verde institucional legível SOBRE fundo escuro. O #004922 funciona como fundo de botão com
+     texto branco (10,63:1), mas como cor de traço sobre o fundo do sistema dá 1,77:1 — o ícone
+     some. Este dá 5,01:1 sobre o cartão. Use este para ícone e texto; o outro para preenchimento. */
+  --color-acpb-green-fg: #2E9E5B;
   --color-acpb-yellow: #F8D800;
   --color-acpb-yellow-hover: #e0c300;
   --color-acpb-yellow-dark: #b8a000;
+
+  /* Dinheiro que entra. Fica fora da família do verde institucional de propósito: um é marca,
+     o outro é sinal de valor, e confundi-los faria o saldo mudar de cor junto com o tema. */
+  --color-valor-positivo: #40C075;
 
   --color-surface-bg: #0F1210;
   --color-surface-card: #181D1A;
   --color-surface-card-hover: #1e2521;
   --color-surface-border: #222824;
   --color-surface-input: #151917;
+  /* Realce da borda/superfície no hover. Um tom acima de surface-border — sem ele, o botão de
+     "adicionar" do seletor de disponibilidade ficava sem resposta visual ao passar o mouse. */
+  --color-surface-border-hover: #2C332E;
 
   --color-text-primary: #FFFFFF;
   --color-text-secondary: #AEB5B0;
-  --color-text-muted: #727A74;
+  /* Clareado de #727A74 para passar em AA: o valor antigo dava 3,86:1 sobre a superfície de
+     cartão, e este cinza é usado justamente nos textos pequenos de apoio. Agora 5,34:1.
+     Ver a seção de paleta em docs/produto/descricao-da-ui.md. */
+  --color-text-muted: #8A928B;
 
   --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
   --font-heading: 'Outfit', 'Inter', system-ui, sans-serif;
@@ -31,14 +45,14 @@
   height: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: #0F1210;
+  background: var(--color-surface-bg);
 }
 ::-webkit-scrollbar-thumb {
-  background: #222824;
+  background: var(--color-surface-border);
   border-radius: 3px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #004922;
+  background: var(--color-acpb-green);
 }
 
 /* Animations */
@@ -96,7 +110,7 @@ h1, h2, h3, h4, h5, h6 {
 
 /* Selection */
 ::selection {
-  background: #004922;
+  background: var(--color-acpb-green);
   color: #F8D800;
 }
 

@@ -79,16 +79,16 @@ export const MinhaContaPage: React.FC = () => {
     <div className="space-y-6 animate-fade-in pb-12 max-w-3xl">
       <div>
         <h1 className="text-2xl font-bold text-white font-heading flex items-center gap-2">
-          <ShieldCheck className="w-6 h-6 text-[#F8D800]" />
+          <ShieldCheck className="w-6 h-6 text-acpb-yellow" />
           Minha conta
         </h1>
-        <p className="text-sm text-[#AEB5B0]">
+        <p className="text-sm text-text-secondary">
           Seus dados de acesso ao sistema. Alterações no cadastro pessoal (nome, CPF, endereço)
           são feitas na tela de Pessoas, por quem tem permissão para isso.
         </p>
       </div>
 
-      <div className="bg-[#181D1A] border border-[#222824] rounded-xl p-5 flex flex-col sm:flex-row gap-5 items-start">
+      <div className="bg-surface-card border border-surface-border rounded-xl p-5 flex flex-col sm:flex-row gap-5 items-start">
         <AvatarUpload
           pessoaId={user.pessoaId}
           nome={user.name}
@@ -98,18 +98,18 @@ export const MinhaContaPage: React.FC = () => {
         />
         <div className="space-y-2 min-w-0">
           <div>
-            <p className="text-xs text-[#727A74]">Nome</p>
+            <p className="text-xs text-text-muted">Nome</p>
             <p className="text-white font-medium">{user.name}</p>
           </div>
           <div>
-            <p className="text-xs text-[#727A74]">E-mail de acesso</p>
+            <p className="text-xs text-text-muted">E-mail de acesso</p>
             <p className="text-white break-all">{user.email}</p>
           </div>
           <div>
-            <p className="text-xs text-[#727A74]">Perfis</p>
+            <p className="text-xs text-text-muted">Perfis</p>
             <div className="flex flex-wrap gap-1 mt-1">
               {user.perfis.length === 0 ? (
-                <span className="text-sm text-[#AEB5B0]">Sem perfil atribuído</span>
+                <span className="text-sm text-text-secondary">Sem perfil atribuído</span>
               ) : (
                 user.perfis.map((perfil) => (
                   <Badge key={perfil} variant="success">
@@ -122,13 +122,13 @@ export const MinhaContaPage: React.FC = () => {
         </div>
       </div>
 
-      <form onSubmit={trocarSenha} className="bg-[#181D1A] border border-[#222824] rounded-xl p-5 space-y-4">
+      <form onSubmit={trocarSenha} className="bg-surface-card border border-surface-border rounded-xl p-5 space-y-4">
         <div>
           <h2 className="text-lg font-semibold text-white font-heading flex items-center gap-2">
-            <KeyRound className="w-5 h-5 text-[#F8D800]" />
+            <KeyRound className="w-5 h-5 text-acpb-yellow" />
             Alterar senha
           </h2>
-          <p className="text-sm text-[#AEB5B0]">
+          <p className="text-sm text-text-secondary">
             Pedimos a senha atual para garantir que é você — e não alguém que pegou o
             computador ou o celular já logado.
           </p>
@@ -162,7 +162,7 @@ export const MinhaContaPage: React.FC = () => {
           />
         </div>
 
-        <p className="text-xs text-[#727A74]">
+        <p className="text-xs text-text-muted">
           Pelo menos {MINIMO_DA_SENHA} caracteres. Trocar a senha não desconecta esta sessão nem
           as outras já abertas — se a preocupação é um acesso indevido em outro aparelho, troque
           a senha e avise o administrador. Qualquer link de recuperação de senha pedido antes

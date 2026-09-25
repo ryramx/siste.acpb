@@ -88,10 +88,10 @@ export const MembersList: React.FC = () => {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-white font-heading flex items-center gap-2">
-            <UserCheck className="w-6 h-6 text-[#004922]" />
+            <UserCheck className="w-6 h-6 text-acpb-green-fg" />
             Membros da Associação
           </h1>
-          <p className="text-sm text-[#AEB5B0]">
+          <p className="text-sm text-text-secondary">
             Gerenciamento completo do corpo de associados da ACPB.
           </p>
         </div>
@@ -108,7 +108,7 @@ export const MembersList: React.FC = () => {
       </div>
 
       {/* Busca e Filtros */}
-      <div className="bg-[#181D1A] border border-[#222824] p-4 rounded-xl flex flex-col md:flex-row gap-4 items-center justify-between">
+      <div className="bg-surface-card border border-surface-border p-4 rounded-xl flex flex-col md:flex-row gap-4 items-center justify-between">
         <div className="w-full md:w-80">
           <Input
             placeholder="Buscar por nome, CPF, e-mail..."
@@ -151,10 +151,10 @@ export const MembersList: React.FC = () => {
           onAction={() => navigate('/membros/novo')}
         />
       ) : (
-        <div className="bg-[#181D1A] border border-[#222824] rounded-xl overflow-hidden shadow-sm">
+        <div className="bg-surface-card border border-surface-border rounded-xl overflow-hidden shadow-sm">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
-              <thead className="bg-[#0F1210] border-b border-[#222824] text-[#AEB5B0] font-medium">
+              <thead className="bg-surface-bg border-b border-surface-border text-text-secondary font-medium">
                 <tr>
                   <th className="py-3.5 px-4">Membro</th>
                   <th className="py-3.5 px-4 hidden md:table-cell">Contato</th>
@@ -163,29 +163,29 @@ export const MembersList: React.FC = () => {
                   <th className="py-3.5 px-4 text-right">Ações</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[#222824]">
+              <tbody className="divide-y divide-surface-border">
                 {filteredMembers.map((m) => (
-                  <tr key={m.id} className="hover:bg-[#1e2521] transition-colors">
+                  <tr key={m.id} className="hover:bg-surface-card-hover transition-colors">
                     <td className="py-3.5 px-4">
                       <div className="flex items-center gap-3">
                         <Avatar pessoaId={m.pessoaId} nome={m.name} temFoto={m.temFoto} size="sm" />
                         <div>
                           <div className="font-semibold text-white">{m.name}</div>
-                          <div className="text-xs text-[#727A74]">CPF: {exibirCPF(m.cpf)}</div>
+                          <div className="text-xs text-text-muted">CPF: {exibirCPF(m.cpf)}</div>
                         </div>
                       </div>
                     </td>
-                    <td className="py-3.5 px-4 hidden md:table-cell text-[#AEB5B0]">
+                    <td className="py-3.5 px-4 hidden md:table-cell text-text-secondary">
                       <div className="flex flex-col text-xs space-y-0.5">
                         <span className="flex items-center gap-1">
-                          <Phone className="w-3 h-3 text-[#F8D800]" /> {exibirTelefone(m.phone)}
+                          <Phone className="w-3 h-3 text-acpb-yellow" /> {exibirTelefone(m.phone)}
                         </span>
-                        <span className="flex items-center gap-1 text-[#727A74]">
+                        <span className="flex items-center gap-1 text-text-muted">
                           <Mail className="w-3 h-3" /> {m.email}
                         </span>
                       </div>
                     </td>
-                    <td className="py-3.5 px-4 hidden sm:table-cell text-[#AEB5B0] text-xs">
+                    <td className="py-3.5 px-4 hidden sm:table-cell text-text-secondary text-xs">
                       {m.cargoName || 'Nenhum'}
                     </td>
                     <td className="py-3.5 px-4">
@@ -197,7 +197,7 @@ export const MembersList: React.FC = () => {
                       <div className="flex items-center justify-end gap-1">
                         <button
                           onClick={() => navigate(`/membros/${m.id}`)}
-                          className="p-1.5 text-[#AEB5B0] hover:text-white hover:bg-[#222824] rounded-lg transition-colors"
+                          className="p-1.5 text-text-secondary hover:text-white hover:bg-surface-border rounded-lg transition-colors"
                           title="Visualizar detalhes"
                         >
                           <Eye className="w-4 h-4" />
@@ -205,7 +205,7 @@ export const MembersList: React.FC = () => {
                         {hasPermission('edit_members') && (
                           <button
                             onClick={() => navigate(`/membros/${m.id}`)}
-                            className="p-1.5 text-[#AEB5B0] hover:text-[#F8D800] hover:bg-[#222824] rounded-lg transition-colors"
+                            className="p-1.5 text-text-secondary hover:text-acpb-yellow hover:bg-surface-border rounded-lg transition-colors"
                             title="Editar"
                           >
                             <Edit className="w-4 h-4" />

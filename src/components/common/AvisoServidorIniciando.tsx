@@ -26,9 +26,9 @@ export const AvisoServidorIniciando: React.FC = () => {
       role="status"
       aria-live="polite"
     >
-      <div className="flex items-center gap-2.5 px-3.5 py-2.5 bg-[#181D1A] border border-[#222824] rounded-lg shadow-lg">
-        <Loader2 className="w-4 h-4 text-[#F8D800] animate-spin shrink-0" />
-        <span className="text-xs text-[#AEB5B0]">
+      <div className="flex items-center gap-2.5 px-3.5 py-2.5 bg-surface-card border border-surface-border rounded-lg shadow-lg">
+        <Loader2 className="w-4 h-4 text-acpb-yellow animate-spin shrink-0" />
+        <span className="text-xs text-text-secondary">
           O servidor está iniciando. Isso pode levar até um minuto.
         </span>
       </div>

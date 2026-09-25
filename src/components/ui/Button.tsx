@@ -21,14 +21,14 @@ export const Button: React.FC<ButtonProps> = ({
   disabled,
   ...props
 }) => {
-  const baseStyles = 'inline-flex items-center justify-center font-medium rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-[#0F1210] disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer';
+  const baseStyles = 'inline-flex items-center justify-center font-medium rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-surface-bg disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer';
 
   const variants = {
-    primary: 'bg-[#004922] hover:bg-[#00632e] text-white focus:ring-[#004922] active:bg-[#003318]',
-    secondary: 'bg-[#F8D800] hover:bg-[#e0c300] text-[#0F1210] font-semibold focus:ring-[#F8D800]',
-    outline: 'border border-[#222824] bg-[#181D1A] hover:bg-[#222824] text-white focus:ring-[#222824]',
+    primary: 'bg-acpb-green hover:bg-acpb-green-hover text-white focus:ring-acpb-green active:bg-acpb-green-dark',
+    secondary: 'bg-acpb-yellow hover:bg-acpb-yellow-hover text-surface-bg font-semibold focus:ring-acpb-yellow',
+    outline: 'border border-surface-border bg-surface-card hover:bg-surface-border text-white focus:ring-surface-border',
     danger: 'bg-red-700 hover:bg-red-800 text-white focus:ring-red-700',
-    ghost: 'bg-transparent hover:bg-[#181D1A] text-[#AEB5B0] hover:text-white focus:ring-transparent'
+    ghost: 'bg-transparent hover:bg-surface-card text-text-secondary hover:text-white focus:ring-transparent'
   };
 
   const sizes = {

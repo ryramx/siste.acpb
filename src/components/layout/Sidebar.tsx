@@ -48,21 +48,21 @@ export const Sidebar: React.FC<SidebarProps> = ({
   };
 
   const navContent = (
-    <div className="flex flex-col h-full bg-[#181D1A] border-r border-[#222824] select-none">
+    <div className="flex flex-col h-full bg-surface-card border-r border-surface-border select-none">
       {/* Brand Header */}
-      <div className="flex items-center justify-between p-4 border-b border-[#222824]">
+      <div className="flex items-center justify-between p-4 border-b border-surface-border">
         <div className="flex items-center gap-3 overflow-hidden">
           <img
             src="/logo-acpb.png"
             alt="Logo ACPB"
-            className="w-10 h-10 object-contain rounded-lg shrink-0 border border-[#004922]/50 bg-[#0F1210] p-0.5"
+            className="w-10 h-10 object-contain rounded-lg shrink-0 border border-acpb-green/50 bg-surface-bg p-0.5"
           />
           {isOpen && (
             <div className="flex flex-col leading-tight overflow-hidden">
               <span className="font-bold text-white text-sm font-heading tracking-wide">
                 ACPB
               </span>
-              <span className="text-[10px] text-[#F8D800] uppercase tracking-wider font-semibold">
+              <span className="text-[10px] text-acpb-yellow uppercase tracking-wider font-semibold">
                 Sistema de Gestão
               </span>
             </div>
@@ -71,7 +71,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         {/* Toggle Desktop Button */}
         <button
           onClick={onToggle}
-          className="hidden md:flex p-1.5 rounded-lg text-[#AEB5B0] hover:text-white hover:bg-[#222824] transition-colors"
+          className="hidden md:flex p-1.5 rounded-lg text-text-secondary hover:text-white hover:bg-surface-border transition-colors"
           title={isOpen ? 'Recolher menu' : 'Expandir menu'}
           aria-label={isOpen ? 'Recolher menu' : 'Expandir menu'}
         >
@@ -81,7 +81,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         <button
           onClick={onMobileClose}
           aria-label="Fechar menu"
-          className="md:hidden p-1.5 rounded-lg text-[#AEB5B0] hover:text-white hover:bg-[#222824]"
+          className="md:hidden p-1.5 rounded-lg text-text-secondary hover:text-white hover:bg-surface-border"
         >
           <X className="w-5 h-5" />
         </button>
@@ -97,12 +97,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
             className={({ isActive }) =>
               `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
                 isActive
-                  ? 'bg-[#004922] text-white font-semibold shadow-inner'
-                  : 'text-[#AEB5B0] hover:bg-[#222824] hover:text-white'
+                  ? 'bg-acpb-green text-white font-semibold shadow-inner'
+                  : 'text-text-secondary hover:bg-surface-border hover:text-white'
               }`
             }
           >
-            <LayoutDashboard className="w-5 h-5 shrink-0 text-[#F8D800]" />
+            <LayoutDashboard className="w-5 h-5 shrink-0 text-acpb-yellow" />
             {isOpen && <span>Dashboard</span>}
           </NavLink>
         )}
@@ -118,10 +118,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
         <div>
           <button
             onClick={() => setPeopleOpen(!peopleOpen)}
-            className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium transition-colors text-[#AEB5B0] hover:bg-[#222824] hover:text-white`}
+            className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium transition-colors text-text-secondary hover:bg-surface-border hover:text-white`}
           >
             <div className="flex items-center gap-3">
-              <Users className="w-5 h-5 shrink-0 text-[#AEB5B0]" />
+              <Users className="w-5 h-5 shrink-0 text-text-secondary" />
               {isOpen && <span>Pessoas</span>}
             </div>
             {isOpen && (
@@ -130,7 +130,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </button>
 
           {isOpen && peopleOpen && (
-            <div className="ml-8 mt-1 space-y-1 border-l border-[#222824] pl-2">
+            <div className="ml-8 mt-1 space-y-1 border-l border-surface-border pl-2">
               {/* Primeiro da lista porque e a entidade base: membro, voluntario e beneficiario
                   sao vinculos que apontam para um cadastro daqui. */}
               {hasPermission('view_people') && (
@@ -140,8 +140,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   className={({ isActive }) =>
                     `flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-colors ${
                       isActive
-                        ? 'text-[#F8D800] bg-[#004922]/40 font-semibold'
-                        : 'text-[#AEB5B0] hover:text-white hover:bg-[#222824]'
+                        ? 'text-acpb-yellow bg-acpb-green/40 font-semibold'
+                        : 'text-text-secondary hover:text-white hover:bg-surface-border'
                     }`
                   }
                 >
@@ -156,8 +156,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   className={({ isActive }) =>
                     `flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-colors ${
                       isActive
-                        ? 'text-[#F8D800] bg-[#004922]/40 font-semibold'
-                        : 'text-[#AEB5B0] hover:text-white hover:bg-[#222824]'
+                        ? 'text-acpb-yellow bg-acpb-green/40 font-semibold'
+                        : 'text-text-secondary hover:text-white hover:bg-surface-border'
                     }`
                   }
                 >
@@ -173,8 +173,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   className={({ isActive }) =>
                     `flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-colors ${
                       isActive
-                        ? 'text-[#F8D800] bg-[#004922]/40 font-semibold'
-                        : 'text-[#AEB5B0] hover:text-white hover:bg-[#222824]'
+                        ? 'text-acpb-yellow bg-acpb-green/40 font-semibold'
+                        : 'text-text-secondary hover:text-white hover:bg-surface-border'
                     }`
                   }
                 >
@@ -190,8 +190,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   className={({ isActive }) =>
                     `flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-colors ${
                       isActive
-                        ? 'text-[#F8D800] bg-[#004922]/40 font-semibold'
-                        : 'text-[#AEB5B0] hover:text-white hover:bg-[#222824]'
+                        ? 'text-acpb-yellow bg-acpb-green/40 font-semibold'
+                        : 'text-text-secondary hover:text-white hover:bg-surface-border'
                     }`
                   }
                 >
@@ -212,8 +212,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
             className={({ isActive }) =>
               `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
                 isActive
-                  ? 'bg-[#004922] text-white font-semibold'
-                  : 'text-[#AEB5B0] hover:bg-[#222824] hover:text-white'
+                  ? 'bg-acpb-green text-white font-semibold'
+                  : 'text-text-secondary hover:bg-surface-border hover:text-white'
               }`
             }
           >
@@ -230,8 +230,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
             className={({ isActive }) =>
               `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
                 isActive
-                  ? 'bg-[#004922] text-white font-semibold'
-                  : 'text-[#AEB5B0] hover:bg-[#222824] hover:text-white'
+                  ? 'bg-acpb-green text-white font-semibold'
+                  : 'text-text-secondary hover:bg-surface-border hover:text-white'
               }`
             }
           >
@@ -245,10 +245,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <div>
             <button
               onClick={() => setFinancialOpen(!financialOpen)}
-              className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium transition-colors text-[#AEB5B0] hover:bg-[#222824] hover:text-white"
+              className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium transition-colors text-text-secondary hover:bg-surface-border hover:text-white"
             >
               <div className="flex items-center gap-3">
-                <DollarSign className="w-5 h-5 shrink-0 text-[#F8D800]" />
+                <DollarSign className="w-5 h-5 shrink-0 text-acpb-yellow" />
                 {isOpen && <span>Financeiro</span>}
               </div>
               {isOpen && (
@@ -257,7 +257,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </button>
 
             {isOpen && financialOpen && (
-              <div className="ml-8 mt-1 space-y-1 border-l border-[#222824] pl-2">
+              <div className="ml-8 mt-1 space-y-1 border-l border-surface-border pl-2">
                 {['', '/receitas', '/despesas', '/movimentacoes'].map((sub, i) => {
                   const labels = ['Dashboard', 'Receitas', 'Despesas', 'Movimentações'];
                   const icons = ['📊', '↑', '↓', '↕'];
@@ -270,8 +270,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
                       className={({ isActive }) =>
                         `flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-colors ${
                           isActive
-                            ? 'text-[#F8D800] bg-[#004922]/40 font-semibold'
-                            : 'text-[#AEB5B0] hover:text-white hover:bg-[#222824]'
+                            ? 'text-acpb-yellow bg-acpb-green/40 font-semibold'
+                            : 'text-text-secondary hover:text-white hover:bg-surface-border'
                         }`
                       }
                     >
@@ -293,8 +293,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
             className={({ isActive }) =>
               `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
                 isActive
-                  ? 'bg-[#004922] text-white font-semibold'
-                  : 'text-[#AEB5B0] hover:bg-[#222824] hover:text-white'
+                  ? 'bg-acpb-green text-white font-semibold'
+                  : 'text-text-secondary hover:bg-surface-border hover:text-white'
               }`
             }
           >
@@ -314,8 +314,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
             className={({ isActive }) =>
               `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
                 isActive
-                  ? 'bg-[#004922] text-white font-semibold'
-                  : 'text-[#AEB5B0] hover:bg-[#222824] hover:text-white'
+                  ? 'bg-acpb-green text-white font-semibold'
+                  : 'text-text-secondary hover:bg-surface-border hover:text-white'
               }`
             }
           >
@@ -332,8 +332,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
             className={({ isActive }) =>
               `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
                 isActive
-                  ? 'bg-[#004922] text-white font-semibold'
-                  : 'text-[#AEB5B0] hover:bg-[#222824] hover:text-white'
+                  ? 'bg-acpb-green text-white font-semibold'
+                  : 'text-text-secondary hover:bg-surface-border hover:text-white'
               }`
             }
           >
@@ -350,8 +350,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
             className={({ isActive }) =>
               `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
                 isActive
-                  ? 'bg-[#004922] text-white font-semibold'
-                  : 'text-[#AEB5B0] hover:bg-[#222824] hover:text-white'
+                  ? 'bg-acpb-green text-white font-semibold'
+                  : 'text-text-secondary hover:bg-surface-border hover:text-white'
               }`
             }
           >
@@ -362,13 +362,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
       </div>
 
       {/* Footer / Exit Section */}
-      <div className="p-3 border-t border-[#222824] space-y-2">
+      <div className="p-3 border-t border-surface-border space-y-2">
         {user && isOpen && (
-          <div className="px-3 py-2 bg-[#0F1210] rounded-lg border border-[#222824] flex items-center gap-3">
+          <div className="px-3 py-2 bg-surface-bg rounded-lg border border-surface-border flex items-center gap-3">
             <Avatar pessoaId={user.pessoaId} nome={user.name} temFoto={user.temFoto} size="sm" />
             <div className="flex flex-col truncate">
               <span className="text-xs font-semibold text-white truncate">{user.name}</span>
-              <span className="text-[10px] text-[#F8D800] tracking-wide font-medium">{user.role}</span>
+              <span className="text-[10px] text-acpb-yellow tracking-wide font-medium">{user.role}</span>
             </div>
           </div>
         )}
@@ -381,8 +381,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
           className={({ isActive }) =>
             `w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
               isActive
-                ? 'text-[#F8D800] bg-[#004922]/40 font-semibold'
-                : 'text-[#AEB5B0] hover:bg-[#222824] hover:text-white'
+                ? 'text-acpb-yellow bg-acpb-green/40 font-semibold'
+                : 'text-text-secondary hover:bg-surface-border hover:text-white'
             }`
           }
         >

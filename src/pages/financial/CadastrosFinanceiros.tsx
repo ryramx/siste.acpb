@@ -29,8 +29,8 @@ const LinhaCadastro: React.FC<LinhaCadastroProps> = ({
   salvando,
   onAlternar
 }) => (
-  <div className="flex items-center justify-between gap-3 bg-[#0F1210] border border-[#222824] rounded-lg px-3 py-2">
-    <span className={`text-sm ${ativo ? 'text-white' : 'text-[#727A74] line-through'}`}>
+  <div className="flex items-center justify-between gap-3 bg-surface-bg border border-surface-border rounded-lg px-3 py-2">
+    <span className={`text-sm ${ativo ? 'text-white' : 'text-text-muted line-through'}`}>
       {nome}
     </span>
     <div className="flex items-center gap-2 shrink-0">
@@ -138,7 +138,7 @@ export const CadastrosFinanceiros: React.FC = () => {
     <div className="space-y-6 animate-fade-in">
       <div>
         <h1 className="text-2xl font-bold text-white font-heading">Categorias e contas</h1>
-        <p className="text-sm text-[#AEB5B0]">
+        <p className="text-sm text-text-secondary">
           O que aparece nas listas do formulário de lançamento. Itens desativados somem das
           listas, mas continuam valendo nos lançamentos já registrados.
         </p>
@@ -154,9 +154,9 @@ export const CadastrosFinanceiros: React.FC = () => {
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {/* Categorias */}
-          <div className="bg-[#181D1A] border border-[#222824] p-6 rounded-2xl space-y-4">
+          <div className="bg-surface-card border border-surface-border p-6 rounded-2xl space-y-4">
             <h2 className="text-base font-bold text-white font-heading flex items-center gap-2">
-              <Tag className="w-5 h-5 text-[#F8D800]" />
+              <Tag className="w-5 h-5 text-acpb-yellow" />
               Categorias
             </h2>
 
@@ -193,11 +193,11 @@ export const CadastrosFinanceiros: React.FC = () => {
 
             {(['RECEITA', 'DESPESA'] as const).map((tipo) => (
               <div key={tipo} className="space-y-1.5">
-                <span className="text-[11px] text-[#727A74] uppercase tracking-wider font-semibold">
+                <span className="text-[11px] text-text-muted uppercase tracking-wider font-semibold">
                   {tipo === 'RECEITA' ? 'De receita' : 'De despesa'}
                 </span>
                 {categoriasPorTipo(tipo).length === 0 ? (
-                  <p className="text-xs text-[#727A74] italic">Nenhuma cadastrada ainda.</p>
+                  <p className="text-xs text-text-muted italic">Nenhuma cadastrada ainda.</p>
                 ) : (
                   categoriasPorTipo(tipo).map((c) => (
                     <LinhaCadastro
@@ -220,12 +220,12 @@ export const CadastrosFinanceiros: React.FC = () => {
           </div>
 
           {/* Contas */}
-          <div className="bg-[#181D1A] border border-[#222824] p-6 rounded-2xl space-y-4">
+          <div className="bg-surface-card border border-surface-border p-6 rounded-2xl space-y-4">
             <h2 className="text-base font-bold text-white font-heading flex items-center gap-2">
-              <Wallet className="w-5 h-5 text-[#F8D800]" />
+              <Wallet className="w-5 h-5 text-acpb-yellow" />
               Contas
             </h2>
-            <p className="text-xs text-[#AEB5B0]">
+            <p className="text-xs text-text-secondary">
               Contas são os lugares onde o dinheiro da associação fica guardado, como o caixa da
               sede ou uma conta bancária. Cada lançamento diz de qual conta o dinheiro saiu ou em
               qual entrou.
@@ -278,7 +278,7 @@ export const CadastrosFinanceiros: React.FC = () => {
 
             <div className="space-y-1.5">
               {contas.length === 0 ? (
-                <p className="text-xs text-[#727A74] italic">
+                <p className="text-xs text-text-muted italic">
                   Nenhuma cadastrada ainda. Sem uma conta ativa não é possível lançar.
                 </p>
               ) : (

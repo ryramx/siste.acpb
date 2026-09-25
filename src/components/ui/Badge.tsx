@@ -18,11 +18,11 @@ export const Badge: React.FC<BadgeProps> = ({
   const base = 'inline-flex items-center font-medium rounded-full';
   
   const variants = {
-    success: 'bg-[#004922]/30 text-[#40C075] border border-[#004922]',
-    warning: 'bg-[#F8D800]/10 text-[#F8D800] border border-[#F8D800]/30',
+    success: 'bg-acpb-green/30 text-valor-positivo border border-acpb-green',
+    warning: 'bg-acpb-yellow/10 text-acpb-yellow border border-acpb-yellow/30',
     danger: 'bg-red-900/30 text-red-400 border border-red-800',
     info: 'bg-blue-900/30 text-blue-400 border border-blue-800',
-    neutral: 'bg-[#222824] text-[#AEB5B0] border border-[#222824]'
+    neutral: 'bg-surface-border text-text-secondary border border-surface-border'
   };
 
   const sizes = {

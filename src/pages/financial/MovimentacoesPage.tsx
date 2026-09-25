@@ -61,34 +61,34 @@ export const MovimentacoesPage: React.FC = () => {
       <FinancialTabs />
       <div>
         <h1 className="text-2xl font-bold text-white font-heading flex items-center gap-2">
-          <SlidersHorizontal className="w-6 h-6 text-[#F8D800]" />
+          <SlidersHorizontal className="w-6 h-6 text-acpb-yellow" />
           Movimentações Financeiras
         </h1>
-        <p className="text-sm text-[#AEB5B0]">
+        <p className="text-sm text-text-secondary">
           Visão consolidada de todas as entradas e saídas em ordem cronológica.
         </p>
       </div>
 
       {/* Resumo do Período */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="bg-[#181D1A] border border-[#222824] border-l-4 border-l-green-500 p-4 rounded-xl">
-          <span className="text-xs text-[#AEB5B0]">Entradas (Receitas)</span>
+        <div className="bg-surface-card border border-surface-border border-l-4 border-l-green-500 p-4 rounded-xl">
+          <span className="text-xs text-text-secondary">Entradas (Receitas)</span>
           <div className="text-xl font-bold text-green-400 mt-1">{formatarMoedaComSinal(totalReceitas, true)}</div>
         </div>
-        <div className="bg-[#181D1A] border border-[#222824] border-l-4 border-l-red-600 p-4 rounded-xl">
-          <span className="text-xs text-[#AEB5B0]">Saídas (Despesas)</span>
+        <div className="bg-surface-card border border-surface-border border-l-4 border-l-red-600 p-4 rounded-xl">
+          <span className="text-xs text-text-secondary">Saídas (Despesas)</span>
           <div className="text-xl font-bold text-red-400 mt-1">{formatarMoedaComSinal(totalDespesas, false)}</div>
         </div>
-        <div className={`bg-[#181D1A] border border-[#222824] border-l-4 p-4 rounded-xl ${saldo >= 0 ? 'border-l-[#F8D800]' : 'border-l-red-600'}`}>
-          <span className="text-xs text-[#AEB5B0]">Saldo Líquido</span>
-          <div className={`text-xl font-bold mt-1 ${saldo >= 0 ? 'text-[#F8D800]' : 'text-red-400'}`}>
+        <div className={`bg-surface-card border border-surface-border border-l-4 p-4 rounded-xl ${saldo >= 0 ? 'border-l-acpb-yellow' : 'border-l-red-600'}`}>
+          <span className="text-xs text-text-secondary">Saldo Líquido</span>
+          <div className={`text-xl font-bold mt-1 ${saldo >= 0 ? 'text-acpb-yellow' : 'text-red-400'}`}>
             {formatarMoedaComSinal(saldo, saldo >= 0)}
           </div>
         </div>
       </div>
 
       {/* Filtros */}
-      <div className="bg-[#181D1A] border border-[#222824] p-4 rounded-xl flex flex-col md:flex-row gap-3">
+      <div className="bg-surface-card border border-surface-border p-4 rounded-xl flex flex-col md:flex-row gap-3">
         <div className="flex-1">
           <Input placeholder="Buscar por descrição, categoria ou responsável..." value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)} leftIcon={<Search className="w-4 h-4" />} />
@@ -115,10 +115,10 @@ export const MovimentacoesPage: React.FC = () => {
       {loading ? <TableSkeleton rows={5} /> : filtered.length === 0 ? (
         <EmptyState title="Nenhuma movimentação encontrada" description="Ajuste os filtros para ver as movimentações." />
       ) : (
-        <div className="bg-[#181D1A] border border-[#222824] rounded-xl overflow-hidden">
+        <div className="bg-surface-card border border-surface-border rounded-xl overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
-              <thead className="bg-[#0F1210] border-b border-[#222824] text-[#AEB5B0] font-medium">
+              <thead className="bg-surface-bg border-b border-surface-border text-text-secondary font-medium">
                 <tr>
                   <th className="py-3 px-4">Tipo</th>
                   <th className="py-3 px-4">Data</th>
@@ -131,11 +131,11 @@ export const MovimentacoesPage: React.FC = () => {
                   {podeEditar && <th className="py-3 px-4 text-right">Ações</th>}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[#222824]">
+              <tbody className="divide-y divide-surface-border">
                 {filtered
                   .sort((a, b) => b.date.localeCompare(a.date))
                   .map((t) => (
-                    <tr key={t.id} className="hover:bg-[#1e2521] transition-colors">
+                    <tr key={t.id} className="hover:bg-surface-card-hover transition-colors">
                       <td className="py-3 px-4">
                         <span className={`inline-flex items-center gap-1 text-xs font-semibold px-2 py-1 rounded ${
                           t.type === 'RECEITA'
@@ -148,10 +148,10 @@ export const MovimentacoesPage: React.FC = () => {
                           {t.type === 'RECEITA' ? 'Entrada' : 'Saída'}
                         </span>
                       </td>
-                      <td className="py-3 px-4 text-xs text-[#AEB5B0]">{formatarData(t.date)}</td>
+                      <td className="py-3 px-4 text-xs text-text-secondary">{formatarData(t.date)}</td>
                       <td className="py-3 px-4 font-medium text-white">{t.description}</td>
-                      <td className="py-3 px-4 text-xs text-[#F8D800] hidden md:table-cell">{t.category}</td>
-                      <td className="py-3 px-4 text-xs text-[#AEB5B0] hidden lg:table-cell">{t.responsibleName}</td>
+                      <td className="py-3 px-4 text-xs text-acpb-yellow hidden md:table-cell">{t.category}</td>
+                      <td className="py-3 px-4 text-xs text-text-secondary hidden lg:table-cell">{t.responsibleName}</td>
                       <td className="py-3 px-4 text-xs">
                         <AnexosLancamento transacao={t} onAlterado={carregar} />
                       </td>
