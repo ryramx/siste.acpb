@@ -229,7 +229,7 @@ export const AppRoutes: React.FC = () => {
                 <Route
                   path="financeiro/cadastros"
                   element={
-                    <ProtectedRoute permission="view_financial">
+                    <ProtectedRoute permission="edit_financial">
                       <CadastrosFinanceiros />
                     </ProtectedRoute>
                   }

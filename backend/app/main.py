@@ -2,6 +2,7 @@ from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
 from app.core.monitoramento import configurar_monitoramento
+from app.core.protecao import ProtecaoDaApi
 from app.api.deps import get_current_user
 from app.api.routes import auth, health, monitoramento, pessoas, cargos, membros, voluntarios, projetos, eventos, beneficiarios, inscricoes, dashboard, contas_financeiras, categorias_financeiras, movimentacoes_financeiras, usuarios, perfis, permissoes, auditoria, telefones, cadastros, atendimentos, anexos_financeiros, relatorios, patrimonios
 
@@ -14,6 +15,11 @@ app = FastAPI(
 # Log com formato fixo, id por requisição e relato externo de erro (quando há SENTRY_DSN).
 # Antes disto, um 500 em produção só existia para quem abrisse o log do Render na hora certa.
 configurar_monitoramento(app)
+
+# Tamanho do corpo, limite de escrita e cabeçalhos de segurança (ver app/core/protecao.py).
+# Registrado antes do CORS, então roda por dentro dele: a resposta 413/429 ainda leva os
+# cabeçalhos de CORS e o navegador consegue ler a mensagem.
+app.add_middleware(ProtecaoDaApi)
 
 # Configuração de CORS
 if settings.BACKEND_CORS_ORIGINS:

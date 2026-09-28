@@ -10,6 +10,7 @@ import { StatCard } from '../../components/ui/StatCard';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { eventService, inscricaoService } from '../../services/domainServices';
 import { EventInscription, EventItem, InscriptionStatus } from '../../types/domain';
+import { erroNomePessoa } from '../../utils/nomePessoa';
 import {
   apenasDigitos,
   cpfValido,
@@ -94,7 +95,10 @@ export const EventInscriptions: React.FC = () => {
       ? 'Confira os dígitos: este CPF não passa na validação.'
       : undefined;
 
-  const podeSalvar = origem === 'cadastrada' ? pessoaId !== '' : visitante.name.trim() !== '';
+  const erroNomeVisitante =
+    origem === 'avulso' ? erroNomePessoa(visitante.name, 'O nome do participante') : undefined;
+  const podeSalvar =
+    origem === 'cadastrada' ? pessoaId !== '' : visitante.name.trim() !== '' && !erroNomeVisitante;
 
   const handleInscrever = async () => {
     if (!id || !podeSalvar) return;
@@ -342,6 +346,7 @@ export const EventInscriptions: React.FC = () => {
               required
               value={visitante.name}
               onChange={(e) => setVisitante({ ...visitante, name: e.target.value })}
+              error={erroNomeVisitante}
             />
             <Input
               label="Telefone"

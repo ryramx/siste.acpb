@@ -19,6 +19,7 @@ import {
   AssetStatus,
   ASSET_STATUS_LABELS
 } from '../../types/patrimonio';
+import { formatarData, formatarMoeda } from '../../utils/dinheiro';
 
 const OPCOES_STATUS = (Object.keys(ASSET_STATUS_LABELS) as AssetStatus[]).map((s) => ({
   value: s,
@@ -44,15 +45,8 @@ const FORM_VAZIO: AssetInput = {
   observacoes: ''
 };
 
-function formatarMoeda(valor: number | null): string {
-  if (valor === null) return '—';
-  return valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-}
-
-function formatarData(iso: string | null): string {
-  if (!iso) return '—';
-  const [ano, mes, dia] = iso.split('-');
-  return `${dia}/${mes}/${ano}`;
+function formatarMoedaOuTraco(valor: number | null): string {
+  return valor === null ? '—' : formatarMoeda(valor);
 }
 
 export const AssetsList: React.FC = () => {
@@ -204,7 +198,7 @@ export const AssetsList: React.FC = () => {
         </div>
         <div className="bg-[#181D1A] border border-[#222824] border-l-4 border-l-[#F8D800] p-4 rounded-xl">
           <span className="text-xs text-[#AEB5B0]">Valor de aquisição somado</span>
-          <div className="text-xl font-bold text-[#F8D800] mt-1">{formatarMoeda(valorTotal)}</div>
+          <div className="text-xl font-bold text-[#F8D800] mt-1">{formatarMoedaOuTraco(valorTotal)}</div>
         </div>
       </div>
 
@@ -280,7 +274,7 @@ export const AssetsList: React.FC = () => {
                     <td className="py-3 px-4 text-[#AEB5B0] hidden sm:table-cell">
                       {formatarData(b.dataAquisicao)}
                     </td>
-                    <td className="py-3 px-4 text-white">{formatarMoeda(b.valorAquisicao)}</td>
+                    <td className="py-3 px-4 text-white">{formatarMoedaOuTraco(b.valorAquisicao)}</td>
                     <td className="py-3 px-4">
                       <Badge variant={VARIANTE_POR_STATUS[b.status]} size="sm">
                         {ASSET_STATUS_LABELS[b.status] ?? b.status}

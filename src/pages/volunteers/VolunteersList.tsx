@@ -13,6 +13,7 @@ import { NovoVinculoModal } from '../../components/common/NovoVinculoModal';
 import { EditarVoluntarioModal } from '../../components/common/EditarVoluntarioModal';
 import { separarDisponibilidade } from '../../utils/disponibilidade';
 import { useAuth } from '../../contexts/AuthContext';
+import { opcoesDeContato } from '../../utils/contato';
 
 export const VolunteersList: React.FC = () => {
   const { hasPermission } = useAuth();
@@ -201,9 +202,19 @@ export const VolunteersList: React.FC = () => {
                     Editar
                   </Button>
                 )}
-                <Button variant="outline" size="sm">
-                  Contatar
-                </Button>
+                {/* Sem telefone nem e-mail no cadastro não há como contatar, e o botão some. */}
+                {opcoesDeContato(v).map((opcao) => (
+                  <a
+                    key={opcao.rotulo}
+                    href={opcao.href}
+                    target={opcao.href.startsWith('http') ? '_blank' : undefined}
+                    rel="noopener noreferrer"
+                    aria-label={`${opcao.rotulo} de ${v.name}`}
+                    className="inline-flex items-center justify-center font-medium rounded-lg transition-all duration-200 border border-[#222824] bg-[#181D1A] hover:bg-[#222824] text-white px-3 py-1.5 text-xs"
+                  >
+                    {opcao.rotulo}
+                  </a>
+                ))}
               </div>
             </div>
           ))}

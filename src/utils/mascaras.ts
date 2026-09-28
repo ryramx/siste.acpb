@@ -96,9 +96,10 @@ export function cpfValido(valor: string): boolean {
  * abria o teclado com setas de incremento em vez do teclado numérico simples.
  */
 
-/** Teto de 12 dígitos: R$ 9.999.999.999,99. Sem limite, colar um texto longo geraria um
- * número que perde precisão em ponto flutuante antes mesmo de chegar ao servidor. */
-const MAXIMO_DIGITOS_VALOR = 12;
+/** Teto de 10 dígitos: R$ 99.999.999,99, o mesmo que o backend aceita num lançamento
+ * (VALOR_MAXIMO em backend/app/schemas/movimentacao_financeira.py). Sem limite, colar um texto
+ * longo geraria um número que perde precisão em ponto flutuante antes de chegar ao servidor. */
+const MAXIMO_DIGITOS_VALOR = 10;
 
 /** Recebe o que a pessoa digitou e devolve a máscara pronta, sempre com os centavos. */
 export function formatarValor(valor: string): string {

@@ -63,9 +63,11 @@ class MovimentacaoFinanceira(Base, TimestampMixin):
         nullable=False
     )
 
+    # Indexada: as telas do financeiro filtram por ano e mês (migration b7d2f4a91c36).
     data_movimentacao: Mapped[date] = mapped_column(
         Date,
-        nullable=False
+        nullable=False,
+        index=True
     )
 
     forma_pagamento: Mapped[str | None] = mapped_column(

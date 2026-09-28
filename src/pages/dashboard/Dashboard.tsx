@@ -19,6 +19,7 @@ import { apiClient } from '../../services/apiClient';
 import { eventService } from '../../services/domainServices';
 import { EventItem } from '../../types/domain';
 import { fraseDoMomento, saudacao } from '../../utils/saudacao';
+import { formatarMoeda } from '../../utils/dinheiro';
 
 interface DashboardResumo {
   quantidade_pessoas: number;
@@ -231,19 +232,19 @@ export const Dashboard: React.FC = () => {
               <div className="p-3 bg-[#0F1210] border border-[#222824] rounded-xl">
                 <span className="text-xs text-[#AEB5B0] block">Receitas</span>
                 <span className="text-base font-bold text-[#40C075] mt-1 block">
-                  R$ {resumo.receitas_confirmadas.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                  {formatarMoeda(resumo.receitas_confirmadas)}
                 </span>
               </div>
               <div className="p-3 bg-[#0F1210] border border-[#222824] rounded-xl">
                 <span className="text-xs text-[#AEB5B0] block">Despesas</span>
                 <span className="text-base font-bold text-red-400 mt-1 block">
-                  R$ {resumo.despesas_confirmadas.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                  {formatarMoeda(resumo.despesas_confirmadas)}
                 </span>
               </div>
               <div className="p-3 bg-[#0F1210] border border-[#004922] rounded-xl bg-[#004922]/10">
                 <span className="text-xs text-[#AEB5B0] block">Saldo</span>
                 <span className={`text-base font-bold mt-1 block ${saldoPositivo ? 'text-[#F8D800]' : 'text-red-400'}`}>
-                  R$ {resumo.saldo_financeiro.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                  {formatarMoeda(resumo.saldo_financeiro)}
                 </span>
               </div>
             </div>

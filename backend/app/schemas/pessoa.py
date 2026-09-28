@@ -1,5 +1,32 @@
 from datetime import date, datetime
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, field_validator
+
+from app.schemas.nome_pessoa import normalizar_nome_opcional, normalizar_nome_pessoa
+
+_CAMPOS_NOME_OPCIONAIS = {
+    "nome_mae": "O nome da mãe",
+    "nome_pai": "O nome do pai",
+    "responsavel_nome": "O nome do responsável",
+}
+
+
+class _ValidaNomes:
+    """Validação dos nomes de gente, só na entrada (criar e editar).
+
+    Fica fora da PessoaBase de propósito: a PessoaResponse herda dela, e um nome antigo que não
+    passe na regra faria a listagem inteira quebrar em vez de só aparecer.
+    """
+
+    @field_validator("nome_completo", check_fields=False)
+    @classmethod
+    def validar_nome_completo(cls, v: str | None) -> str | None:
+        return None if v is None else normalizar_nome_pessoa(v, "O nome completo")
+
+    @field_validator("nome_mae", "nome_pai", "responsavel_nome", check_fields=False)
+    @classmethod
+    def validar_nomes_opcionais(cls, v: str | None, info) -> str | None:
+        return normalizar_nome_opcional(v, _CAMPOS_NOME_OPCIONAIS[info.field_name])
+
 
 class PessoaBase(BaseModel):
     nome_completo: str
@@ -21,10 +48,10 @@ class PessoaBase(BaseModel):
     estado: str | None = None
     cep: str | None = None
 
-class PessoaCreate(PessoaBase):
+class PessoaCreate(_ValidaNomes, PessoaBase):
     pass
 
-class PessoaUpdate(BaseModel):
+class PessoaUpdate(_ValidaNomes, BaseModel):
     conta_tecnica: bool | None = None
     nome_completo: str | None = None
     cpf: str | None = None

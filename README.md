@@ -550,12 +550,48 @@ Já implementado:
 * Autorização RBAC por permissão `modulo.acao` em todas as rotas de negócio;
 * Auditoria de operações sensíveis (ator, ação, tabela, registro, dados antes/depois e IP);
 * Exclusão substituída por inativação nos cadastros críticos, preservando o histórico;
-* Upload de arquivos com tipo e tamanho validados e nome sempre gerado por `uuid4`;
+* Upload de arquivos com tipo conferido pelo conteúdo (não pela extensão), leitura em partes
+  com corte no limite (413) e nome sempre gerado por `uuid4`;
 * Download de anexos e fotos apenas por rota autenticada — nada exposto como arquivo estático;
 * Recuperação de senha com token de uso único, expiração de 30 min e apenas o hash persistido;
 * Redefinição de senha por administrador, para quem perdeu acesso ao e-mail cadastrado;
 * Recusa de iniciar em produção sem `JWT_SECRET_KEY`, sem `DATABASE_PASSWORD` ou com CORS aberto;
-* Política de backup e de retenção de dados documentada.
+* Política de backup e de retenção de dados documentada;
+* Travas de administrador: ninguém desativa a própria conta nem tira o próprio Administrador,
+  o último admin ativo não pode ser desativado, e a conta principal só se altera por ela mesma
+  (ver `backend/DEPLOY.md`).
+
+### Proteção contra abuso
+
+O que a própria API faz (ver `backend/app/core/protecao.py` e `backend/app/core/rate_limit.py`):
+
+| Proteção | Limite padrão | Variável |
+|---|---|---|
+| Login errado, por e-mail / por IP | 5 / 20 em 15 min | `LOGIN_MAX_FALHAS_POR_EMAIL`, `LOGIN_MAX_FALHAS_POR_IP` |
+| Recuperação de senha, por e-mail / por IP | 3 / 10 por hora | `RECUPERACAO_MAX_POR_EMAIL`, `RECUPERACAO_MAX_POR_IP` |
+| Criar, editar e excluir, por usuário | 60 por minuto | `ESCRITAS_POR_MINUTO` |
+| Upload de comprovante ou foto, por usuário | 10 por minuto | `UPLOADS_POR_MINUTO` |
+| Tamanho do corpo da requisição | 6 MB | `REQUISICAO_TAMANHO_MAXIMO_MB` |
+| Tamanho de um comprovante / foto | 5 MB | `ANEXOS_TAMANHO_MAXIMO_MB`, `FOTOS_TAMANHO_MAXIMO_MB` |
+
+Toda resposta leva `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY` e
+`Referrer-Policy: no-referrer`; em produção, também `Strict-Transport-Security`. O CORS aceita
+só as origens de `BACKEND_CORS_ORIGINS`, e a API se recusa a subir em produção com `*`.
+
+O que depende da infraestrutura, e não do código:
+
+* **Ataque de volume (DDoS).** Os limites acima barram abuso de um usuário ou de um script;
+  uma inundação de requisições precisa ser contida antes de chegar à aplicação, pelo Render ou
+  por um proxy na frente (Cloudflare, por exemplo). No plano gratuito do Render não há isso.
+* **IP de quem acessa.** A API roda atrás do proxy do Render e o `uvicorn` sobe sem
+  `--forwarded-allow-ips`, então o IP visto pode ser o do proxy, igual para todo mundo. Por
+  isso os limites de escrita contam por usuário. Os limites por IP do login e da recuperação
+  de senha podem estar valendo para a associação inteira; o limite por e-mail continua valendo
+  por pessoa. Confiar no `X-Forwarded-For` sem saber exatamente o que o proxy envia deixaria
+  qualquer um escolher o próprio IP, então isso fica para quando o comportamento do Render for
+  conferido.
+* **Contadores em memória.** Valem por processo e zeram a cada deploy ou retorno da hibernação
+  (ver o comentário em `rate_limit.py`). Com um processo só, como hoje, valem como escritos.
 
 ---
 

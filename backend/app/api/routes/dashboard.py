@@ -37,7 +37,10 @@ def _filtro_periodo(query, data_inicio: date | None, data_fim: date | None):
 
 @router.get("/resumo", response_model=DashboardResumoResponse)
 def obter_resumo(db: Session = Depends(get_db)):
-    qtd_pessoas = db.query(func.count(Pessoa.id)).scalar() or 0
+    # Contas técnicas operam o sistema e não são gente da associação (ver Pessoa.conta_tecnica).
+    qtd_pessoas = (
+        db.query(func.count(Pessoa.id)).filter(Pessoa.conta_tecnica.is_(False)).scalar() or 0
+    )
     membros_ativos = db.query(func.count(Membro.id)).filter(Membro.ativo == True).scalar() or 0
     voluntarios_ativos = db.query(func.count(Voluntario.id)).filter(Voluntario.data_fim == None).scalar() or 0
     beneficiarios = db.query(func.count(Beneficiario.id)).scalar() or 0

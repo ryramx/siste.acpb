@@ -1,7 +1,26 @@
 from datetime import date
 from decimal import Decimal
 from datetime import datetime
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, field_validator
+
+# Teto de um lançamento: R$ 99.999.999,99. A coluna (NUMERIC(12,2)) aguenta até
+# R$ 9.999.999.999,99, mas um valor desses numa associação só aparece por erro de digitação,
+# e passando do tamanho da coluna o banco recusaria com um erro 500 em vez de uma mensagem.
+# As somas não correm risco: SUM de NUMERIC no Postgres não tem teto.
+VALOR_MAXIMO = Decimal("99999999.99")
+
+
+def _validar_valor(valor: Decimal | None) -> Decimal | None:
+    if valor is None:
+        return valor
+    if valor <= 0:
+        raise ValueError("O valor precisa ser maior que zero")
+    if valor > VALOR_MAXIMO:
+        raise ValueError("O valor passa do máximo de R$ 99.999.999,99 por lançamento")
+    if valor != valor.quantize(Decimal("0.01")):
+        raise ValueError("O valor aceita no máximo duas casas decimais")
+    return valor
+
 
 class MovimentacaoFinanceiraBase(BaseModel):
     conta_financeira_id: int
@@ -17,7 +36,10 @@ class MovimentacaoFinanceiraBase(BaseModel):
     observacoes: str | None = None
 
 class MovimentacaoFinanceiraCreate(MovimentacaoFinanceiraBase):
-    pass
+    @field_validator("valor")
+    @classmethod
+    def validar_valor(cls, v: Decimal) -> Decimal:
+        return _validar_valor(v)
 
 class MovimentacaoFinanceiraUpdate(BaseModel):
     conta_financeira_id: int | None = None
@@ -31,6 +53,11 @@ class MovimentacaoFinanceiraUpdate(BaseModel):
     forma_pagamento: str | None = None
     status: str | None = None
     observacoes: str | None = None
+
+    @field_validator("valor")
+    @classmethod
+    def validar_valor(cls, v: Decimal | None) -> Decimal | None:
+        return _validar_valor(v)
 
 class MovimentacaoFinanceiraResponse(MovimentacaoFinanceiraBase):
     id: int

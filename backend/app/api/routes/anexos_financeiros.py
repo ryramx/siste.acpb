@@ -5,6 +5,7 @@ from fastapi.responses import Response
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user, require_permission
+from app.core.upload import exigir_tipo_real, ler_com_limite
 from app.core.anexos_storage import (
     TAMANHO_MAXIMO_BYTES,
     TIPOS_PERMITIDOS,
@@ -59,23 +60,20 @@ async def enviar_anexo(
             detail=f"Tipo de arquivo não permitido. Aceitos: {', '.join(sorted(TIPOS_PERMITIDOS))}",
         )
 
-    conteudo = await arquivo.read()
-    if len(conteudo) > TAMANHO_MAXIMO_BYTES:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Arquivo excede o tamanho máximo de {settings.ANEXOS_TAMANHO_MAXIMO_MB}MB",
-        )
-    if len(conteudo) == 0:
-        raise HTTPException(status_code=400, detail="Arquivo vazio")
+    conteudo = await ler_com_limite(
+        arquivo, TAMANHO_MAXIMO_BYTES, settings.ANEXOS_TAMANHO_MAXIMO_MB
+    )
+    # O tipo que vale é o do conteúdo, não o declarado pelo navegador.
+    tipo_mime = exigir_tipo_real(conteudo, TIPOS_PERMITIDOS)
 
-    nome_armazenado = gerar_nome_armazenado(arquivo.content_type)
-    salvar_conteudo(nome_armazenado, conteudo, arquivo.content_type)
+    nome_armazenado = gerar_nome_armazenado(tipo_mime)
+    salvar_conteudo(nome_armazenado, conteudo, tipo_mime)
 
     obj = AnexoFinanceiro(
         movimentacao_financeira_id=movimentacao_financeira_id,
         nome_original=arquivo.filename or "arquivo",
         nome_armazenado=nome_armazenado,
-        tipo_mime=arquivo.content_type,
+        tipo_mime=tipo_mime,
         tamanho_bytes=len(conteudo),
         enviado_por_usuario_id=usuario_atual.id,
         created_at=datetime.utcnow(),

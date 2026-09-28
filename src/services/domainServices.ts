@@ -1,6 +1,7 @@
 import { Member, Volunteer, Beneficiary, Project, ProjectVolunteerLink, ProjectBeneficiaryLink, EventItem, EventInscription, InscriptionStatus, FinancialTransaction, AttendanceRecord } from '../types/domain';
 import { apiClient } from './apiClient';
 import { apenasDigitos } from '../utils/mascaras';
+import { Periodo, periodoNaUrl } from '../utils/periodo';
 
 interface ApiMembro {
   id: number;
@@ -317,6 +318,7 @@ const toVolunteer = (
   name: pessoa.nome_completo,
   email: pessoa.email ?? '',
   phone: telefone?.numero ?? '',
+  whatsapp: telefone?.whatsapp ?? false,
   area: voluntario.area ?? NAO_INFORMADA,
   skills: voluntario.habilidades ? voluntario.habilidades.split(',').map((s) => s.trim()).filter(Boolean) : [],
   availability: voluntario.disponibilidade ?? NAO_INFORMADA,
@@ -1107,9 +1109,16 @@ export const financialService = {
       .map((c) => ({ id: String(c.id), nome: c.nome }));
   },
 
-  async getAll(): Promise<FinancialTransaction[]> {
+  /** Anos que têm lançamento, mais o atual, do mais recente ao mais antigo. */
+  async listarAnos(): Promise<number[]> {
+    return apiClient.get<number[]>('/movimentacoes-financeiras/anos');
+  },
+
+  /** Lançamentos; com `periodo`, só os daquele ano (ou mês), filtrados no servidor. */
+  async getAll(periodo?: Periodo): Promise<FinancialTransaction[]> {
+    const filtro = periodo ? periodoNaUrl(periodo) : '';
     const [movimentacoes, contas, categorias] = await Promise.all([
-      apiClient.get<ApiMovimentacao[]>('/movimentacoes-financeiras/'),
+      apiClient.get<ApiMovimentacao[]>(`/movimentacoes-financeiras/${filtro}`),
       carregarContas(),
       carregarCategorias()
     ]);

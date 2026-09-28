@@ -86,6 +86,15 @@ def test_upload_com_tipo_nao_permitido_e_rejeitado(token_admin, pessoa_teste):
     assert response.status_code == 400
 
 
+def test_pdf_declarado_como_png_e_rejeitado(token_admin, pessoa_teste):
+    response = client.post(
+        f"/pessoas/{pessoa_teste}/foto",
+        headers={"Authorization": f"Bearer {token_admin}"},
+        files={"arquivo": ("foto.png", b"%PDF-1.4 nao e imagem", "image/png")},
+    )
+    assert response.status_code == 400
+
+
 def test_upload_download_substituicao_e_remocao_de_foto(token_admin, pessoa_teste):
     headers = {"Authorization": f"Bearer {token_admin}"}
     conteudo1 = b"\x89PNG\r\n conteudo fake da imagem 1"

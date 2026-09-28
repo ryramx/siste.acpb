@@ -12,6 +12,7 @@ import {
 import { FinancialTransaction } from '../../types/domain';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
+import { formatarData, formatarMoeda } from '../../utils/dinheiro';
 
 interface AnexosLancamentoProps {
   transacao: FinancialTransaction;
@@ -172,8 +173,8 @@ export const AnexosLancamento: React.FC<AnexosLancamentoProps> = ({ transacao, o
       <Modal isOpen={aberto} onClose={fechar} title="Comprovantes do lançamento" maxWidth="lg">
         <div className="space-y-4">
           <div className="text-sm text-[#AEB5B0]">
-            <strong className="text-white">{transacao.description}</strong> — R$&nbsp;
-            {transacao.amount.toFixed(2)} em {transacao.date}
+            <strong className="text-white">{transacao.description}</strong> —{' '}
+            {formatarMoeda(transacao.amount)} em {formatarData(transacao.date)}
           </div>
 
           {carregando ? (

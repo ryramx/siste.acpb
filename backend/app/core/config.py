@@ -49,6 +49,14 @@ class Settings(BaseSettings):
     RECUPERACAO_MAX_POR_IP: int = 10
     RECUPERACAO_JANELA_MINUTOS: int = 60
 
+    # Proteção geral da API (ver app/core/protecao.py). Contam por usuário, numa janela de um
+    # minuto; leitura não conta. Folgados para quem usa a tela: ninguém salva 60 formulários
+    # por minuto, mas um script em laço bate no teto em segundos.
+    ESCRITAS_POR_MINUTO: int = 60
+    UPLOADS_POR_MINUTO: int = 10
+    # Acima do maior upload aceito (5 MB de comprovante), que tem o próprio limite na rota.
+    REQUISICAO_TAMANHO_MAXIMO_MB: int = 6
+
     # Observabilidade (ver app/core/monitoramento.py).
     #
     # SENTRY_DSN vazio desliga o relato externo: os erros continuam no log do servidor. É o
