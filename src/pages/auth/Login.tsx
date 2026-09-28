@@ -92,9 +92,9 @@ export const Login: React.FC = () => {
         {/* Formulário de Login */}
         <form onSubmit={handleSubmit} className="space-y-4">
           <Input
-            label="E-mail Institucional"
+            label="E-mail"
             type="email"
-            placeholder="seu.email@acpb.local"
+            placeholder="seuemail@exemplo.com"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             leftIcon={<Mail className="w-4 h-4" />}
