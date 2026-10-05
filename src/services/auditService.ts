@@ -46,17 +46,30 @@ interface ApiAuditoria {
 /**
  * Monta a query da listagem. Exportada para teste.
  *
- * `data_fim` recebe T23:59:59 porque o backend compara com `created_at`, que é
- * datetime: mandar só a data significaria meia-noite e excluiria todo o último
- * dia escolhido pelo usuário.
+ * O filtro vale para o dia *local* escolhido, do primeiro ao último segundo: mandar só a
+ * data significaria meia-noite e excluiria todo o último dia.
+ *
+ * Os limites vão convertidos para UTC, sem marca de fuso, porque é assim que `created_at`
+ * está gravado (`datetime.utcnow()`). Antes iam no horário local tratado como UTC, e no
+ * Brasil o que acontecia das 21h à meia-noite caía no dia seguinte do filtro — "hoje" não
+ * mostrava a noite de hoje e mostrava a de ontem.
  */
+/** Primeiro ou último instante do dia local 'AAAA-MM-DD', em UTC e sem marca de fuso. */
+export function limiteDoDiaEmUtc(dia: string, ponta: 'inicio' | 'fim'): string {
+  const [ano, mes, d] = dia.split('-').map(Number);
+  const local =
+    ponta === 'inicio' ? new Date(ano, mes - 1, d, 0, 0, 0, 0) : new Date(ano, mes - 1, d, 23, 59, 59, 999);
+  // 'AAAA-MM-DDTHH:MM:SS.mmm' — o `Z` sai porque a coluna não tem fuso.
+  return local.toISOString().slice(0, 23);
+}
+
 export function buildAuditPath(filtros: AuditFilters = {}): string {
   const params = new URLSearchParams();
   if (filtros.usuarioId) params.set('usuario_id', filtros.usuarioId);
   if (filtros.tabela) params.set('tabela', filtros.tabela);
   if (filtros.acao) params.set('acao', filtros.acao);
-  if (filtros.dataInicio) params.set('data_inicio', `${filtros.dataInicio}T00:00:00`);
-  if (filtros.dataFim) params.set('data_fim', `${filtros.dataFim}T23:59:59`);
+  if (filtros.dataInicio) params.set('data_inicio', limiteDoDiaEmUtc(filtros.dataInicio, 'inicio'));
+  if (filtros.dataFim) params.set('data_fim', limiteDoDiaEmUtc(filtros.dataFim, 'fim'));
   params.set('limit', String(filtros.limit ?? 50));
   params.set('offset', String(filtros.offset ?? 0));
   return `/auditoria/?${params.toString()}`;

@@ -1,4 +1,5 @@
 import { apiClient } from './apiClient';
+import { isoLocal } from '../utils/data';
 
 /** Agregações financeiras calculadas pelo backend.
  *
@@ -45,6 +46,38 @@ interface ApiCategoria {
   total: number;
 }
 
+/** Completa com zero os meses sem lançamento confirmado.
+ *
+ * O backend só devolve meses que têm movimento. Sem preencher, "últimos 12 meses" com
+ * lançamentos só em setembro vira uma coluna solitária no meio do gráfico, e meses vizinhos
+ * no eixo podem estar a um ano de distância um do outro sem nada que avise. O intervalo vai
+ * do início ao fim do filtro; sem filtro ("Tudo"), do primeiro ao último mês com movimento.
+ * Sem nenhum ponto, devolve vazio — o gráfico mostra o estado vazio em vez de doze zeros.
+ */
+export function preencherMeses(pontos: ApiEvolucao[], periodo: PeriodoDoFiltro = {}): ApiEvolucao[] {
+  if (pontos.length === 0) return [];
+
+  const indice = (ano: number, mes: number) => ano * 12 + (mes - 1);
+  const doIso = (iso: string) => indice(Number(iso.slice(0, 4)), Number(iso.slice(5, 7)));
+  const ordenados = [...pontos].sort((a, b) => indice(a.ano, a.mes) - indice(b.ano, b.mes));
+
+  const primeiro = periodo.dataInicio
+    ? doIso(periodo.dataInicio)
+    : indice(ordenados[0].ano, ordenados[0].mes);
+  const ultimo = periodo.dataFim
+    ? doIso(periodo.dataFim)
+    : indice(ordenados[ordenados.length - 1].ano, ordenados[ordenados.length - 1].mes);
+
+  const porMes = new Map(ordenados.map((p) => [indice(p.ano, p.mes), p]));
+  const resultado: ApiEvolucao[] = [];
+  for (let i = primeiro; i <= ultimo; i++) {
+    const ano = Math.floor(i / 12);
+    const mes = (i % 12) + 1;
+    resultado.push(porMes.get(i) ?? { ano, mes, receitas: 0, despesas: 0 });
+  }
+  return resultado;
+}
+
 const MESES = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
 
 /** Monta a query descartando filtro vazio — mandar `?data_inicio=` faria o backend filtrar por
@@ -63,7 +96,8 @@ export function buildQueryDePeriodo(periodo: PeriodoDoFiltro = {}): string {
 export type ChaveDePeriodo = 'TUDO' | 'ANO' | 'DOZE_MESES' | 'SEIS_MESES';
 
 export function periodoDe(chave: ChaveDePeriodo, hoje = new Date()): PeriodoDoFiltro {
-  const iso = (d: Date) => d.toISOString().slice(0, 10);
+  // Data local, não `toISOString()`: ver utils/data.ts.
+  const iso = isoLocal;
   const fim = iso(hoje);
 
   switch (chave) {
@@ -91,7 +125,7 @@ export const dashboardFinanceiroService = {
     const pontos = await apiClient.get<ApiEvolucao[]>(
       `/dashboard/financeiro/evolucao${buildQueryDePeriodo(periodo)}`
     );
-    return pontos.map((p) => ({
+    return preencherMeses(pontos, periodo).map((p) => ({
       ano: p.ano,
       mes: p.mes,
       receitas: p.receitas,

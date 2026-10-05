@@ -16,6 +16,7 @@ import {
   formatarCPF,
   formatarTelefone
 } from '../../utils/mascaras';
+import { hojeIso } from '../../utils/data';
 
 /** Opções fechadas para os dois campos que só fazem sentido comparados entre si: com texto
  * livre, "Ensino médio", "ensino medio" e "2º grau" virariam três valores diferentes e
@@ -68,7 +69,7 @@ export const MemberForm: React.FC = () => {
     // troca, e a busca por CEP sobrescreve isto quando o endereço é de outra cidade.
     city: 'São Lourenço da Mata',
     state: 'PE',
-    entryDate: new Date().toISOString().split('T')[0],
+    entryDate: hojeIso(),
     status: 'ATIVO' as 'ATIVO' | 'INATIVO',
     cargoId: '',
     notes: ''

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { DollarSign, ArrowUpRight, ArrowDownRight, Plus, TrendingUp } from 'lucide-react';
+import { DollarSign, ArrowUpRight, ArrowDownRight, Plus, TrendingUp, Wallet } from 'lucide-react';
 import { FinancialTabs } from '../../components/common/FinancialTabs';
 import { GraficoEvolucaoMensal } from '../../components/charts/GraficoEvolucaoMensal';
 import { GraficoPorCategoria } from '../../components/charts/GraficoPorCategoria';
@@ -28,6 +28,7 @@ import { useToast } from '../../contexts/ToastContext';
 import { formatarData, formatarMoeda, formatarMoedaComSinal, participacao, somarValores } from '../../utils/dinheiro';
 import { usePeriodoFinanceiro } from '../../hooks/usePeriodoFinanceiro';
 import { descreverPeriodo } from '../../utils/periodo';
+import { hojeIso } from '../../utils/data';
 
 export const FinancialDashboard: React.FC = () => {
   const navigate = useNavigate();
@@ -48,6 +49,13 @@ export const FinancialDashboard: React.FC = () => {
   const [receitasPorCategoria, setReceitasPorCategoria] = useState<TotalPorCategoria[]>([]);
   const [despesasPorCategoria, setDespesasPorCategoria] = useState<TotalPorCategoria[]>([]);
   const [carregandoGraficos, setCarregandoGraficos] = useState(true);
+  // Incrementado a cada lançamento criado, editado ou excluído. Sem ele os gráficos só
+  // recarregavam ao trocar o período: os cartões passavam a mostrar o lançamento novo e os
+  // gráficos logo abaixo continuavam com os números de antes.
+  const [revisao, setRevisao] = useState(0);
+  // null enquanto carrega ou se falhar: mostrar "R$ 0,00" seria afirmar um número que a
+  // tela não sabe.
+  const [saldoEmCaixa, setSaldoEmCaixa] = useState<number | null>(null);
 
   // Modal Novo Lançamento
   const [modalOpen, setModalOpen] = useState(false);
@@ -59,7 +67,7 @@ export const FinancialDashboard: React.FC = () => {
     // atribuir um projeto por descuido distorceria o custo dele.
     projectId: '',
     amount: 0,
-    date: new Date().toISOString().split('T')[0],
+    date: hojeIso(),
     description: '',
     paymentMethod: 'Pix',
     status: 'CONFIRMADA'
@@ -75,7 +83,13 @@ export const FinancialDashboard: React.FC = () => {
     // abertura apagaria o valor inicial, e o select passaria a *mostrar* a primeira conta
     // enquanto enviava vazio — o usuário via o campo preenchido e o servidor respondia
     // "Conta financeira não encontrada".
-    setNewTx({ ...lancamentoVazio(), accountId: contas[0]?.id ?? '' });
+    // A categoria, pelo mesmo motivo: ela é semeada pelo efeito de `txType`, que só roda
+    // quando o tipo *muda*. Abrindo o mesmo tipo de novo — ou "Nova Despesa" logo ao entrar,
+    // já que o tipo inicial é despesa — o efeito não rodava e a categoria ia vazia, com o
+    // select mostrando "Aluguel". Quando o tipo muda, a lista carregada é a do outro tipo e o
+    // efeito preenche ao chegar.
+    const categoriaInicial = tipo === txType ? (categorias[0]?.id ?? '') : '';
+    setNewTx({ ...lancamentoVazio(), accountId: contas[0]?.id ?? '', categoryId: categoriaInicial });
     setModalOpen(true);
   };
 
@@ -91,12 +105,23 @@ export const FinancialDashboard: React.FC = () => {
     }
   };
 
+  /** Recarrega a lista e os gráficos juntos, depois de algo que muda os totais. Anexar
+   * comprovante não muda total nenhum, então esse caminho continua só na lista. */
+  const recarregarTudo = () => {
+    fetchTransactions();
+    setRevisao((r) => r + 1);
+  };
+
   useEffect(() => {
     setLoading(true);
     fetchTransactions();
   }, [periodo.ano, periodo.mes]);
 
   useEffect(() => {
+    financialService
+      .saldoEmCaixa()
+      .then(setSaldoEmCaixa)
+      .catch(() => setSaldoEmCaixa(null));
     financialService
       .listarProjetos()
       .then(setProjetos)
@@ -142,7 +167,7 @@ export const FinancialDashboard: React.FC = () => {
     return () => {
       cancelado = true;
     };
-  }, [periodoGraficos]);
+  }, [periodoGraficos, revisao]);
 
   useEffect(() => {
     financialService.listarCategorias(txType).then((lista) => {
@@ -157,7 +182,7 @@ export const FinancialDashboard: React.FC = () => {
   const totalDespesas = somarValores(transactions
     .filter((t) => t.type === 'DESPESA' && t.status === 'CONFIRMADA').map((curr) => curr.amount));
 
-  const saldo = somarValores([totalReceitas, -totalDespesas]);
+  const resultado = somarValores([totalReceitas, -totalDespesas]);
 
   const handleCreateTx = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -174,7 +199,7 @@ export const FinancialDashboard: React.FC = () => {
         message: 'Lançamento financeiro registrado com sucesso.'
       });
       setModalOpen(false);
-      fetchTransactions();
+      recarregarTudo();
     } catch (err) {
       // Antes só aparecia o título: o motivo real vindo do servidor (conta ausente, valor
       // inválido) era descartado, e não havia como saber o que corrigir.
@@ -224,8 +249,12 @@ export const FinancialDashboard: React.FC = () => {
         )}
       </div>
 
-      {/* 3 KPIs de Resumo Financeiro */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      {/* Resumo financeiro. Resultado e saldo em caixa são números diferentes e os dois
+          importam: o resultado diz se entrou mais do que saiu no período escolhido; o saldo,
+          quanto dinheiro existe hoje, contando o que já estava nas contas antes do sistema —
+          por isso ele não segue o filtro. Vem da mesma rota do dashboard geral, para os dois
+          nunca mostrarem valores diferentes com o mesmo nome. */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
         <StatCard
           title="Receitas Totais"
           value={formatarMoeda(totalReceitas)}
@@ -241,10 +270,17 @@ export const FinancialDashboard: React.FC = () => {
           accentColor="neutral"
         />
         <StatCard
-          title="Saldo do Período"
-          value={formatarMoeda(saldo)}
+          title="Resultado"
+          value={formatarMoeda(resultado)}
           icon={<TrendingUp className="w-5 h-5 text-acpb-yellow" />}
           subtitle={`Receitas menos despesas em ${descreverPeriodo(periodo)}`}
+          accentColor="yellow"
+        />
+        <StatCard
+          title="Saldo em Caixa"
+          value={saldoEmCaixa === null ? '—' : formatarMoeda(saldoEmCaixa)}
+          icon={<Wallet className="w-5 h-5 text-acpb-yellow" />}
+          subtitle="Todo o dinheiro das contas, sem filtro de período"
           accentColor="yellow"
         />
       </div>
@@ -339,7 +375,7 @@ export const FinancialDashboard: React.FC = () => {
                 </td>
                 <td className="py-3.5 px-4">
                   <div className="flex justify-end">
-                    <AcoesLancamento transacao={t} onAlterado={fetchTransactions} />
+                    <AcoesLancamento transacao={t} onAlterado={recarregarTudo} />
                   </div>
                 </td>
               </tr>

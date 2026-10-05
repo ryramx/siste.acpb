@@ -17,6 +17,7 @@ import { AcoesLancamento } from '../../components/common/AcoesLancamento';
 import { AnexosLancamento } from '../../components/common/AnexosLancamento';
 import { formatarData, formatarMoeda, formatarMoedaComSinal, somarValores } from '../../utils/dinheiro';
 import { usePeriodoFinanceiro } from '../../hooks/usePeriodoFinanceiro';
+import { hojeIso } from '../../utils/data';
 
 export const ReceitasPage: React.FC = () => {
   const { hasPermission, user } = useAuth();
@@ -38,7 +39,7 @@ export const ReceitasPage: React.FC = () => {
     categoryId: '',
     accountId: '',
     amount: 0,
-    date: new Date().toISOString().split('T')[0],
+    date: hojeIso(),
     description: '',
     paymentMethod: 'Pix',
     status: 'CONFIRMADA'
@@ -90,6 +91,16 @@ export const ReceitasPage: React.FC = () => {
       });
       addToast({ type: 'success', title: 'Receita registrada', message: 'Receita adicionada com sucesso.' });
       setModalOpen(false);
+      // Limpa o que é deste lançamento e mantém conta e categoria, que costumam se repetir.
+      // Sem isto o próximo lançamento abria com a descrição e o valor do anterior, e um
+      // "Salvar" apressado registrava o mesmo valor duas vezes.
+      setNewReceita((prev) => ({
+        ...prev,
+        amount: 0,
+        date: hojeIso(),
+        description: '',
+        projectId: ''
+      }));
       fetchData();
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Tente novamente em instantes.';

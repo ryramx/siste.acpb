@@ -10,6 +10,7 @@ import { beneficiaryService } from '../../services/domainServices';
 import { Beneficiary, AttendanceRecord } from '../../types/domain';
 import { useToast } from '../../contexts/ToastContext';
 import { useAuth } from '../../contexts/AuthContext';
+import { hojeIso } from '../../utils/data';
 
 export const BeneficiaryDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -24,7 +25,7 @@ export const BeneficiaryDetails: React.FC = () => {
   const [modalOpen, setModalOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [newAttendance, setNewAttendance] = useState({
-    date: new Date().toISOString().split('T')[0],
+    date: hojeIso(),
     type: 'Social',
     notes: ''
   });
@@ -58,7 +59,7 @@ export const BeneficiaryDetails: React.FC = () => {
       });
       setModalOpen(false);
       setNewAttendance({
-        date: new Date().toISOString().split('T')[0],
+        date: hojeIso(),
         type: 'Social',
         notes: ''
       });

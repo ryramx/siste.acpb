@@ -60,6 +60,15 @@ describe('GraficoEvolucaoMensal', () => {
     expect(screen.queryByRole('img')).not.toBeInTheDocument();
   });
 
+  it('desenha quando os dados chegam depois da montagem', () => {
+    // É o caminho real da tela: o gráfico monta vazio enquanto a API responde. A área medida
+    // só aparece com os dados, e a medição presa à montagem nunca a via — o SVG não saía.
+    const { container, rerender } = render(<GraficoEvolucaoMensal dados={[]} />);
+    rerender(<GraficoEvolucaoMensal dados={dados} />);
+    expect(screen.getByRole('img')).toBeInTheDocument();
+    expect(container.querySelectorAll('path')).toHaveLength(5);
+  });
+
   it('a legenda nomeia as duas series, para a identidade nao depender so da cor', () => {
     render(<GraficoEvolucaoMensal dados={dados} />);
     expect(screen.getByText('Receitas')).toBeInTheDocument();

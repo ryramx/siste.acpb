@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, afterEach } from 'vitest';
-import { auditService, buildAuditPath } from './auditService';
+import { auditService, buildAuditPath, limiteDoDiaEmUtc } from './auditService';
 import { apiClient, ApiError } from './apiClient';
 import { userManagementService } from './settingsService';
 import { SystemUser } from '../types/settings';
@@ -46,12 +46,26 @@ describe('buildAuditPath', () => {
     expect(path).not.toContain('acao=');
   });
 
-  it('expande data_fim ate o fim do dia', () => {
-    // created_at e datetime: mandar so a data significaria meia-noite e
-    // excluiria todo o ultimo dia escolhido pelo usuario.
-    const path = buildAuditPath({ dataInicio: '2026-01-01', dataFim: '2026-01-31' });
-    expect(path).toContain('data_inicio=2026-01-01T00%3A00%3A00');
-    expect(path).toContain('data_fim=2026-01-31T23%3A59%3A59');
+  it('cobre o dia local inteiro, convertido para UTC', () => {
+    // created_at e gravado em UTC sem fuso. Os limites precisam ser a meia-noite e o
+    // ultimo instante do dia *local*, convertidos -- lidos de volta como UTC, tem que dar
+    // exatamente esses instantes, em qualquer fuso em que o teste rode.
+    const params = new URLSearchParams(
+      buildAuditPath({ dataInicio: '2026-01-01', dataFim: '2026-01-31' }).split('?')[1]
+    );
+    const inicio = new Date(`${params.get('data_inicio')}Z`);
+    const fim = new Date(`${params.get('data_fim')}Z`);
+    expect(inicio.getTime()).toBe(new Date(2026, 0, 1, 0, 0, 0, 0).getTime());
+    expect(fim.getTime()).toBe(new Date(2026, 0, 31, 23, 59, 59, 999).getTime());
+    // Sem marca de fuso: a coluna nao tem fuso, e o backend compara direto.
+    expect(params.get('data_inicio')).not.toMatch(/Z|[+-]\d{2}:\d{2}$/);
+  });
+
+  it('no Brasil, a noite de hoje entra no filtro de hoje', () => {
+    // Em UTC-3 o dia local 05/10 vai de 03:00 UTC de 05/10 a 02:59 UTC de 06/10.
+    // Em CI (UTC) os limites coincidem com o dia UTC e o teste so confere o formato.
+    expect(limiteDoDiaEmUtc('2026-10-05', 'inicio')).toMatch(/^2026-10-05T\d{2}:00:00\.000$/);
+    expect(limiteDoDiaEmUtc('2026-10-05', 'fim')).toMatch(/^2026-10-0[56]T\d{2}:59:59\.999$/);
   });
 
   it('repassa paginacao', () => {

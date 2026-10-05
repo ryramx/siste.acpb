@@ -2,7 +2,8 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   buildQueryDePeriodo,
   dashboardFinanceiroService,
-  periodoDe
+  periodoDe,
+  preencherMeses
 } from './dashboardFinanceiroService';
 import { apiClient, ApiError } from './apiClient';
 
@@ -54,6 +55,47 @@ describe('periodoDe', () => {
   });
 });
 
+describe('periodoDe a noite', () => {
+  it('usa a data local, nao a UTC', () => {
+    // 1º de outubro, 22h no horário local. Em UTC−3 já é dia 2 em UTC, e o `toISOString`
+    // antigo fazia o período começar no dia 2. Em CI (fuso UTC) o teste passa dos dois
+    // jeitos; ele pega a regressão na máquina de quem desenvolve, no fuso do Brasil.
+    const noite = new Date(2026, 9, 1, 22, 0);
+    expect(periodoDe('DOZE_MESES', noite)).toEqual({
+      dataInicio: '2025-11-01',
+      dataFim: '2026-10-01'
+    });
+  });
+});
+
+describe('preencherMeses', () => {
+  const setembro = { ano: 2026, mes: 9, receitas: 2000, despesas: 1500 };
+
+  it('completa com zero os meses do filtro sem lancamento', () => {
+    const meses = preencherMeses([setembro], { dataInicio: '2026-07-01', dataFim: '2026-10-05' });
+    expect(meses.map((m) => m.mes)).toEqual([7, 8, 9, 10]);
+    expect(meses[0]).toEqual({ ano: 2026, mes: 7, receitas: 0, despesas: 0 });
+    expect(meses[2]).toEqual(setembro);
+  });
+
+  it('atravessa a virada do ano', () => {
+    const meses = preencherMeses([setembro], { dataInicio: '2025-11-01', dataFim: '2026-10-05' });
+    expect(meses).toHaveLength(12);
+    expect(meses[0]).toMatchObject({ ano: 2025, mes: 11 });
+    expect(meses[11]).toMatchObject({ ano: 2026, mes: 10 });
+  });
+
+  it('sem filtro, vai do primeiro ao ultimo mes com movimento', () => {
+    const marco = { ano: 2026, mes: 3, receitas: 100, despesas: 0 };
+    const meses = preencherMeses([setembro, marco]);
+    expect(meses.map((m) => m.mes)).toEqual([3, 4, 5, 6, 7, 8, 9]);
+  });
+
+  it('sem nenhum ponto continua vazio, para o grafico mostrar o estado vazio', () => {
+    expect(preencherMeses([], { dataInicio: '2026-01-01', dataFim: '2026-10-05' })).toEqual([]);
+  });
+});
+
 describe('dashboardFinanceiroService.evolucaoMensal', () => {
   it('deriva o saldo e o rotulo do mes', async () => {
     vi.spyOn(apiClient, 'get').mockResolvedValue([
@@ -65,7 +107,10 @@ describe('dashboardFinanceiroService.evolucaoMensal', () => {
 
     expect(pontos[0]).toMatchObject({ rotulo: 'jan/26', saldo: 1800 });
     // Saldo negativo precisa sobreviver: e o caso que a diretoria mais quer enxergar.
-    expect(pontos[1]).toMatchObject({ rotulo: 'dez/26', saldo: -500 });
+    expect(pontos[11]).toMatchObject({ rotulo: 'dez/26', saldo: -500 });
+    // Os dez meses entre os dois chegam zerados, não omitidos.
+    expect(pontos).toHaveLength(12);
+    expect(pontos[5]).toMatchObject({ rotulo: 'jun/26', saldo: 0 });
   });
 
   it('repassa o periodo na query', async () => {

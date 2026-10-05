@@ -10,6 +10,7 @@ import { EmptyState } from '../../components/ui/EmptyState';
 import { useToast } from '../../contexts/ToastContext';
 import { ApiError } from '../../services/apiClient';
 import { auditService, AuditEntry, AuditFilters } from '../../services/auditService';
+import { instanteUtc } from '../../utils/data';
 
 const TAMANHO_PAGINA = 50;
 
@@ -45,7 +46,8 @@ const VARIANTE_POR_ACAO: Record<string, 'success' | 'info' | 'danger' | 'warning
 };
 
 function formatarDataHora(iso: string): string {
-  const data = new Date(iso);
+  // O servidor grava em UTC sem marcar o fuso; ver utils/data.ts.
+  const data = instanteUtc(iso);
   if (Number.isNaN(data.getTime())) return iso;
   return data.toLocaleString('pt-BR');
 }

@@ -55,8 +55,10 @@ export const GraficoPorCategoria: React.FC<Props> = ({
   const classeDaBarra = tipo === 'RECEITA' ? 'fill-serie-receita' : 'fill-serie-despesa';
 
   // Espaço reservado à direita para o valor escrito na ponta. Medir antes de desenhar é o que
-  // impede o texto de ser cortado pela borda do cartão.
-  const ESPACO_DO_VALOR = 104;
+  // impede o texto de ser cortado pela borda do cartão. Dimensionado para o pior caso de uso
+  // real, "R$ 99.999,99 · 100%" a 11px (~120px), mais os 8px que afastam o texto da barra —
+  // com 104 o percentual já saía cortado em "R$ 2.000,00 · 100%".
+  const ESPACO_DO_VALOR = 136;
   const larguraUtil = Math.max(0, largura - LARGURA_DO_ROTULO - ESPACO_DO_VALOR);
   const altura = dados.length * ALTURA_DA_LINHA;
 

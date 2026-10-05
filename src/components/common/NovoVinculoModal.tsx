@@ -12,6 +12,7 @@ import {
 } from '../../services/domainServices';
 import { formatarCPF } from '../../utils/mascaras';
 import { erroNomePessoa } from '../../utils/nomePessoa';
+import { hojeIso } from '../../utils/data';
 
 type Papel = 'voluntario' | 'beneficiario';
 
@@ -58,7 +59,7 @@ export const NovoVinculoModal: React.FC<NovoVinculoModalProps> = ({
   opcoesDisponibilidade = []
 }) => {
   const textos = TEXTOS[papel];
-  const hoje = new Date().toISOString().split('T')[0];
+  const hoje = hojeIso();
 
   const [origem, setOrigem] = useState<'cadastrada' | 'nova'>('cadastrada');
   const [pessoas, setPessoas] = useState<{ id: string; name: string }[]>([]);

@@ -12,6 +12,7 @@ import { Project } from '../../types/domain';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
 import { formatarMoeda } from '../../utils/dinheiro';
+import { hojeIso } from '../../utils/data';
 
 export const ProjectsList: React.FC = () => {
   const navigate = useNavigate();
@@ -26,7 +27,7 @@ export const ProjectsList: React.FC = () => {
   const [newProject, setNewProject] = useState({
     name: '',
     description: '',
-    startDate: new Date().toISOString().split('T')[0],
+    startDate: hojeIso(),
     status: 'ATIVO'
   });
 

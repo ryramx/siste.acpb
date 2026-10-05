@@ -20,6 +20,7 @@ import { eventService } from '../../services/domainServices';
 import { EventItem } from '../../types/domain';
 import { fraseDoMomento, saudacao } from '../../utils/saudacao';
 import { formatarMoeda } from '../../utils/dinheiro';
+import { hojeIso } from '../../utils/data';
 
 interface DashboardResumo {
   quantidade_pessoas: number;
@@ -54,7 +55,7 @@ export const Dashboard: React.FC = () => {
         eventService.getAll()
       ]);
       setResumo(resumoData);
-      const hoje = new Date().toISOString().split('T')[0];
+      const hoje = hojeIso();
       setProximosEventos(
         eventos
           .filter((e) => e.date >= hoje)
@@ -242,7 +243,7 @@ export const Dashboard: React.FC = () => {
                 </span>
               </div>
               <div className="p-3 bg-surface-bg border border-acpb-green rounded-xl bg-acpb-green/10">
-                <span className="text-xs text-text-secondary block">Saldo</span>
+                <span className="text-xs text-text-secondary block">Saldo em caixa</span>
                 <span className={`text-base font-bold mt-1 block ${saldoPositivo ? 'text-acpb-yellow' : 'text-red-400'}`}>
                   {formatarMoeda(resumo.saldo_financeiro)}
                 </span>

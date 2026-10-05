@@ -2,6 +2,7 @@ import { Member, Volunteer, Beneficiary, Project, ProjectVolunteerLink, ProjectB
 import { apiClient } from './apiClient';
 import { apenasDigitos } from '../utils/mascaras';
 import { Periodo, periodoNaUrl } from '../utils/periodo';
+import { hojeIso } from '../utils/data';
 
 interface ApiMembro {
   id: number;
@@ -830,7 +831,7 @@ function toEventItem(
     maxSlots: e.limite_participantes,
     filledSlots,
     requiresRegistration: e.exige_inscricao,
-    status: e.data_evento < new Date().toISOString().split('T')[0] ? 'REALIZADO' : 'AGENDADO'
+    status: e.data_evento < hojeIso() ? 'REALIZADO' : 'AGENDADO'
   };
 }
 
@@ -1042,6 +1043,14 @@ export const financialService = {
   async listarProjetos(): Promise<OpcaoFinanceira[]> {
     const projetos = await apiClient.get<ApiProjeto[]>('/projetos/');
     return projetos.map((p) => ({ id: String(p.id), nome: p.nome }));
+  },
+
+  /** Dinheiro em caixa hoje: saldo inicial das contas mais todos os lançamentos confirmados,
+   * sem filtro de período. Lido da mesma rota do dashboard geral, e não recalculado aqui,
+   * para os dois nunca mostrarem valores diferentes com o mesmo nome. */
+  async saldoEmCaixa(): Promise<number> {
+    const resumo = await apiClient.get<{ saldo_financeiro: number }>('/dashboard/resumo');
+    return resumo.saldo_financeiro;
   },
 
   async listarContas(): Promise<OpcaoFinanceira[]> {
