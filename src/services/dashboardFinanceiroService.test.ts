@@ -2,7 +2,8 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   buildQueryDePeriodo,
   dashboardFinanceiroService,
-  periodoDe,
+  intervaloDoAno,
+  intervaloDoPeriodo,
   preencherMeses
 } from './dashboardFinanceiroService';
 import { apiClient, ApiError } from './apiClient';
@@ -28,43 +29,43 @@ describe('buildQueryDePeriodo', () => {
   });
 });
 
-describe('periodoDe', () => {
-  const hoje = new Date('2026-09-24T12:00:00Z');
+describe('intervaloDoAno', () => {
+  const hoje = new Date(2026, 9, 5, 12, 0);
 
-  it('"tudo" nao filtra nada', () => {
-    expect(periodoDe('TUDO', hoje)).toEqual({});
+  it('no ano corrente, vai de janeiro ate hoje', () => {
+    // Meses que ainda nao chegaram ficariam como zero, lidos como "nao entrou nada".
+    expect(intervaloDoAno(2026, hoje)).toEqual({ dataInicio: '2026-01-01', dataFim: '2026-10-05' });
   });
 
-  it('"este ano" comeca em 1 de janeiro', () => {
-    expect(periodoDe('ANO', hoje)).toEqual({ dataInicio: '2026-01-01', dataFim: '2026-09-24' });
+  it('em ano passado, vai ate dezembro', () => {
+    expect(intervaloDoAno(2025, hoje)).toEqual({ dataInicio: '2025-01-01', dataFim: '2025-12-31' });
   });
 
-  it('"12 meses" volta 11 meses e comeca no primeiro dia', () => {
-    // 11 e nao 12: contando o mes corrente, o grafico mostra 12 colunas.
-    expect(periodoDe('DOZE_MESES', hoje)).toEqual({
-      dataInicio: '2025-10-01',
-      dataFim: '2026-09-24'
-    });
-  });
-
-  it('"6 meses" volta 5 meses', () => {
-    expect(periodoDe('SEIS_MESES', hoje)).toEqual({
-      dataInicio: '2026-04-01',
-      dataFim: '2026-09-24'
-    });
+  it('usa a data local, nao a UTC', () => {
+    // 22h de 5/10 no horario local ja e dia 6 em UTC−3. Em CI (fuso UTC) o teste passa dos
+    // dois jeitos; ele pega a regressao na maquina de quem desenvolve, no fuso do Brasil.
+    expect(intervaloDoAno(2026, new Date(2026, 9, 5, 22, 0)).dataFim).toBe('2026-10-05');
   });
 });
 
-describe('periodoDe a noite', () => {
-  it('usa a data local, nao a UTC', () => {
-    // 1º de outubro, 22h no horário local. Em UTC−3 já é dia 2 em UTC, e o `toISOString`
-    // antigo fazia o período começar no dia 2. Em CI (fuso UTC) o teste passa dos dois
-    // jeitos; ele pega a regressão na máquina de quem desenvolve, no fuso do Brasil.
-    const noite = new Date(2026, 9, 1, 22, 0);
-    expect(periodoDe('DOZE_MESES', noite)).toEqual({
-      dataInicio: '2025-11-01',
-      dataFim: '2026-10-01'
+describe('intervaloDoPeriodo', () => {
+  it('ano inteiro quando nao ha mes', () => {
+    expect(intervaloDoPeriodo({ ano: 2026, mes: null })).toEqual({
+      dataInicio: '2026-01-01',
+      dataFim: '2026-12-31'
     });
+  });
+
+  it('um mes vai do dia 1 ao ultimo dia dele', () => {
+    expect(intervaloDoPeriodo({ ano: 2026, mes: 9 })).toEqual({
+      dataInicio: '2026-09-01',
+      dataFim: '2026-09-30'
+    });
+  });
+
+  it('fevereiro respeita o ano bissexto', () => {
+    expect(intervaloDoPeriodo({ ano: 2028, mes: 2 }).dataFim).toBe('2028-02-29');
+    expect(intervaloDoPeriodo({ ano: 2026, mes: 2 }).dataFim).toBe('2026-02-28');
   });
 });
 

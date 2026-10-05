@@ -5,11 +5,11 @@ import { FinancialTabs } from '../../components/common/FinancialTabs';
 import { GraficoEvolucaoMensal } from '../../components/charts/GraficoEvolucaoMensal';
 import { GraficoPorCategoria } from '../../components/charts/GraficoPorCategoria';
 import {
-  ChaveDePeriodo,
   PontoMensal,
   TotalPorCategoria,
   dashboardFinanceiroService,
-  periodoDe
+  intervaloDoAno,
+  intervaloDoPeriodo
 } from '../../services/dashboardFinanceiroService';
 import { AcoesLancamento } from '../../components/common/AcoesLancamento';
 import { AnexosLancamento } from '../../components/common/AnexosLancamento';
@@ -44,7 +44,6 @@ export const FinancialDashboard: React.FC = () => {
 
   // Agregações vindas do backend. Somar no navegador só funciona enquanto a lista inteira de
   // lançamentos couber na memória da aba — e não respeita filtro de período nenhum.
-  const [periodoGraficos, setPeriodoGraficos] = useState<ChaveDePeriodo>('DOZE_MESES');
   const [evolucao, setEvolucao] = useState<PontoMensal[]>([]);
   const [receitasPorCategoria, setReceitasPorCategoria] = useState<TotalPorCategoria[]>([]);
   const [despesasPorCategoria, setDespesasPorCategoria] = useState<TotalPorCategoria[]>([]);
@@ -135,17 +134,17 @@ export const FinancialDashboard: React.FC = () => {
     });
   }, []);
 
-  // Um efeito só para os gráficos: o filtro de período vale para os três ao mesmo tempo, e
-  // recarregar tudo junto é o que mantém os números coerentes entre eles.
+  // Um efeito só para os gráficos, presos ao período do topo do Financeiro — o mesmo dos
+  // cartões e da lista. Recarregar os três juntos é o que mantém os números coerentes.
   useEffect(() => {
     let cancelado = false;
     setCarregandoGraficos(true);
-    const filtro = periodoDe(periodoGraficos);
+    const doPeriodo = intervaloDoPeriodo(periodo);
 
     Promise.all([
-      dashboardFinanceiroService.evolucaoMensal(filtro),
-      dashboardFinanceiroService.porCategoria('RECEITA', filtro),
-      dashboardFinanceiroService.porCategoria('DESPESA', filtro)
+      dashboardFinanceiroService.evolucaoMensal(intervaloDoAno(periodo.ano)),
+      dashboardFinanceiroService.porCategoria('RECEITA', doPeriodo),
+      dashboardFinanceiroService.porCategoria('DESPESA', doPeriodo)
     ])
       .then(([pontos, receitas, despesas]) => {
         if (cancelado) return;
@@ -167,7 +166,7 @@ export const FinancialDashboard: React.FC = () => {
     return () => {
       cancelado = true;
     };
-  }, [periodoGraficos, revisao]);
+  }, [periodo.ano, periodo.mes, revisao]);
 
   useEffect(() => {
     financialService.listarCategorias(txType).then((lista) => {
@@ -283,35 +282,6 @@ export const FinancialDashboard: React.FC = () => {
           subtitle="Todo o dinheiro das contas, sem filtro de período"
           accentColor="yellow"
         />
-      </div>
-
-      {/* Filtro de período: uma linha, acima do que ele governa, e vale para os três gráficos
-          ao mesmo tempo — números que discordam entre si por causa de filtros separados são
-          pior que número nenhum. */}
-      <div className="flex flex-wrap items-center gap-2">
-        <span className="text-xs text-text-muted">Período dos gráficos:</span>
-        {(
-          [
-            ['SEIS_MESES', 'Últimos 6 meses'],
-            ['DOZE_MESES', 'Últimos 12 meses'],
-            ['ANO', 'Este ano'],
-            ['TUDO', 'Tudo']
-          ] as [ChaveDePeriodo, string][]
-        ).map(([chave, rotulo]) => (
-          <button
-            key={chave}
-            type="button"
-            onClick={() => setPeriodoGraficos(chave)}
-            aria-pressed={periodoGraficos === chave}
-            className={`text-xs px-3 py-1.5 rounded-lg border transition-colors cursor-pointer ${
-              periodoGraficos === chave
-                ? 'bg-acpb-green/20 border-acpb-green text-white font-semibold'
-                : 'bg-surface-card border-surface-border text-text-secondary hover:text-white hover:border-surface-border-hover'
-            }`}
-          >
-            {rotulo}
-          </button>
-        ))}
       </div>
 
       <GraficoEvolucaoMensal dados={evolucao} recarregando={carregandoGraficos} />

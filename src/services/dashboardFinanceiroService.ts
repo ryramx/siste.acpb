@@ -1,5 +1,6 @@
 import { apiClient } from './apiClient';
 import { isoLocal } from '../utils/data';
+import { Periodo } from '../utils/periodo';
 
 /** Agregações financeiras calculadas pelo backend.
  *
@@ -90,34 +91,30 @@ export function buildQueryDePeriodo(periodo: PeriodoDoFiltro = {}): string {
   return query ? `?${query}` : '';
 }
 
-/** Presets de período. O intervalo é fechado nos dois lados porque o backend compara com a
- * data do lançamento, que é um `date` — sem hora, então não há o problema de "último dia
- * cortado à meia-noite" que a tela de auditoria tem. */
-export type ChaveDePeriodo = 'TUDO' | 'ANO' | 'DOZE_MESES' | 'SEIS_MESES';
+/** Intervalo do gráfico mensal: o ano escolhido no topo do Financeiro, de janeiro em diante.
+ *
+ * O gráfico segue o mesmo período do resto do módulo — antes ele tinha botões próprios
+ * ("últimos 12 meses"...), e a tela tinha dois filtros que podiam discordar. Com um mês
+ * escolhido, o gráfico continua mostrando o ano: um mês sozinho é uma coluna só, e o que o
+ * gráfico responde é justamente a comparação entre os meses.
+ *
+ * No ano corrente vai até hoje, e não até dezembro: os meses que ainda não chegaram
+ * apareceriam como zero, lidos como "não entrou nada". O intervalo é fechado nos dois lados
+ * porque o backend compara com a data do lançamento, que é um `date`, sem hora.
+ */
+export function intervaloDoAno(ano: number, hoje = new Date()): PeriodoDoFiltro {
+  const fim = ano === hoje.getFullYear() ? isoLocal(hoje) : `${ano}-12-31`;
+  return { dataInicio: `${ano}-01-01`, dataFim: fim };
+}
 
-export function periodoDe(chave: ChaveDePeriodo, hoje = new Date()): PeriodoDoFiltro {
-  // Data local, não `toISOString()`: ver utils/data.ts.
-  const iso = isoLocal;
-  const fim = iso(hoje);
-
-  switch (chave) {
-    case 'TUDO':
-      return {};
-    case 'ANO':
-      return { dataInicio: `${hoje.getFullYear()}-01-01`, dataFim: fim };
-    case 'DOZE_MESES': {
-      const inicio = new Date(hoje);
-      inicio.setMonth(inicio.getMonth() - 11);
-      inicio.setDate(1);
-      return { dataInicio: iso(inicio), dataFim: fim };
-    }
-    case 'SEIS_MESES': {
-      const inicio = new Date(hoje);
-      inicio.setMonth(inicio.getMonth() - 5);
-      inicio.setDate(1);
-      return { dataInicio: iso(inicio), dataFim: fim };
-    }
-  }
+/** Intervalo exato do período escolhido — o ano inteiro ou um mês —, para os totais por
+ * categoria, que precisam bater com os cartões e a lista da mesma tela. */
+export function intervaloDoPeriodo(periodo: Periodo): PeriodoDoFiltro {
+  if (!periodo.mes) return { dataInicio: `${periodo.ano}-01-01`, dataFim: `${periodo.ano}-12-31` };
+  const mes = String(periodo.mes).padStart(2, '0');
+  // Dia 0 do mês seguinte é o último dia deste: cobre fevereiro e os meses de 30 dias.
+  const ultimoDia = new Date(periodo.ano, periodo.mes, 0).getDate();
+  return { dataInicio: `${periodo.ano}-${mes}-01`, dataFim: `${periodo.ano}-${mes}-${ultimoDia}` };
 }
 
 export const dashboardFinanceiroService = {

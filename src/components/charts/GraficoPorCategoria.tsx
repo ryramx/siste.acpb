@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { TotalPorCategoria } from '../../services/dashboardFinanceiroService';
 import { useLargura } from './useLargura';
 import { moeda } from './formatos';
+import { participacao } from '../../utils/dinheiro';
 
 interface Props {
   titulo: string;
@@ -15,6 +16,9 @@ const ALTURA_DA_LINHA = 30;
 const ALTURA_DA_BARRA = 16;
 const RAIO = 4;
 const LARGURA_DO_ROTULO = 116;
+/** Quantas categorias aparecem antes de "Ver todas". Despesas tem 15 no cadastro padrão, e a
+ * lista inteira empurrava o resto do dashboard para baixo. */
+export const CATEGORIAS_VISIVEIS = 5;
 
 function caminhoDaBarra(x: number, y: number, largura: number, altura: number): string {
   const r = Math.min(RAIO, largura, altura / 2);
@@ -49,18 +53,23 @@ export const GraficoPorCategoria: React.FC<Props> = ({
 }) => {
   const [container, largura] = useLargura<HTMLDivElement>();
   const [destacada, setDestacada] = useState<string | null>(null);
+  const [expandido, setExpandido] = useState(false);
 
+  // Total, maior e percentuais sempre sobre a lista inteira: recolher muda o que se vê, não
+  // o tamanho relativo das barras nem o total do período.
+  const ordenados = [...dados].sort((a, b) => b.total - a.total);
+  const visiveis = expandido ? ordenados : ordenados.slice(0, CATEGORIAS_VISIVEIS);
   const total = dados.reduce((soma, d) => soma + d.total, 0);
   const maior = Math.max(0, ...dados.map((d) => d.total));
   const classeDaBarra = tipo === 'RECEITA' ? 'fill-serie-receita' : 'fill-serie-despesa';
 
   // Espaço reservado à direita para o valor escrito na ponta. Medir antes de desenhar é o que
   // impede o texto de ser cortado pela borda do cartão. Dimensionado para o pior caso de uso
-  // real, "R$ 99.999,99 · 100%" a 11px (~120px), mais os 8px que afastam o texto da barra —
+  // real, "R$ 99.999,99 · 100,00%" a 11px (~135px), mais os 8px que afastam o texto da barra —
   // com 104 o percentual já saía cortado em "R$ 2.000,00 · 100%".
-  const ESPACO_DO_VALOR = 136;
+  const ESPACO_DO_VALOR = 148;
   const larguraUtil = Math.max(0, largura - LARGURA_DO_ROTULO - ESPACO_DO_VALOR);
-  const altura = dados.length * ALTURA_DA_LINHA;
+  const altura = visiveis.length * ALTURA_DA_LINHA;
 
   return (
     <div className="bg-surface-card border border-surface-border rounded-2xl p-5 space-y-3">
@@ -83,14 +92,16 @@ export const GraficoPorCategoria: React.FC<Props> = ({
               width={largura}
               height={altura}
               role="img"
-              aria-label={`${titulo}: ${dados
+              aria-label={`${titulo}: ${visiveis
                 .map((d) => `${d.categoria}, ${moeda(d.total)}`)
                 .join('; ')}`}
             >
-              {dados.map((d, i) => {
+              {visiveis.map((d, i) => {
                 const y = i * ALTURA_DA_LINHA;
                 const comprimento = maior > 0 ? (d.total / maior) * larguraUtil : 0;
-                const percentual = total > 0 ? Math.round((d.total / total) * 100) : 0;
+                // Duas casas, e "< 0,01%" para o que existe mas é pequeno: arredondar para
+                // inteiro mostrava 0% numa categoria que tem dinheiro.
+                const percentual = participacao(d.total, total).texto;
                 const centro = y + ALTURA_DA_LINHA / 2;
 
                 return (
@@ -102,7 +113,7 @@ export const GraficoPorCategoria: React.FC<Props> = ({
                     onBlur={() => setDestacada(null)}
                     tabIndex={0}
                     role="button"
-                    aria-label={`${d.categoria}: ${moeda(d.total)}, ${percentual}% do total`}
+                    aria-label={`${d.categoria}: ${moeda(d.total)}, ${percentual} do total`}
                     className="outline-none"
                   >
                     {destacada === d.categoriaId && (
@@ -145,12 +156,22 @@ export const GraficoPorCategoria: React.FC<Props> = ({
                       fontSize={11}
                     >
                       {moeda(d.total)}
-                      <tspan className="fill-text-muted"> · {percentual}%</tspan>
+                      <tspan className="fill-text-muted"> · {percentual}</tspan>
                     </text>
                   </g>
                 );
               })}
             </svg>
+          )}
+
+          {ordenados.length > CATEGORIAS_VISIVEIS && (
+            <button
+              type="button"
+              onClick={() => setExpandido(!expandido)}
+              className="text-xs font-semibold text-acpb-yellow hover:underline mt-1"
+            >
+              {expandido ? 'Recolher' : `Ver todas (${ordenados.length})`}
+            </button>
           )}
 
           <p className="text-xs text-text-muted pt-2 border-t border-surface-border mt-2">

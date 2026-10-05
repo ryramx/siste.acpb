@@ -1,6 +1,7 @@
 import React from 'react';
 import { describe, expect, it } from 'vitest';
 import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { GraficoPorCategoria } from './GraficoPorCategoria';
 import { TotalPorCategoria } from '../../services/dashboardFinanceiroService';
 
@@ -40,7 +41,7 @@ describe('GraficoPorCategoria', () => {
     renderizar();
     const svg = screen.getByRole('img');
     expect(svg.textContent).toContain('R$ 1.200,00');
-    expect(svg.textContent).toContain('60%'); // 1200 de 2000
+    expect(svg.textContent).toContain('60,00%'); // 1200 de 2000
   });
 
   it('encurta nome de categoria longo em vez de deixar vazar do cartao', () => {
@@ -51,7 +52,7 @@ describe('GraficoPorCategoria', () => {
 
   it('cada barra tem rotulo acessivel com o valor cheio', () => {
     renderizar();
-    expect(screen.getByLabelText(/Aluguel: R\$ 1\.200,00, 60% do total/)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Aluguel: R\$ 1\.200,00, 60,00% do total/)).toBeInTheDocument();
   });
 
   it('mostra o total do periodo', () => {
@@ -63,5 +64,51 @@ describe('GraficoPorCategoria', () => {
     renderizar([]);
     expect(screen.getByText(/nenhum lançamento confirmado no período/i)).toBeInTheDocument();
     expect(screen.queryByRole('img')).not.toBeInTheDocument();
+  });
+
+  it('mostra a categoria pequena como "< 0,01%", e nao 0%', () => {
+    // Trazido das barras antigas do dashboard: uma receita de centavos ao lado de uma de
+    // milhoes aparecia como 0%, como se nao existisse.
+    renderizar([
+      { categoriaId: '1', categoria: 'Grande', tipo: 'DESPESA', total: 10_000_000 },
+      { categoriaId: '2', categoria: 'Pequena', tipo: 'DESPESA', total: 0.02 }
+    ]);
+    expect(screen.getByRole('img').textContent).toContain('< 0,01%');
+  });
+
+  it('mostra as 5 maiores e recolhe o resto', async () => {
+    const usuario = userEvent.setup();
+    const muitas = Array.from({ length: 7 }, (_, i) => ({
+      categoriaId: String(i),
+      categoria: `Categoria ${i}`,
+      tipo: 'DESPESA' as const,
+      total: (i + 1) * 100
+    }));
+    renderizar(muitas);
+    // As maiores sao as de indice alto; a 0 e a 1 ficam recolhidas.
+    expect(screen.getByRole('img').textContent).toContain('Categoria 6');
+    expect(screen.getByRole('img').textContent).not.toContain('Categoria 0');
+
+    await usuario.click(screen.getByRole('button', { name: 'Ver todas (7)' }));
+    expect(screen.getByRole('img').textContent).toContain('Categoria 0');
+
+    await usuario.click(screen.getByRole('button', { name: 'Recolher' }));
+    expect(screen.getByRole('img').textContent).not.toContain('Categoria 0');
+  });
+
+  it('o total do periodo considera tambem as recolhidas', () => {
+    const muitas = Array.from({ length: 7 }, (_, i) => ({
+      categoriaId: String(i),
+      categoria: `Categoria ${i}`,
+      tipo: 'DESPESA' as const,
+      total: 100
+    }));
+    renderizar(muitas);
+    expect(screen.getByText('R$ 700,00')).toBeInTheDocument();
+  });
+
+  it('sem botao quando cabem todas', () => {
+    renderizar();
+    expect(screen.queryByRole('button', { name: /ver todas/i })).not.toBeInTheDocument();
   });
 });

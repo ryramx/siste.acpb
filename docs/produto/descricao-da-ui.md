@@ -607,12 +607,13 @@ Financeiro
 # 19. Dashboard financeiro
 
 ```
-┌─────────────────────────────────────────────────┐
-│ Receitas     │ Despesas     │ Saldo             │
-│ R$ 8.420     │ R$ 6.830     │ R$ 1.590          │
-└──────────────┴──────────────┴───────────────────┘
+Período: [2026 ▼] [Todos os meses ▼]      ← topo do Financeiro, vale para todas as abas
 
-[6 meses] [12 meses] [Este ano] [Tudo]      ← filtro, uma linha, vale para tudo abaixo
+┌────────────┬────────────┬────────────┬──────────────┐
+│ Receitas   │ Despesas   │ Resultado  │ Saldo em     │
+│ R$ 8.420   │ R$ 6.830   │ R$ 1.590   │ caixa        │
+│            │            │ no período │ R$ 12.090    │
+└────────────┴────────────┴────────────┴──────────────┘
 
 ┌─────────────────────────────────────────────────┐
 │ Receitas e despesas por mês      ▪Receitas ▪Desp│
@@ -658,9 +659,24 @@ tradicionais: eles nunca aparecem encostados um no outro, então o problema não
 e o botão "ver os mesmos dados em tabela" abre a tabela equivalente. Gráfico que só entrega o
 número ao passar o mouse exclui quem usa teclado, leitor de tela ou celular.
 
-**O período é um filtro só, acima de tudo.** Os três gráficos recarregam juntos — números que
-discordam entre si por causa de filtros separados são pior do que número nenhum. Enquanto
-recarrega, o gráfico anterior fica esmaecido em vez de virar esqueleto, para a tela não saltar.
+**O período é um filtro só, acima de tudo.** É o seletor de ano e mês do topo do Financeiro, o
+mesmo dos cartões e da lista; os gráficos não têm filtro próprio. A primeira versão tinha botões
+"6 meses / 12 meses / este ano / tudo" só para os gráficos, e a tela chegou a ter dois filtros
+que podiam discordar — números que discordam entre si por causa de filtros separados são pior
+do que número nenhum. A evolução mensal mostra o ano escolhido, de janeiro até o mês atual,
+mesmo com um mês selecionado: um mês sozinho seria uma coluna só, e a pergunta do gráfico é a
+comparação entre meses. As categorias seguem o período exato. Enquanto recarrega, o gráfico
+anterior fica esmaecido em vez de virar esqueleto, para a tela não saltar.
+
+**Resultado e saldo em caixa são dois cartões.** O resultado (receitas − despesas) segue o
+período; o saldo em caixa não — é o dinheiro que existe hoje, contando o saldo inicial das
+contas — e vem da mesma rota do dashboard geral, que usa o mesmo nome. Antes um cartão chamado
+"disponível em caixa" mostrava o resultado, e o dashboard geral mostrava o saldo com o mesmo
+nome e outro valor.
+
+**As categorias mostram as 5 maiores**, com "Ver todas": despesas têm 15 no cadastro padrão, e
+a lista inteira empurrava o resto da tela. O percentual tem duas casas, e "< 0,01%" para o que
+existe mas é pequeno — arredondar para inteiro mostrava 0% em categoria com dinheiro.
 
 **As agregações vêm do banco, não do navegador.** `GET /dashboard/financeiro/evolucao` e
 `/por-categoria` somam no Postgres. Somar no cliente exigiria carregar a lista inteira de
