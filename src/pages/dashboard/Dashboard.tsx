@@ -35,7 +35,10 @@ interface DashboardResumo {
 }
 
 export const Dashboard: React.FC = () => {
-  const { user } = useAuth();
+  const { user, hasPermission } = useAuth();
+  // O perfil Financeiro vê o dashboard mas não a agenda: sem eventos.visualizar, a lista de
+  // eventos responde 403 e derrubaria o dashboard inteiro.
+  const veEventos = hasPermission('view_events');
   const navigate = useNavigate();
 
   const [resumo, setResumo] = useState<DashboardResumo | null>(null);
@@ -52,7 +55,7 @@ export const Dashboard: React.FC = () => {
     try {
       const [resumoData, eventos] = await Promise.all([
         apiClient.get<DashboardResumo>('/dashboard/resumo'),
-        eventService.getAll()
+        veEventos ? eventService.getAll() : Promise.resolve<EventItem[]>([])
       ]);
       setResumo(resumoData);
       const hoje = hojeIso();
@@ -114,12 +117,16 @@ export const Dashboard: React.FC = () => {
           </p>
         </div>
         <div className="z-10 flex gap-2">
-          <Button variant="outline" size="sm" onClick={() => navigate('/membros')}>
-            Ver Membros
-          </Button>
-          <Button variant="primary" size="sm" onClick={() => navigate('/financeiro')}>
-            Gestão Financeira
-          </Button>
+          {hasPermission('view_members') && (
+            <Button variant="outline" size="sm" onClick={() => navigate('/membros')}>
+              Ver Membros
+            </Button>
+          )}
+          {hasPermission('view_financial') && (
+            <Button variant="primary" size="sm" onClick={() => navigate('/financeiro')}>
+              Gestão Financeira
+            </Button>
+          )}
         </div>
         <div className="absolute right-0 top-0 bottom-0 w-64 bg-gradient-to-l from-acpb-green/20 to-transparent pointer-events-none" />
       </div>
@@ -159,57 +166,59 @@ export const Dashboard: React.FC = () => {
       {/* Seção do Meio: Próximos Eventos + Situação Financeira */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Próximos Eventos */}
-        <div className="bg-surface-card border border-surface-border rounded-2xl p-6 flex flex-col justify-between">
-          <div>
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-white font-heading flex items-center gap-2">
-                <Calendar className="w-5 h-5 text-acpb-yellow" />
-                Próximos eventos
-              </h3>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => navigate('/eventos')}
-                rightIcon={<ChevronRight className="w-4 h-4" />}
-              >
-                Ver todos
-              </Button>
-            </div>
-
-            {proximosEventos.length === 0 ? (
-              <p className="text-xs text-text-muted py-4 text-center">
-                Nenhum evento futuro agendado.
-              </p>
-            ) : (
-              <div className="space-y-3">
-                {proximosEventos.map((evt) => (
-                  <div
-                    key={evt.id}
-                    onClick={() => navigate(`/eventos/${evt.id}`)}
-                    className="p-3.5 bg-surface-bg border border-surface-border rounded-xl flex items-center justify-between hover:border-acpb-green/50 transition-colors cursor-pointer"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-lg bg-acpb-green/30 border border-acpb-green flex flex-col items-center justify-center text-white shrink-0">
-                        <span className="text-[10px] font-bold uppercase">
-                          {evt.date.split('-')[1]}/{evt.date.split('-')[0].slice(2)}
-                        </span>
-                        <span className="text-xs font-bold text-acpb-yellow">{evt.date.split('-')[2]}</span>
-                      </div>
-                      <div>
-                        <h4 className="text-sm font-semibold text-white">{evt.title}</h4>
-                        <p className="text-xs text-text-secondary flex items-center gap-1.5 mt-0.5">
-                          <Clock className="w-3 h-3 text-acpb-yellow" />
-                          {evt.time ?? 'Horário a definir'} • {evt.location}
-                        </p>
-                      </div>
-                    </div>
-                    <Badge variant="success">{evt.status}</Badge>
-                  </div>
-                ))}
+        {veEventos && (
+          <div className="bg-surface-card border border-surface-border rounded-2xl p-6 flex flex-col justify-between">
+            <div>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-white font-heading flex items-center gap-2">
+                  <Calendar className="w-5 h-5 text-acpb-yellow" />
+                  Próximos eventos
+                </h3>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => navigate('/eventos')}
+                  rightIcon={<ChevronRight className="w-4 h-4" />}
+                >
+                  Ver todos
+                </Button>
               </div>
-            )}
+
+              {proximosEventos.length === 0 ? (
+                <p className="text-xs text-text-muted py-4 text-center">
+                  Nenhum evento futuro agendado.
+                </p>
+              ) : (
+                <div className="space-y-3">
+                  {proximosEventos.map((evt) => (
+                    <div
+                      key={evt.id}
+                      onClick={() => navigate(`/eventos/${evt.id}`)}
+                      className="p-3.5 bg-surface-bg border border-surface-border rounded-xl flex items-center justify-between hover:border-acpb-green/50 transition-colors cursor-pointer"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-lg bg-acpb-green/30 border border-acpb-green flex flex-col items-center justify-center text-white shrink-0">
+                          <span className="text-[10px] font-bold uppercase">
+                            {evt.date.split('-')[1]}/{evt.date.split('-')[0].slice(2)}
+                          </span>
+                          <span className="text-xs font-bold text-acpb-yellow">{evt.date.split('-')[2]}</span>
+                        </div>
+                        <div>
+                          <h4 className="text-sm font-semibold text-white">{evt.title}</h4>
+                          <p className="text-xs text-text-secondary flex items-center gap-1.5 mt-0.5">
+                            <Clock className="w-3 h-3 text-acpb-yellow" />
+                            {evt.time ?? 'Horário a definir'} • {evt.location}
+                          </p>
+                        </div>
+                      </div>
+                      <Badge variant="success">{evt.status}</Badge>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Situação Financeira */}
         <div className="bg-surface-card border border-surface-border rounded-2xl p-6 flex flex-col justify-between">
@@ -219,14 +228,16 @@ export const Dashboard: React.FC = () => {
                 <TrendingUp className="w-5 h-5 text-acpb-green-fg" />
                 Situação financeira (confirmada)
               </h3>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => navigate('/financeiro')}
-                rightIcon={<ChevronRight className="w-4 h-4" />}
-              >
-                Relatório
-              </Button>
+              {hasPermission('view_financial') && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => navigate('/financeiro')}
+                  rightIcon={<ChevronRight className="w-4 h-4" />}
+                >
+                  Relatório
+                </Button>
+              )}
             </div>
 
             <div className="grid grid-cols-3 gap-3 mb-4">
