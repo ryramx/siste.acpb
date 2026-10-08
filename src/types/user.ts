@@ -27,6 +27,8 @@ export type PermissionKey =
   | 'edit_beneficiaries'
   | 'view_projects'
   | 'edit_projects'
+  /** Editar um projeto e os vínculos dele exige `projetos.editar`; criar exige só `projetos.criar`. */
+  | 'update_projects'
   | 'view_events'
   | 'edit_events'
   /** Cadastro de Pessoa em si (distinto de membros/voluntários/beneficiários).

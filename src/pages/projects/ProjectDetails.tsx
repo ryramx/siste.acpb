@@ -49,6 +49,11 @@ export const ProjectDetails: React.FC = () => {
   // Secretário, Coordenador e Voluntário veem projetos mas não o financeiro. Pedir as
   // movimentações para eles só rende um 403 — e, dentro do Promise.all, derrubava a tela toda.
   const podeVerFinanceiro = hasPermission('view_financial');
+  // Mesmo caso com o Financeiro, que vê projetos mas não a agenda (eventos.visualizar).
+  const podeVerEventos = hasPermission('view_events');
+  // Secretário e Financeiro só visualizam projetos: sem isto viam Editar, Alterar responsável
+  // e os botões de vínculo, e tomavam 403 ao salvar.
+  const podeEditar = hasPermission('update_projects');
 
   const [project, setProject] = useState<Project | null>(null);
   const [activeTab, setActiveTab] = useState<'overview' | 'beneficiaries' | 'volunteers' | 'events' | 'financial'>('overview');
@@ -96,7 +101,7 @@ export const ProjectDetails: React.FC = () => {
       projectService.getById(id),
       projectService.getBeneficiaries(id),
       projectService.getVolunteers(id),
-      eventService.getAll(),
+      podeVerEventos ? eventService.getAll() : Promise.resolve([] as EventItem[]),
       podeVerFinanceiro ? financialService.getAll() : Promise.resolve([] as FinancialTransaction[])
     ])
       .then(([p, bList, vList, eList, fList]) => {
@@ -119,7 +124,7 @@ export const ProjectDetails: React.FC = () => {
     return () => {
       cancelado = true;
     };
-  }, [id, podeVerFinanceiro, tentativa]);
+  }, [id, podeVerFinanceiro, podeVerEventos, tentativa]);
 
   /** Carrega candidatos sob demanda, ao abrir o modal — listar todos no load da página
    *  custaria duas varreduras de /pessoas/ que a maioria das visitas nunca usa. */
@@ -286,24 +291,26 @@ export const ProjectDetails: React.FC = () => {
             Responsável Técnico: {project.responsibleName ?? 'Não definido'}
           </p>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            leftIcon={<Pencil className="w-4 h-4" />}
-            onClick={abrirEdicao}
-          >
-            Editar
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            leftIcon={<UserCog className="w-4 h-4" />}
-            onClick={openResponsibleModal}
-          >
-            {project.responsibleName ? 'Alterar responsável' : 'Definir responsável'}
-          </Button>
-        </div>
+        {podeEditar && (
+          <div className="flex flex-wrap items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              leftIcon={<Pencil className="w-4 h-4" />}
+              onClick={abrirEdicao}
+            >
+              Editar
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              leftIcon={<UserCog className="w-4 h-4" />}
+              onClick={openResponsibleModal}
+            >
+              {project.responsibleName ? 'Alterar responsável' : 'Definir responsável'}
+            </Button>
+          </div>
+        )}
       </div>
 
       {/* Cards de Visão Geral das Relações */}
@@ -363,22 +370,24 @@ export const ProjectDetails: React.FC = () => {
 
         {activeTab === 'beneficiaries' && (
           <div className="space-y-4">
-            <div className="flex justify-end">
-              <Button
-                size="sm"
-                leftIcon={<Plus className="w-4 h-4" />}
-                onClick={openBeneficiaryModal}
-              >
-                Adicionar Beneficiário
-              </Button>
-            </div>
+            {podeEditar && (
+              <div className="flex justify-end">
+                <Button
+                  size="sm"
+                  leftIcon={<Plus className="w-4 h-4" />}
+                  onClick={openBeneficiaryModal}
+                >
+                  Adicionar Beneficiário
+                </Button>
+              </div>
+            )}
             {beneficiaries.length === 0 ? (
               <EmptyState
                 title="Nenhum beneficiário vinculado"
                 description="Vincule as pessoas atendidas por este projeto para acompanhar quem ele alcança."
                 icon={<HeartHandshake className="w-8 h-8" />}
-                actionLabel="Adicionar Beneficiário"
-                onAction={openBeneficiaryModal}
+                actionLabel={podeEditar ? 'Adicionar Beneficiário' : undefined}
+                onAction={podeEditar ? openBeneficiaryModal : undefined}
               />
             ) : (
               <div className="space-y-3">
@@ -391,13 +400,15 @@ export const ProjectDetails: React.FC = () => {
                       <p className="text-sm font-medium text-white truncate">{b.personName}</p>
                       {b.role && <p className="text-xs text-text-secondary">{b.role}</p>}
                     </div>
-                    <button
-                      onClick={() => handleRemoveBeneficiary(b)}
-                      aria-label={`Remover ${b.personName} do projeto`}
-                      className="text-text-secondary hover:text-red-400 transition-colors p-1.5 rounded-lg hover:bg-surface-border shrink-0"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                    {podeEditar && (
+                      <button
+                        onClick={() => handleRemoveBeneficiary(b)}
+                        aria-label={`Remover ${b.personName} do projeto`}
+                        className="text-text-secondary hover:text-red-400 transition-colors p-1.5 rounded-lg hover:bg-surface-border shrink-0"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    )}
                   </div>
                 ))}
               </div>
@@ -407,22 +418,24 @@ export const ProjectDetails: React.FC = () => {
 
         {activeTab === 'volunteers' && (
           <div className="space-y-4">
-            <div className="flex justify-end">
-              <Button
-                size="sm"
-                leftIcon={<Plus className="w-4 h-4" />}
-                onClick={openVolunteerModal}
-              >
-                Adicionar Voluntário
-              </Button>
-            </div>
+            {podeEditar && (
+              <div className="flex justify-end">
+                <Button
+                  size="sm"
+                  leftIcon={<Plus className="w-4 h-4" />}
+                  onClick={openVolunteerModal}
+                >
+                  Adicionar Voluntário
+                </Button>
+              </div>
+            )}
             {volunteers.length === 0 ? (
               <EmptyState
                 title="Nenhum voluntário vinculado"
                 description="Vincule os voluntários que atuam neste projeto para montar a equipe."
                 icon={<Users className="w-8 h-8" />}
-                actionLabel="Adicionar Voluntário"
-                onAction={openVolunteerModal}
+                actionLabel={podeEditar ? 'Adicionar Voluntário' : undefined}
+                onAction={podeEditar ? openVolunteerModal : undefined}
               />
             ) : (
               <div className="space-y-3">
@@ -438,13 +451,15 @@ export const ProjectDetails: React.FC = () => {
                         {v.area && <span className="text-acpb-yellow"> · {v.area}</span>}
                       </p>
                     </div>
-                    <button
-                      onClick={() => handleRemoveVolunteer(v)}
-                      aria-label={`Remover ${v.personName} do projeto`}
-                      className="text-text-secondary hover:text-red-400 transition-colors p-1.5 rounded-lg hover:bg-surface-border shrink-0"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                    {podeEditar && (
+                      <button
+                        onClick={() => handleRemoveVolunteer(v)}
+                        aria-label={`Remover ${v.personName} do projeto`}
+                        className="text-text-secondary hover:text-red-400 transition-colors p-1.5 rounded-lg hover:bg-surface-border shrink-0"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    )}
                   </div>
                 ))}
               </div>

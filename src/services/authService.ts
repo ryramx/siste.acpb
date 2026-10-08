@@ -36,6 +36,8 @@ const REGRAS_DE_PERMISSAO: Record<PermissionKey, string[] | null> = {
   edit_beneficiaries: ['beneficiarios.criar', 'beneficiarios.editar'],
   view_projects: ['projetos.visualizar'],
   edit_projects: ['projetos.criar', 'projetos.editar'],
+  // O PUT do projeto e os vínculos (voluntários, beneficiários) exigem `projetos.editar`.
+  update_projects: ['projetos.editar'],
   view_events: ['eventos.visualizar'],
   edit_events: ['eventos.criar', 'eventos.editar'],
   view_people: ['pessoas.visualizar'],
