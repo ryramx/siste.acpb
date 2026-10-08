@@ -185,3 +185,18 @@ def test_voluntario_acessa_relatorio_eventos(token_voluntario):
         "/relatorios/eventos", headers={"Authorization": f"Bearer {token_voluntario}"}
     )
     assert response.status_code == 200
+
+
+def test_relatorio_csv_escreve_numero_data_e_booleano_no_formato_brasileiro():
+    """No Excel em português o ponto é separador de milhar: "576.22" abria como 57622."""
+    from datetime import date
+    from decimal import Decimal
+
+    from app.core.relatorios import gerar_csv
+
+    conteudo = gerar_csv(
+        ["data", "valor", "exige_inscricao"],
+        [{"data": date(2026, 1, 11), "valor": Decimal("576.22"), "exige_inscricao": True}],
+    ).decode("utf-8-sig")
+
+    assert conteudo.splitlines()[1] == "11/01/2026;576,22;Sim"

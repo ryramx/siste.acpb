@@ -1,5 +1,7 @@
 import csv
 import io
+from datetime import date, datetime
+from decimal import Decimal
 from typing import Any, Literal
 
 from openpyxl import Workbook
@@ -17,8 +19,28 @@ MIME_POR_FORMATO = {
 }
 
 
+def _celula_como_texto(valor: Any) -> str:
+    """Escreve o valor como uma pessoa no Brasil lê, no CSV e no PDF.
+
+    `str()` puro gerava "576.22", "True" e "2026-01-11". No Excel em português o ponto é
+    separador de milhar, então "576.22" abria como 57622 -- o relatório financeiro saía com
+    valores errados. A vírgula decimal vai sem separador de milhar para o Excel ler como número.
+    """
+    if valor is None:
+        return ""
+    if isinstance(valor, bool):
+        return "Sim" if valor else "Não"
+    if isinstance(valor, (Decimal, float)):
+        return f"{valor:.2f}".replace(".", ",")
+    if isinstance(valor, datetime):
+        return valor.strftime("%d/%m/%Y %H:%M")
+    if isinstance(valor, date):
+        return valor.strftime("%d/%m/%Y")
+    return str(valor)
+
+
 def _linhas_como_texto(colunas: list[str], linhas: list[dict[str, Any]]) -> list[list[str]]:
-    return [[("" if row.get(c) is None else str(row.get(c))) for c in colunas] for row in linhas]
+    return [[_celula_como_texto(row.get(c)) for c in colunas] for row in linhas]
 
 
 def gerar_csv(colunas: list[str], linhas: list[dict[str, Any]]) -> bytes:

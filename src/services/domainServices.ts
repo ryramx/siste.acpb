@@ -1,5 +1,5 @@
 import { Member, Volunteer, Beneficiary, Project, ProjectVolunteerLink, ProjectBeneficiaryLink, EventItem, EventInscription, InscriptionStatus, FinancialTransaction, AttendanceRecord } from '../types/domain';
-import { apiClient } from './apiClient';
+import { apiClient, ApiError } from './apiClient';
 import { apenasDigitos } from '../utils/mascaras';
 import { Periodo, periodoNaUrl } from '../utils/periodo';
 import { hojeIso } from '../utils/data';
@@ -604,16 +604,32 @@ async function despesasPorProjeto(): Promise<Map<number, number>> {
   }
 }
 
+/** Lê um dado complementar da tela. Sem a permissão dele (403), a tela segue sem o dado em vez
+ * de quebrar inteira: o perfil Voluntário não tem pessoas.visualizar e o Financeiro não tem
+ * eventos.visualizar, mas os dois enxergam projetos e o dashboard. */
+async function sePermitido<T>(leitura: Promise<T>, semPermissao: T): Promise<T> {
+  try {
+    return await leitura;
+  } catch (err) {
+    if (err instanceof ApiError && err.status === 403) return semPermissao;
+    throw err;
+  }
+}
+
+async function listarEventosVisiveis(): Promise<ApiEvento[]> {
+  return sePermitido(apiClient.get<ApiEvento[]>('/eventos/'), []);
+}
+
 async function resolverNomePessoa(
   pessoaId: number | null,
-  cache: Map<number, string>
+  cache: Map<number, string | null>
 ): Promise<string | null> {
   if (pessoaId === null) return null;
   if (!cache.has(pessoaId)) {
-    const pessoa = await apiClient.get<ApiPessoa>(`/pessoas/${pessoaId}`);
-    cache.set(pessoaId, pessoa.nome_completo);
+    const pessoa = await sePermitido(apiClient.get<ApiPessoa>(`/pessoas/${pessoaId}`), null);
+    cache.set(pessoaId, pessoa?.nome_completo ?? null);
   }
-  return cache.get(pessoaId)!;
+  return cache.get(pessoaId) ?? null;
 }
 
 function toProject(
@@ -685,11 +701,11 @@ export const projectService = {
   async getAll(): Promise<Project[]> {
     const [projetos, eventos, despesas] = await Promise.all([
       apiClient.get<ApiProjeto[]>('/projetos/'),
-      apiClient.get<ApiEvento[]>('/eventos/'),
+      listarEventosVisiveis(),
       despesasPorProjeto()
     ]);
 
-    const nomesCache = new Map<number, string>();
+    const nomesCache = new Map<number, string | null>();
     return Promise.all(
       projetos.map(async (p) => {
         const nome = await resolverNomePessoa(p.responsavel_id, nomesCache);
@@ -702,7 +718,7 @@ export const projectService = {
   async getById(id: string): Promise<Project | undefined> {
     const [p, eventos, despesas] = await Promise.all([
       apiClient.get<ApiProjeto>(`/projetos/${id}`),
-      apiClient.get<ApiEvento[]>('/eventos/'),
+      listarEventosVisiveis(),
       despesasPorProjeto()
     ]);
     const nome = await resolverNomePessoa(p.responsavel_id, new Map());
@@ -743,7 +759,7 @@ export const projectService = {
     const atualizado = await apiClient.put<ApiProjeto>(`/projetos/${id}`, corpo);
     const nome = await resolverNomePessoa(atualizado.responsavel_id, new Map());
     const [eventos, despesas] = await Promise.all([
-      apiClient.get<ApiEvento[]>('/eventos/'),
+      listarEventosVisiveis(),
       despesasPorProjeto()
     ]);
     const eventsCount = eventos.filter((e) => e.projeto_id === atualizado.id).length;
@@ -823,7 +839,8 @@ function toEventItem(
     title: e.nome,
     description: e.descricao ?? '',
     date: e.data_evento,
-    time: e.hora_inicio,
+    // A API devolve "19:00:00"; a tela mostra e edita só horas e minutos.
+    time: e.hora_inicio ? e.hora_inicio.slice(0, 5) : null,
     location: e.local ?? '',
     responsibleName,
     projectId: e.projeto_id ? String(e.projeto_id) : undefined,
@@ -838,7 +855,7 @@ function toEventItem(
 export const eventService = {
   async getAll(): Promise<EventItem[]> {
     const eventos = await apiClient.get<ApiEvento[]>('/eventos/');
-    const nomesCache = new Map<number, string>();
+    const nomesCache = new Map<number, string | null>();
     return Promise.all(
       eventos.map(async (e) => {
         const nome = await resolverNomePessoa(e.responsavel_id, nomesCache);
@@ -1133,7 +1150,7 @@ export const financialService = {
     ]);
     const contasPorId = new Map(contas.map((c) => [c.id, c.nome]));
     const categoriasPorId = new Map(categorias.map((c) => [c.id, c.nome]));
-    const pessoasCache = new Map<number, string>();
+    const pessoasCache = new Map<number, string | null>();
     const projetosCache = new Map<number, string>();
 
     return Promise.all(
