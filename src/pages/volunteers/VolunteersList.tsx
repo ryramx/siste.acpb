@@ -42,6 +42,12 @@ export const VolunteersList: React.FC = () => {
     v.availability === NAO_INFORMADA ? [] : separarDisponibilidade(v.availability)
   );
 
+  // A área é texto livre no cadastro ("Cozinha", "Pedagogia"...), então o filtro oferece as
+  // áreas que existem de fato. Uma lista fixa deixava de fora qualquer área fora dela.
+  const areasEmUso = [...new Set(volunteers.map((v) => v.area))].sort((a, b) =>
+    a.localeCompare(b, 'pt-BR')
+  );
+
   const filteredVolunteers = volunteers.filter((v) => {
     // O subtitulo da tela promete busca por "dias disponiveis", entao a disponibilidade
     // tambem entra no termo -- antes so nome e habilidades eram considerados.
@@ -111,10 +117,7 @@ export const VolunteersList: React.FC = () => {
             onChange={(e) => setAreaFilter(e.target.value)}
             options={[
               { value: 'TODAS', label: 'Todas as Áreas' },
-              { value: 'Educação', label: 'Educação' },
-              { value: 'Saúde', label: 'Saúde' },
-              { value: 'Assistência Social', label: 'Assistência Social' },
-              { value: 'Eventos', label: 'Eventos' }
+              ...areasEmUso.map((area) => ({ value: area, label: area }))
             ]}
           />
         </div>

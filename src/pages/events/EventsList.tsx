@@ -310,7 +310,9 @@ export const EventsList: React.FC = () => {
               <div className="flex items-center gap-4 text-xs text-text-secondary mt-1">
                 <span className="flex items-center gap-1"><Clock className="w-3.5 h-3.5 text-acpb-yellow" /> {evt.time ?? 'Sem horário'}</span>
                 <span className="flex items-center gap-1"><MapPin className="w-3.5 h-3.5 text-acpb-yellow" /> {evt.location}</span>
-                <span className="flex items-center gap-1"><Users className="w-3.5 h-3.5" /> {evt.filledSlots}{evt.maxSlots !== null ? `/${evt.maxSlots}` : ''} vagas</span>
+                <span className="flex items-center gap-1"><Users className="w-3.5 h-3.5" /> {evt.maxSlots !== null
+                    ? `${evt.filledSlots}/${evt.maxSlots} vagas`
+                    : `${evt.filledSlots} inscritos`}</span>
               </div>
             </div>
           </div>
