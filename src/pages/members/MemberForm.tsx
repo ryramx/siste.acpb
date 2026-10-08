@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, Save } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
@@ -39,6 +39,17 @@ export const MemberForm: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const isEditing = Boolean(id);
   const { addToast } = useToast();
+  // Vindo da tela de Pessoas ("Tornar membro"), a pessoa já chega escolhida.
+  const [searchParams] = useSearchParams();
+  const pessoaDaUrl = isEditing ? '' : (searchParams.get('pessoa') ?? '');
+
+  /** Novo membro pode ser alguém que já está no cadastro (uma voluntária que vira membro, ou
+   * uma pessoa registrada antes na tela de Pessoas). Sem esta opção, o formulário só criava
+   * pessoa nova, e o CPF repetido era recusado sem saída. */
+  const [origem, setOrigem] = useState<'nova' | 'cadastrada'>(pessoaDaUrl ? 'cadastrada' : 'nova');
+  const [pessoasSemMembro, setPessoasSemMembro] = useState<{ id: string; name: string }[]>([]);
+  const [pessoaId, setPessoaId] = useState('');
+  const [carregandoPessoa, setCarregandoPessoa] = useState(false);
 
   const [loading, setLoading] = useState(false);
   const [loadingInitialData, setLoadingInitialData] = useState(isEditing);
@@ -83,6 +94,23 @@ export const MemberForm: React.FC = () => {
   }, []);
 
   useEffect(() => {
+    if (isEditing) return;
+    memberService
+      .listarPessoasSemMembro()
+      .then(setPessoasSemMembro)
+      .catch(() =>
+        addToast({
+          type: 'error',
+          title: 'Erro ao carregar o cadastro',
+          message: 'Não foi possível carregar a lista de pessoas.'
+        })
+      );
+    if (pessoaDaUrl) escolherPessoa(pessoaDaUrl);
+    // Só na abertura do formulário.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
     if (!id) return;
     memberService.getById(id).then((membro) => {
       if (membro) {
@@ -117,6 +145,69 @@ export const MemberForm: React.FC = () => {
       setLoadingInitialData(false);
     });
   }, [id]);
+
+  const DADOS_PESSOAIS_VAZIOS = {
+    name: '',
+    cpf: '',
+    rg: '',
+    birthDate: '',
+    gender: '',
+    maritalStatus: '',
+    occupation: '',
+    education: '',
+    motherName: '',
+    fatherName: '',
+    guardianName: '',
+    guardianPhone: '',
+    phone: '',
+    whatsapp: '',
+    email: '',
+    cep: '',
+    address: '',
+    neighborhood: '',
+    city: 'São Lourenço da Mata',
+    state: 'PE'
+  };
+
+  /** Preenche o formulário com o que já está no cadastro da pessoa: quem a escolhe confere e
+   * completa, em vez de redigitar. O que for alterado aqui é salvo na própria pessoa. */
+  const escolherPessoa = async (novoId: string) => {
+    setPessoaId(novoId);
+    if (!novoId) {
+      setFormData((prev) => ({ ...prev, ...DADOS_PESSOAIS_VAZIOS }));
+      return;
+    }
+    setCarregandoPessoa(true);
+    try {
+      const dados = await memberService.dadosDaPessoa(novoId);
+      setFormData((prev) => ({
+        ...prev,
+        ...dados,
+        cpf: formatarCPF(dados.cpf),
+        phone: formatarTelefone(dados.phone),
+        whatsapp: formatarTelefone(dados.whatsapp),
+        guardianPhone: formatarTelefone(dados.guardianPhone),
+        cep: formatarCEP(dados.cep)
+      }));
+    } catch {
+      setPessoaId('');
+      addToast({
+        type: 'error',
+        title: 'Erro ao carregar a pessoa',
+        message: 'Não foi possível carregar os dados desta pessoa.'
+      });
+    } finally {
+      setCarregandoPessoa(false);
+    }
+  };
+
+  const mudarOrigem = (nova: 'nova' | 'cadastrada') => {
+    setOrigem(nova);
+    setPessoaId('');
+    setFormData((prev) => ({ ...prev, ...DADOS_PESSOAIS_VAZIOS }));
+  };
+
+  const aguardandoPessoa = !isEditing && origem === 'cadastrada' && !pessoaId;
 
   /** Campos que sao exibidos com mascara enquanto o usuario digita. O que vai para a API
    * sao os digitos puros — ver `dadosParaEnvio`. */
@@ -180,6 +271,10 @@ export const MemberForm: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (aguardandoPessoa) {
+      addToast({ type: 'error', title: 'Escolha a pessoa', message: 'Selecione quem será o novo membro.' });
+      return;
+    }
     const erroNome = Object.values(errosNome).find(Boolean);
     if (erroNome) {
       addToast({ type: 'error', title: 'Confira os nomes', message: erroNome });
@@ -194,7 +289,8 @@ export const MemberForm: React.FC = () => {
       cpf: apenasDigitos(formData.cpf),
       phone: apenasDigitos(formData.phone),
       whatsapp: apenasDigitos(formData.whatsapp),
-      cep: apenasDigitos(formData.cep)
+      cep: apenasDigitos(formData.cep),
+      ...(origem === 'cadastrada' && pessoaId ? { pessoaId } : {})
     };
 
     try {
@@ -238,207 +334,251 @@ export const MemberForm: React.FC = () => {
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-8">
-        {/* SEÇÃO 1: INFORMAÇÕES PESSOAIS */}
-        <div className="bg-surface-card border border-surface-border p-6 rounded-2xl space-y-4">
-          <h2 className="text-base font-semibold text-acpb-yellow uppercase tracking-wider text-xs border-b border-surface-border pb-3">
-            1. Informações Pessoais
-          </h2>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Input
-              label="Nome completo"
-              name="name"
-              value={formData.name}
-              onChange={handleChange}
-              error={errosNome.name}
-              placeholder="Digite o nome completo"
-              required
-            />
-            <Input
-              label="CPF"
-              name="cpf"
-              value={formData.cpf}
-              onChange={handleChange}
-              placeholder="000.000.000-00"
-              inputMode="numeric"
-              helperText={avisoCpf ?? 'Opcional — deixe em branco se ainda não tiver o documento'}
-            />
-            <Input
-              label="RG"
-              name="rg"
-              value={formData.rg}
-              onChange={handleChange}
-              placeholder="Somente se a pessoa tiver o documento"
-            />
-            <Input
-              label="Data de Nascimento"
-              name="birthDate"
-              type="date"
-              value={formData.birthDate}
-              onChange={handleChange}
-            />
-            <Select
-              label="Sexo"
-              name="gender"
-              value={formData.gender}
-              onChange={handleChange}
-              options={[
-                { value: '', label: 'Não informado' },
-                { value: 'F', label: 'Feminino' },
-                { value: 'M', label: 'Masculino' },
-                { value: 'OUTRO', label: 'Outro' }
-              ]}
-            />
-            <Select
-              label="Estado civil"
-              name="maritalStatus"
-              value={formData.maritalStatus}
-              onChange={handleChange}
-              options={[
-                { value: '', label: 'Não informado' },
-                ...ESTADOS_CIVIS.map((e) => ({ value: e, label: e }))
-              ]}
-            />
-            <Select
-              label="Escolaridade"
-              name="education"
-              value={formData.education}
-              onChange={handleChange}
-              options={[
-                { value: '', label: 'Não informado' },
-                ...ESCOLARIDADES.map((e) => ({ value: e, label: e }))
-              ]}
-            />
-            <Input
-              label="Profissão"
-              name="occupation"
-              value={formData.occupation}
-              onChange={handleChange}
-              placeholder="Ex.: Professora, Autônomo"
-            />
-          </div>
-
-          {/* Filiação separada: são os campos mais longos da seção e, numa coluna só,
-              acompanham melhor o nome completo que já está acima. */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Input
-              label="Nome da mãe"
-              name="motherName"
-              value={formData.motherName}
-              onChange={handleChange}
-              error={errosNome.motherName}
-            />
-            <Input
-              label="Nome do pai"
-              name="fatherName"
-              value={formData.fatherName}
-              onChange={handleChange}
-              error={errosNome.fatherName}
-            />
-          </div>
-
-          {/* Só para menores, e decidido pela data já digitada -- não é preciso salvar para
-              a seção aparecer. Mostrá-la sempre poluiria o cadastro da maioria, que é
-              adulta; omiti-la deixaria sem contato as crianças atendidas nos projetos. */}
-          {ehMenorDeIdade(formData.birthDate) && (
-            <div className="bg-surface-bg border border-acpb-yellow/30 rounded-xl p-4 space-y-3">
-              <p className="text-xs text-acpb-yellow">
-                Pessoa com {idadeEmAnos(formData.birthDate)} anos — informe quem responde por
-                ela.
-              </p>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Input
-                  label="Responsável legal"
-                  name="guardianName"
-                  value={formData.guardianName}
-                  onChange={handleChange}
-                  error={errosNome.guardianName}
-                  placeholder="Nome de quem responde pelo menor"
+        {!isEditing && (
+          <div className="bg-surface-card border border-surface-border p-6 rounded-2xl space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Select
+                label="Quem será cadastrado"
+                value={origem}
+                onChange={(e) => mudarOrigem(e.target.value as 'nova' | 'cadastrada')}
+                options={[
+                  { value: 'nova', label: 'Uma pessoa nova' },
+                  { value: 'cadastrada', label: 'Alguém que já está no cadastro' }
+                ]}
+              />
+              {origem === 'cadastrada' && (
+                <Select
+                  label="Pessoa"
+                  value={pessoaId}
+                  onChange={(e) => escolherPessoa(e.target.value)}
+                  disabled={carregandoPessoa}
+                  options={[
+                    { value: '', label: 'Selecione...' },
+                    ...pessoasSemMembro.map((p) => ({ value: p.id, label: p.name }))
+                  ]}
                 />
-                <Input
-                  label="Telefone do responsável"
-                  name="guardianPhone"
-                  value={formData.guardianPhone}
-                  onChange={handleChange}
-                  placeholder="(81) 99999-9999"
-                  inputMode="tel"
-                  helperText="Contato para emergências durante as atividades"
-                />
-              </div>
+              )}
             </div>
-          )}
-        </div>
-
-        {/* SEÇÃO 2: CONTATO */}
-        <div className="bg-surface-card border border-surface-border p-6 rounded-2xl space-y-4">
-          <h2 className="text-base font-semibold text-acpb-yellow uppercase tracking-wider text-xs border-b border-surface-border pb-3">
-            2. Contato
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Input
-              label="Telefone Principal"
-              name="phone"
-              value={formData.phone}
-              onChange={handleChange}
-              placeholder="(81) 99999-9999"
-              inputMode="tel"
-            />
-            <Input
-              label="WhatsApp"
-              name="whatsapp"
-              value={formData.whatsapp}
-              onChange={handleChange}
-              placeholder="(81) 99999-9999"
-              inputMode="tel"
-              helperText="Deixe igual ao telefone se for o mesmo número"
-            />
-            <Input
-              label="E-mail"
-              name="email"
-              type="email"
-              value={formData.email}
-              onChange={handleChange}
-              placeholder="exemplo@email.com"
-            />
+            {origem === 'cadastrada' && (
+              <p className="text-xs text-text-muted">
+                {carregandoPessoa
+                  ? 'Carregando os dados...'
+                  : pessoaId
+                    ? 'Os dados abaixo vêm do cadastro da pessoa. O que for alterado aqui é salvo nele.'
+                    : pessoasSemMembro.length === 0
+                      ? 'Todas as pessoas do cadastro já são membros.'
+                      : 'Quem já é membro não aparece na lista.'}
+              </p>
+            )}
           </div>
-        </div>
+        )}
 
-        {/* SEÇÃO 3: ENDEREÇO */}
-        <div className="bg-surface-card border border-surface-border p-6 rounded-2xl space-y-4">
-          <h2 className="text-base font-semibold text-acpb-yellow uppercase tracking-wider text-xs border-b border-surface-border pb-3">
-            3. Endereço
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Input
-              label="CEP"
-              name="cep"
-              value={formData.cep}
-              onChange={handleCepChange}
-              placeholder="00000-000"
-              inputMode="numeric"
-              error={erroCep ?? undefined}
-              helperText={buscandoCep ? 'Buscando endereço...' : 'Preenche o endereço automaticamente'}
-            />
-            <div className="md:col-span-2">
+        {!aguardandoPessoa && (
+          <>
+          {/* SEÇÃO 1: INFORMAÇÕES PESSOAIS */}
+          <div className="bg-surface-card border border-surface-border p-6 rounded-2xl space-y-4">
+            <h2 className="text-base font-semibold text-acpb-yellow uppercase tracking-wider text-xs border-b border-surface-border pb-3">
+              1. Informações Pessoais
+            </h2>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Input
-                label="Endereço"
-                name="address"
-                value={formData.address}
+                label="Nome completo"
+                name="name"
+                value={formData.name}
                 onChange={handleChange}
-                placeholder="Rua das Flores, 123"
+                error={errosNome.name}
+                placeholder="Digite o nome completo"
+                required
+              />
+              <Input
+                label="CPF"
+                name="cpf"
+                value={formData.cpf}
+                onChange={handleChange}
+                placeholder="000.000.000-00"
+                inputMode="numeric"
+                helperText={avisoCpf ?? 'Opcional — deixe em branco se ainda não tiver o documento'}
+              />
+              <Input
+                label="RG"
+                name="rg"
+                value={formData.rg}
+                onChange={handleChange}
+                placeholder="Somente se a pessoa tiver o documento"
+              />
+              <Input
+                label="Data de Nascimento"
+                name="birthDate"
+                type="date"
+                value={formData.birthDate}
+                onChange={handleChange}
+              />
+              <Select
+                label="Sexo"
+                name="gender"
+                value={formData.gender}
+                onChange={handleChange}
+                options={[
+                  { value: '', label: 'Não informado' },
+                  { value: 'F', label: 'Feminino' },
+                  { value: 'M', label: 'Masculino' },
+                  { value: 'OUTRO', label: 'Outro' }
+                ]}
+              />
+              <Select
+                label="Estado civil"
+                name="maritalStatus"
+                value={formData.maritalStatus}
+                onChange={handleChange}
+                options={[
+                  { value: '', label: 'Não informado' },
+                  ...ESTADOS_CIVIS.map((e) => ({ value: e, label: e }))
+                ]}
+              />
+              <Select
+                label="Escolaridade"
+                name="education"
+                value={formData.education}
+                onChange={handleChange}
+                options={[
+                  { value: '', label: 'Não informado' },
+                  ...ESCOLARIDADES.map((e) => ({ value: e, label: e }))
+                ]}
+              />
+              <Input
+                label="Profissão"
+                name="occupation"
+                value={formData.occupation}
+                onChange={handleChange}
+                placeholder="Ex.: Professora, Autônomo"
               />
             </div>
-            <Input
-              label="Bairro"
-              name="neighborhood"
-              value={formData.neighborhood}
-              onChange={handleChange}
-              placeholder="Centro"
-            />
-            <Input label="Cidade" name="city" value={formData.city} onChange={handleChange} />
-            <Input label="Estado" name="state" value={formData.state} onChange={handleChange} />
+
+            {/* Filiação separada: são os campos mais longos da seção e, numa coluna só,
+                acompanham melhor o nome completo que já está acima. */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Input
+                label="Nome da mãe"
+                name="motherName"
+                value={formData.motherName}
+                onChange={handleChange}
+                error={errosNome.motherName}
+              />
+              <Input
+                label="Nome do pai"
+                name="fatherName"
+                value={formData.fatherName}
+                onChange={handleChange}
+                error={errosNome.fatherName}
+              />
+            </div>
+
+            {/* Só para menores, e decidido pela data já digitada -- não é preciso salvar para
+                a seção aparecer. Mostrá-la sempre poluiria o cadastro da maioria, que é
+                adulta; omiti-la deixaria sem contato as crianças atendidas nos projetos. */}
+            {ehMenorDeIdade(formData.birthDate) && (
+              <div className="bg-surface-bg border border-acpb-yellow/30 rounded-xl p-4 space-y-3">
+                <p className="text-xs text-acpb-yellow">
+                  Pessoa com {idadeEmAnos(formData.birthDate)} anos — informe quem responde por
+                  ela.
+                </p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <Input
+                    label="Responsável legal"
+                    name="guardianName"
+                    value={formData.guardianName}
+                    onChange={handleChange}
+                    error={errosNome.guardianName}
+                    placeholder="Nome de quem responde pelo menor"
+                  />
+                  <Input
+                    label="Telefone do responsável"
+                    name="guardianPhone"
+                    value={formData.guardianPhone}
+                    onChange={handleChange}
+                    placeholder="(81) 99999-9999"
+                    inputMode="tel"
+                    helperText="Contato para emergências durante as atividades"
+                  />
+                </div>
+              </div>
+            )}
           </div>
-        </div>
+
+          {/* SEÇÃO 2: CONTATO */}
+          <div className="bg-surface-card border border-surface-border p-6 rounded-2xl space-y-4">
+            <h2 className="text-base font-semibold text-acpb-yellow uppercase tracking-wider text-xs border-b border-surface-border pb-3">
+              2. Contato
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <Input
+                label="Telefone Principal"
+                name="phone"
+                value={formData.phone}
+                onChange={handleChange}
+                placeholder="(81) 99999-9999"
+                inputMode="tel"
+              />
+              <Input
+                label="WhatsApp"
+                name="whatsapp"
+                value={formData.whatsapp}
+                onChange={handleChange}
+                placeholder="(81) 99999-9999"
+                inputMode="tel"
+                helperText="Deixe igual ao telefone se for o mesmo número"
+              />
+              <Input
+                label="E-mail"
+                name="email"
+                type="email"
+                value={formData.email}
+                onChange={handleChange}
+                placeholder="exemplo@email.com"
+              />
+            </div>
+          </div>
+
+          {/* SEÇÃO 3: ENDEREÇO */}
+          <div className="bg-surface-card border border-surface-border p-6 rounded-2xl space-y-4">
+            <h2 className="text-base font-semibold text-acpb-yellow uppercase tracking-wider text-xs border-b border-surface-border pb-3">
+              3. Endereço
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <Input
+                label="CEP"
+                name="cep"
+                value={formData.cep}
+                onChange={handleCepChange}
+                placeholder="00000-000"
+                inputMode="numeric"
+                error={erroCep ?? undefined}
+                helperText={buscandoCep ? 'Buscando endereço...' : 'Preenche o endereço automaticamente'}
+              />
+              <div className="md:col-span-2">
+                <Input
+                  label="Endereço"
+                  name="address"
+                  value={formData.address}
+                  onChange={handleChange}
+                  placeholder="Rua das Flores, 123"
+                />
+              </div>
+              <Input
+                label="Bairro"
+                name="neighborhood"
+                value={formData.neighborhood}
+                onChange={handleChange}
+                placeholder="Centro"
+              />
+              <Input label="Cidade" name="city" value={formData.city} onChange={handleChange} />
+              <Input label="Estado" name="state" value={formData.state} onChange={handleChange} />
+            </div>
+          </div>
+
+          </>
+        )}
 
         {/* SEÇÃO 4: ASSOCIAÇÃO */}
         <div className="bg-surface-card border border-surface-border p-6 rounded-2xl space-y-4">
@@ -506,6 +646,7 @@ export const MemberForm: React.FC = () => {
             variant="primary"
             size="lg"
             isLoading={loading}
+            disabled={aguardandoPessoa || carregandoPessoa}
             leftIcon={<Save className="w-4 h-4" />}
           >
             Salvar Membro

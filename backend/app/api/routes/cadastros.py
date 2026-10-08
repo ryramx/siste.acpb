@@ -71,7 +71,7 @@ def cadastrar_pessoa_com_vinculo(
             if existente:
                 raise HTTPException(
                     status_code=400,
-                    detail="Já existe uma pessoa cadastrada com este CPF — use pessoa_id para reaproveitá-la",
+                    detail="Já existe uma pessoa cadastrada com este CPF. Escolha 'Alguém que já está no cadastro' para aproveitá-la.",
                 )
         pessoa = Pessoa(**dados.pessoa.model_dump(), created_at=agora, updated_at=agora)
         db.add(pessoa)

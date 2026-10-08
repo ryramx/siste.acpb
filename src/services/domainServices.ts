@@ -127,6 +127,57 @@ export interface NovoMembroInput {
   entryDate: string;
   cargoId: string;
   notes: string;
+  /** Quando preenchido, o membro é criado sobre esta Pessoa já cadastrada (e os dados dela são
+   * atualizados com os do formulário) em vez de criar uma Pessoa nova. */
+  pessoaId?: string;
+}
+
+/** Campos de Pessoa que o formulário de membro edita, no formato da API. Só entra o que veio
+ * em `data`: um campo ausente não é apagado. */
+function pessoaPatchDoMembro(data: Partial<NovoMembroInput>): Record<string, unknown> {
+  const pessoaPatch: Record<string, unknown> = {};
+  if (data.name !== undefined) pessoaPatch.nome_completo = data.name;
+  if (data.cpf !== undefined) pessoaPatch.cpf = data.cpf || null;
+  if (data.rg !== undefined) pessoaPatch.rg = data.rg || null;
+  if (data.birthDate !== undefined) pessoaPatch.data_nascimento = data.birthDate || null;
+  if (data.gender !== undefined) pessoaPatch.sexo = data.gender || null;
+  if (data.maritalStatus !== undefined) pessoaPatch.estado_civil = data.maritalStatus || null;
+  if (data.occupation !== undefined) pessoaPatch.profissao = data.occupation || null;
+  if (data.education !== undefined) pessoaPatch.escolaridade = data.education || null;
+  if (data.motherName !== undefined) pessoaPatch.nome_mae = data.motherName || null;
+  if (data.fatherName !== undefined) pessoaPatch.nome_pai = data.fatherName || null;
+  if (data.guardianName !== undefined) pessoaPatch.responsavel_nome = data.guardianName || null;
+  if (data.guardianPhone !== undefined) {
+    // Só dígitos, como os demais telefones do sistema.
+    pessoaPatch.responsavel_telefone = apenasDigitos(data.guardianPhone) || null;
+  }
+  if (data.email !== undefined) pessoaPatch.email = data.email || null;
+  if (data.address !== undefined) pessoaPatch.endereco = data.address || null;
+  if (data.neighborhood !== undefined) pessoaPatch.bairro = data.neighborhood || null;
+  if (data.city !== undefined) pessoaPatch.cidade = data.city || null;
+  if (data.state !== undefined) pessoaPatch.estado = data.state || null;
+  if (data.cep !== undefined) pessoaPatch.cep = data.cep || null;
+  return pessoaPatch;
+}
+
+/** Atualiza o telefone principal da pessoa, ou cria um se ela ainda não tiver. Vazio sem
+ * telefone anterior não cria nada. */
+async function salvarTelefonePrincipal(pessoaId: number, numero: string, whatsapp: string) {
+  const telefoneExistente = await buscarTelefonePrincipal(pessoaId);
+  if (telefoneExistente) {
+    await apiClient.put(`/telefones/${telefoneExistente.id}`, {
+      numero,
+      whatsapp: Boolean(whatsapp)
+    });
+  } else if (numero) {
+    await apiClient.post('/telefones/', {
+      pessoa_id: pessoaId,
+      numero,
+      tipo: 'CELULAR',
+      principal: true,
+      whatsapp: Boolean(whatsapp)
+    });
+  }
 }
 
 // Todos os domínios (membros, voluntários, beneficiários, projetos, eventos e financeiro)
@@ -172,7 +223,77 @@ export const memberService = {
     return toMember(membro, pessoa, cargo, telefone);
   },
 
+  /** Pessoas do cadastro que ainda não são membros: as opções de "Alguém que já está no
+   * cadastro" no formulário. Quem já é membro fica de fora porque o backend recusaria. */
+  async listarPessoasSemMembro(): Promise<{ id: string; name: string }[]> {
+    const [pessoas, membros] = await Promise.all([
+      projectService.getPessoasParaResponsavel(),
+      apiClient.get<ApiMembro[]>('/membros/')
+    ]);
+    const jaMembros = new Set(membros.map((m) => String(m.pessoa_id)));
+    return pessoas.filter((p) => !jaMembros.has(p.id));
+  },
+
+  /** Dados de uma Pessoa já cadastrada, no formato do formulário de membro, para que quem a
+   * escolhe veja (e complete) o que já existe em vez de redigitar. */
+  async dadosDaPessoa(pessoaId: string): Promise<Omit<NovoMembroInput, 'entryDate' | 'cargoId' | 'notes'>> {
+    const [pessoa, telefone] = await Promise.all([
+      apiClient.get<ApiPessoa>(`/pessoas/${pessoaId}`),
+      buscarTelefonePrincipal(Number(pessoaId))
+    ]);
+    return {
+      name: pessoa.nome_completo,
+      cpf: pessoa.cpf ?? '',
+      rg: pessoa.rg ?? '',
+      birthDate: pessoa.data_nascimento ?? '',
+      gender: pessoa.sexo ?? '',
+      maritalStatus: pessoa.estado_civil ?? '',
+      occupation: pessoa.profissao ?? '',
+      education: pessoa.escolaridade ?? '',
+      motherName: pessoa.nome_mae ?? '',
+      fatherName: pessoa.nome_pai ?? '',
+      guardianName: pessoa.responsavel_nome ?? '',
+      guardianPhone: pessoa.responsavel_telefone ?? '',
+      phone: telefone?.numero ?? '',
+      whatsapp: telefone?.whatsapp ? telefone.numero : '',
+      email: pessoa.email ?? '',
+      cep: pessoa.cep ?? '',
+      address: pessoa.endereco ?? '',
+      neighborhood: pessoa.bairro ?? '',
+      city: pessoa.cidade ?? '',
+      state: pessoa.estado ?? ''
+    };
+  },
+
   async create(data: NovoMembroInput): Promise<Member> {
+    const vinculo = {
+      papel: 'membro',
+      membro: {
+        cargo_id: Number(data.cargoId),
+        data_entrada: data.entryDate,
+        ativo: true,
+        observacoes: data.notes || null
+      }
+    };
+
+    if (data.pessoaId) {
+      // Vínculo primeiro: se a pessoa já for membro, o backend recusa antes de qualquer dado
+      // dela ser alterado.
+      const resultado = await apiClient.post<{ pessoa: ApiPessoa; membro: ApiMembro }>(
+        '/cadastros/pessoa-vinculo',
+        { pessoa_id: Number(data.pessoaId), ...vinculo }
+      );
+      const pessoaId = resultado.pessoa.id;
+      const pessoaPatch = pessoaPatchDoMembro(data);
+      if (Object.keys(pessoaPatch).length > 0) {
+        await apiClient.put(`/pessoas/${pessoaId}`, pessoaPatch);
+      }
+      await salvarTelefonePrincipal(pessoaId, data.phone, data.whatsapp);
+      const membro = await this.getById(String(resultado.membro.id));
+      if (!membro) throw new Error('Membro não encontrado após o cadastro');
+      return membro;
+    }
+
     const resultado = await apiClient.post<{
       pessoa: ApiPessoa;
       membro: ApiMembro;
@@ -197,13 +318,7 @@ export const memberService = {
         estado: data.state || null,
         cep: data.cep || null
       },
-      papel: 'membro',
-      membro: {
-        cargo_id: Number(data.cargoId),
-        data_entrada: data.entryDate,
-        ativo: true,
-        observacoes: data.notes || null
-      }
+      ...vinculo
     });
 
     if (data.phone) {
@@ -225,28 +340,7 @@ export const memberService = {
   async update(id: string, data: Partial<NovoMembroInput> & { status?: Member['status'] }): Promise<Member> {
     const membroAtual = await apiClient.get<ApiMembro>(`/membros/${id}`);
 
-    const pessoaPatch: Record<string, unknown> = {};
-    if (data.name !== undefined) pessoaPatch.nome_completo = data.name;
-    if (data.cpf !== undefined) pessoaPatch.cpf = data.cpf || null;
-    if (data.rg !== undefined) pessoaPatch.rg = data.rg || null;
-    if (data.birthDate !== undefined) pessoaPatch.data_nascimento = data.birthDate || null;
-    if (data.gender !== undefined) pessoaPatch.sexo = data.gender || null;
-    if (data.maritalStatus !== undefined) pessoaPatch.estado_civil = data.maritalStatus || null;
-    if (data.occupation !== undefined) pessoaPatch.profissao = data.occupation || null;
-    if (data.education !== undefined) pessoaPatch.escolaridade = data.education || null;
-    if (data.motherName !== undefined) pessoaPatch.nome_mae = data.motherName || null;
-    if (data.fatherName !== undefined) pessoaPatch.nome_pai = data.fatherName || null;
-    if (data.guardianName !== undefined) pessoaPatch.responsavel_nome = data.guardianName || null;
-    if (data.guardianPhone !== undefined) {
-      // Só dígitos, como os demais telefones do sistema.
-      pessoaPatch.responsavel_telefone = apenasDigitos(data.guardianPhone) || null;
-    }
-    if (data.email !== undefined) pessoaPatch.email = data.email || null;
-    if (data.address !== undefined) pessoaPatch.endereco = data.address || null;
-    if (data.neighborhood !== undefined) pessoaPatch.bairro = data.neighborhood || null;
-    if (data.city !== undefined) pessoaPatch.cidade = data.city || null;
-    if (data.state !== undefined) pessoaPatch.estado = data.state || null;
-    if (data.cep !== undefined) pessoaPatch.cep = data.cep || null;
+    const pessoaPatch = pessoaPatchDoMembro(data);
     if (Object.keys(pessoaPatch).length > 0) {
       await apiClient.put(`/pessoas/${membroAtual.pessoa_id}`, pessoaPatch);
     }
@@ -262,21 +356,7 @@ export const memberService = {
         : membroAtual;
 
     if (data.phone !== undefined) {
-      const telefoneExistente = await buscarTelefonePrincipal(membroAtual.pessoa_id);
-      if (telefoneExistente) {
-        await apiClient.put(`/telefones/${telefoneExistente.id}`, {
-          numero: data.phone,
-          whatsapp: Boolean(data.whatsapp)
-        });
-      } else if (data.phone) {
-        await apiClient.post('/telefones/', {
-          pessoa_id: membroAtual.pessoa_id,
-          numero: data.phone,
-          tipo: 'CELULAR',
-          principal: true,
-          whatsapp: Boolean(data.whatsapp)
-        });
-      }
+      await salvarTelefonePrincipal(membroAtual.pessoa_id, data.phone, data.whatsapp ?? '');
     }
 
     const membroFinal = await this.getById(id);

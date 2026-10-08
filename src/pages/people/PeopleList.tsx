@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { IdCard, Pencil, Plus, Search, Trash2, UserPlus } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { IdCard, Pencil, Plus, Search, Trash2, UserCheck, UserPlus } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Select } from '../../components/ui/Select';
@@ -102,6 +103,7 @@ function paraFormulario(pessoa: Pessoa): DadosDePessoa {
 export const PeopleList: React.FC = () => {
   const { hasPermission } = useAuth();
   const { addToast } = useToast();
+  const navigate = useNavigate();
 
   const [pessoas, setPessoas] = useState<Pessoa[]>([]);
   const [vinculosCompletos, setVinculosCompletos] = useState(true);
@@ -116,6 +118,8 @@ export const PeopleList: React.FC = () => {
 
   const podeEditar = hasPermission('edit_people');
   const podeExcluir = hasPermission('delete_people');
+  const podeTornarMembro = hasPermission('edit_members');
+  const temAcoes = podeEditar || podeExcluir || podeTornarMembro;
 
   const carregar = () => {
     setCarregando(true);
@@ -304,7 +308,7 @@ export const PeopleList: React.FC = () => {
                   <th className="py-3 px-4 hidden md:table-cell">CPF</th>
                   <th className="py-3 px-4 hidden lg:table-cell">Contato</th>
                   <th className="py-3 px-4 hidden sm:table-cell">Vínculos</th>
-                  {(podeEditar || podeExcluir) && <th className="py-3 px-4 text-right">Ações</th>}
+                  {temAcoes && <th className="py-3 px-4 text-right">Ações</th>}
                 </tr>
               </thead>
               <tbody className="divide-y divide-surface-border">
@@ -335,9 +339,21 @@ export const PeopleList: React.FC = () => {
                     <td className="py-3 px-4 hidden sm:table-cell">
                       <VinculosDaPessoa pessoa={p} vinculosCompletos={vinculosCompletos} />
                     </td>
-                    {(podeEditar || podeExcluir) && (
+                    {temAcoes && (
                       <td className="py-3 px-4 whitespace-nowrap">
                         <div className="flex justify-end gap-1">
+                          {/* Atalho para o formulário de membro já com a pessoa escolhida: quem
+                              cadastrava a pessoa aqui não tinha como torná-la membro depois. */}
+                          {podeTornarMembro && !p.contaTecnica && !p.vinculos.includes('membro') && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              title="Tornar membro"
+                              aria-label={`Tornar ${p.nomeCompleto} membro`}
+                              onClick={() => navigate(`/membros/novo?pessoa=${p.id}`)}
+                              leftIcon={<UserCheck className="w-4 h-4" />}
+                            />
+                          )}
                           {podeEditar && (
                             <Button
                               variant="ghost"
@@ -579,8 +595,9 @@ export const PeopleList: React.FC = () => {
       {podeEditar && filtradas.length > 0 && (
         <p className="text-xs text-text-muted flex items-center gap-1">
           <UserPlus className="w-3 h-3" />
-          Para transformar uma pessoa em membro, voluntário ou beneficiário, use a tela do módulo
-          correspondente e escolha este cadastro — evita criar a mesma pessoa duas vezes.
+          Para tornar uma pessoa membro, use o botão ao lado do nome. Para voluntário ou
+          beneficiário, use a tela do módulo e escolha este cadastro — evita criar a mesma pessoa
+          duas vezes.
         </p>
       )}
     </div>
